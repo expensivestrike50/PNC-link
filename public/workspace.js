@@ -1,5 +1,6 @@
 import { mutate } from "./workflow.mjs";
 import { dashboard, mountDashboard } from "./nexus-dash.js";
+import { linkDashboard, mountLinkDashboard } from "./link-dash.js";
 import {
   newData,
   profileInput,
@@ -474,6 +475,7 @@ function navItems(c) {
       ["referrals", "My referrals", "02"],
     ];
   return [
+    ["dashboard", "Dashboard", "▦"],
     ...(isAdvisor() ? [["portfolio", "Client portfolio", "↗"]] : []),
     [
       "overview",
@@ -868,6 +870,15 @@ function render() {
   else if (!state.user && !state.demo) {
     location.hash = "#/signin";
     return;
+  } else if (r === "dashboard" && c && c.mode !== "specialist") {
+    html = linkDashboard({
+      c,
+      user: state.user,
+      demo: state.demo,
+      demoRole: state.demoRole,
+      history: state.history,
+      isAdvisor: isAdvisor(),
+    });
   } else {
     let body;
     if (["portfolio", "metrics"].includes(r) && !isAdvisor())
@@ -910,6 +921,7 @@ function render() {
   document.title = `${r === "home" ? "Business transitions" : r.charAt(0).toUpperCase() + r.slice(1)} · PNC-link`;
   document.querySelector("h1")?.focus({ preventScroll: true });
   if (r === "overview" && c && c.mode !== "specialist") mountDashboard(c);
+  if (r === "dashboard") mountLinkDashboard();
   if (r === "assistant") $("#thread")?.scrollTo(0, $("#thread").scrollHeight);
 }
 app.addEventListener("submit", async (e) => {
@@ -1058,8 +1070,9 @@ app.addEventListener("click", async (e) => {
       await loadCases();
       await loadHistory();
       render();
-      location.hash =
-        state.demoRole === "advisor" ? "#/portfolio" : "#/overview";
+      if (route() !== "dashboard")
+        location.hash =
+          state.demoRole === "advisor" ? "#/portfolio" : "#/overview";
     } else if (action === "openCase" || action === "caseBrief") {
       if (
         !state.cases.some((c) => c.id === b.dataset.id && c.mode === "advisor")
