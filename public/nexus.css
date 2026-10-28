@@ -2067,3 +2067,12 @@ body:has(.ld.light) {
 .ws-side .ws-promo-body p {
   color: #555;
 }
+.ld.nx {
+  --navy: var(--ws-text);
+  --paper: var(--ws-bg);
+  --white: var(--ws-card);
+  --pale: var(--ws-soft);
+  --teal: #f2d50f;
+  --blue: #f2d50f;
+  --blue-dark: #d9bf00;
+}

@@ -50,6 +50,7 @@ const I = {
   chart: '<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>',
   split: '<path d="M6 20v-5a4 4 0 0 1 4-4h8M6 4v16M15 7.5l3.5 3.5-3.5 3.5"/>',
   team: '<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>',
+  wallet: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M7 15h3"/>',
   up: '<path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/>',
   down: '<path d="M12 5v11M7.5 11.5L12 16l4.5-4.5M5 19h14"/>',
   swap: '<path d="M4 8h14M14.5 4.5L18 8l-3.5 3.5M20 16H6M9.5 12.5L6 16l3.5 3.5"/>',
@@ -132,11 +133,29 @@ function relationshipMap(d) {
   </svg>`;
 }
 
+/* ---------------- Frame ---------------- */
+
+// Header card shared by the Dashboard and My transition.
+function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole, ping = false, note = "" }) {
+  const owner = demoRole === "owner";
+  const viewSwitch = demo
+    ? `<div class="ld-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
+    : "";
+  return `<header class="ld-head ld-card">
+      ${menu}${account}
+      <div><small>${greeting}</small><h1 tabindex="-1">${esc(name)}</h1></div>
+      <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span><a class="ld-pill ld-pill-sm" href="#/signup">Create your case</a>' : note}
+        <a class="ld-round" href="#/plan" aria-label="Shared action plan">${svg(I.bell, 20)}${ping ? '<i class="ld-ping"></i>' : ""}</a>
+        <a class="ld-round" href="#/discovery" aria-label="Discovery profile settings">${svg(I.settings, 20)}</a>
+      </div>
+    </header>`;
+}
+
 /* ---------------- Page ---------------- */
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ side, menu, theme, c, user, demo, demoRole, history }) {
+export function linkDashboard({ side, menu, account, theme, c, user, demo, demoRole, history }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -166,25 +185,11 @@ export function linkDashboard({ side, menu, theme, c, user, demo, demoRole, hist
   const ev = d.evidence ?? [];
   const shownEv = ev.slice(0, 5);
 
-  const avatar = demo
-    ? '<img src="./assets/icons/hdr-avatar.png" alt="">'
-    : `<span>${esc(initials(name) || "?")}</span>`;
-  const viewSwitch = demo
-    ? `<div class="ld-switch" role="group" aria-label="Sample view"><button type="button" class="${demoRole === "owner" ? "on" : ""}" ${demoRole === "owner" ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch"'}>Client</button><button type="button" class="${demoRole === "owner" ? "" : "on"}" ${demoRole === "owner" ? 'data-action="demoSwitch"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
-    : "";
-
-  return `<div class="ld ${theme}" data-ld>
+  return `<div class="ld nx ${theme}" data-ld>
 ${side}
 
   <div class="ld-body">
-    <header class="ld-head ld-card">
-      ${menu}<div class="ld-avatar">${avatar}</div>
-      <div><small>Welcome back!</small><h1 tabindex="-1">${esc(name)}</h1></div>
-      <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span>' : ""}
-        <a class="ld-round" href="#/plan" aria-label="Shared action plan">${svg(I.bell, 20)}${(d.actions ?? []).some((a) => a.status !== "Completed") ? '<i class="ld-ping"></i>' : ""}</a>
-        <a class="ld-round" href="#/discovery" aria-label="Discovery profile settings">${svg(I.settings, 20)}</a>
-      </div>
-    </header>
+    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
 
     <div class="ld-grid">
       <div class="ld-col">
@@ -278,7 +283,7 @@ ${side}
 }
 
 // Signed in (or guest) without a case yet: same frame, with a way to start.
-export function linkDashboardEmpty({ side, menu, theme, user, guest }) {
+export function linkDashboardEmpty({ side, menu, account, theme, user, guest }) {
   const staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
     name = guest ? "Guest" : user?.name || user?.email || "there";
   const steps = [
@@ -287,14 +292,10 @@ export function linkDashboardEmpty({ side, menu, theme, user, guest }) {
     [I.split, "g", "Compare transition paths", "pathways"],
     [I.team, "p", "Approve each specialist handoff", "referrals"],
   ];
-  return `<div class="ld ${theme}" data-ld>
+  return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    <header class="ld-head ld-card">
-      ${menu}<div class="ld-avatar"><span>${esc(initials(name) || "?")}</span></div>
-      <div><small>Welcome${guest ? "" : " back"}!</small><h1 tabindex="-1">${esc(name)}</h1></div>
-      <div class="ld-head-r">${guest ? '<span class="ld-sample">Saved only in this browser</span>' : ""}<a class="ld-round" href="#/discovery" aria-label="Discovery profile">${svg(I.settings, 20)}</a></div>
-    </header>
+    ${head({ menu, account, name, greeting: guest ? "Welcome!" : "Welcome back!", note: guest ? '<span class="ld-sample">Saved only in this browser</span>' : "" })}
     <section class="ld-start">
       <div class="ld-start-copy">
         <span class="ld-cc-brand">${markLogo}PNC-link</span>
@@ -310,6 +311,93 @@ ${side}
     <div class="ld-tiles">${steps
       .map(([ic, col, label, route], i) => `<a class="ld-card ld-tile" href="#/${route}"><span class="ld-ic ${col}">${svg(ic, 20)}</span><b>${label}</b><small>Step ${i + 1}</small></a>`)
       .join("")}</div>
+  </div>
+</div>`;
+}
+
+// My transition in the dashboard frame. Content pieces (forms, badges, AI and brief
+// buttons) come from workspace.js so their behaviour is unchanged.
+export function linkTransition({ side, menu, account, theme, c, user, demo, demoRole, parts }) {
+  const d = c.data,
+    p = d.profile,
+    journey = transitionJourney(d),
+    current = journey.find((j) => j.status === "Current"),
+    steps = nextSteps(d, c.mode).slice(0, 4),
+    owner = c.mode === "owner",
+    name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
+    icons = [I.target, I.chart, I.split, I.team, I.wallet],
+    tones = ["y", "b", "g", "p", "l"];
+  return `<div class="ld nx ${theme}" data-ld>
+${side}
+  <div class="ld-body">
+    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    <div class="ld-grid">
+      <div class="ld-col">
+        <div class="ld-tools">
+          <a class="ld-pill" href="#/discovery">${svg(I.plus, 18)}${owner ? "Update discovery" : "View discovery"}</a>
+          <a class="ld-pill" href="#/history">${svg(I.calendar, 18)}Updated ${day(c.updatedAt)}${svg(I.chevron, 16)}</a>
+          <span class="ld-grow"></span>
+          ${roundLink("#/pathways", "Compare transition options", I.sliders)}
+          ${roundLink("#/resources", "Planning resources", I.search)}
+        </div>
+        <nav class="ld-tiles five" aria-label="Journey progress">${journey
+          .map(
+            (j, i) =>
+              `<a class="ld-card ld-tile ${j.status.toLowerCase()}" href="#/${esc(j.route)}" ${j.status === "Current" ? 'aria-current="step"' : ""}><span class="ld-ic ${tones[i]}">${svg(icons[i], 20)}</span><b>${esc(j.label)}</b><small>0${i + 1} · ${esc(j.status)}</small></a>`,
+          )
+          .join("")}</nav>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><div><h2>${owner ? "Your next steps" : "Next best actions to review"}</h2><small>Based on recorded facts and transparent workflow rules. Review before acting.</small></div>${roundLink("#/plan", "Open shared action plan")}</div>
+          <div class="ld-invest">${steps
+            .map(
+              (st, i) =>
+                `<a class="ld-inv c${i % 4}" href="#/${esc(st.route)}"><span class="ld-letter">${i + 1}</span><span class="nm"><b>${esc(st.title)}</b><small>${esc(st.detail)}</small></span><span class="ld-go">${svg(I.arrow, 16)}</span></a>`,
+            )
+            .join("")}</div>
+          <div class="ld-btns">${parts.assistant}${parts.brief}</div>
+        </section>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
+          ${parts.review}
+        </section>
+      </div>
+
+      <div class="ld-col">
+        <div class="ld-two">
+          <section class="ld-cc yellow">
+            <span class="ld-cc-brand">${markLogo}PNC-link</span>
+            <small>${owner ? "Owner journey" : "Advisor case"} · ${esc(p.industry)}</small>
+            <h2 class="ld-cc-title">${esc(p.business)}</h2>
+            <p class="ld-cc-desc">A common record of your goals, evidence, decisions, and the people helping you move forward.</p>
+            <div class="ld-cc-badges">${parts.badges}</div>
+          </section>
+          <section class="ld-cc black ld-cc-progress">
+            <span class="ld-cc-brand">${markLogo}Journey progress</span>
+            <div class="ld-cc-ring">${parts.journeyRing}</div>
+            <span class="ld-cc-row"><span><small>Current step</small>${esc(current?.label ?? "Complete")}</span></span>
+          </section>
+        </div>
+        <div class="ld-two">
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><h2>What matters to the owner</h2></div>
+            <div class="row">${parts.chips}</div>
+            <blockquote class="review-note mt-quote">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</blockquote>
+            <p class="ld-text"><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p>
+          </section>
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><small>Liquidity goal</small>${roundLink("#/proceeds", "Open proceeds and wealth", I.arrow, "solid")}</div>
+            <p class="ld-big">${parts.liquidity}</p>
+            <div class="ld-ret">${parts.retainedRing}<small>Desired retained ownership</small></div>
+            <div class="mt-horizon"><small>${esc(p.timeline)}-year horizon</small>${parts.horizon}</div>
+          </section>
+        </div>
+        <section class="ld-card ld-pad ld-meet">
+          <div class="ld-ch"><h2>Your next conversation</h2></div>
+          ${parts.meeting}
+        </section>
+        ${parts.management}
+      </div>
+    </div>
   </div>
 </div>`;
 }

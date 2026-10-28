@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js?v=202610281845";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281852";
 import {
   newData,
   profileInput,
@@ -669,60 +669,44 @@ function horizonBar(years) {
   const labels = Array.from({ length: max + 1 }, (_, y) => `<span>${y === 0 ? "Today" : `${y}y`}</span>`).join("");
   return `<div class="mt-track"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="8" rx="4" class="mt-ring-track-fill"/><rect width="${pct.toFixed(1)}" height="8" rx="4" class="mt-bar"/></svg><span class="mt-pin" data-left="${pct.toFixed(1)}"></span></div><div class="mt-axis-row">${labels}</div>`;
 }
-const STEP_ICONS = [
-  '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
-  '<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>',
-  '<path d="M6 20v-5a4 4 0 0 1 4-4h8M6 4v16M15 7.5l3.5 3.5-3.5 3.5"/>',
-  '<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>',
-  '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M7 15h3"/>',
-];
-const stepIcon = (i) =>
-  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STEP_ICONS[i] ?? STEP_ICONS[0]}</svg>`;
+// Owners and advisors see My transition in the dashboard frame (see render); this covers
+// the no-case and specialist views.
 function overview(c) {
   if (!c) return noCase();
-  if (c.mode === "specialist")
-    return `${intro("Your specialist inbox", "Review the approved purpose and information scope before acknowledging the handoff.")}${referrals(c)}`;
+  return `${intro("Your specialist inbox", "Review the approved purpose and information scope before acknowledging the handoff.")}${referrals(c)}`;
+}
+// Content pieces for My transition, rendered in the dashboard frame by link-dash.js.
+function transitionParts(c) {
   const d = c.data,
     p = d.profile,
     journey = transitionJourney(d),
-    done = journey.filter((j) => j.status === "Complete").length,
-    steps = nextSteps(d, c.mode).slice(0, 4);
-  return `<div class="mt">
-  <section class="mt-hero">
-    <div class="mt-hero-copy"><div class="eyebrow">${c.mode === "advisor" ? "Advisor case" : "Owner journey"} · ${esc(p.industry)}</div><h1 tabindex="-1">${esc(p.business)}</h1><p>A common record of your goals, evidence, decisions, and the people helping you move forward.</p><div class="row">${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}</div></div>
-    <figure class="mt-progress">${progressRing(done, journey.length)}<figcaption>Journey progress</figcaption></figure>
-  </section>
-  <nav class="mt-journey" aria-label="Journey progress">${journey
-    .map(
-      (step, i) =>
-        `<a href="#/${esc(step.route)}" class="mt-step ${step.status.toLowerCase()}" ${step.status === "Current" ? 'aria-current="step"' : ""}><span class="mt-step-ic c${i % 5}">${stepIcon(i)}</span><i>0${i + 1} · ${esc(step.status)}</i><b>${esc(step.label)}</b></a>`,
-    )
-    .join("")}</nav>
-  <div class="mt-grid">
-    <section class="mt-card">
-      <div class="mt-head"><div><h2>${c.mode === "advisor" ? "Next best actions to review" : "Your next steps"}</h2><small>Based on recorded facts and transparent workflow rules. Review before acting.</small></div></div>
-      <div class="mt-steps">${steps.map((step, i) => `<a href="#/${esc(step.route)}" class="next-step mt-row c${i % 4}"><span class="step-number">${i + 1}</span><div><b>${esc(step.title)}</b><p>${esc(step.detail)}</p></div><span aria-hidden="true">↗</span></a>`).join("")}</div>
-      <div class="row mt-actions">${contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation")} ${button("Download meeting brief", "downloadBrief", "quiet small")}</div>
-    </section>
-    <section class="mt-card">
-      <div class="mt-head"><h2>What matters to the owner</h2></div>
-      <div class="row">${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}</div>
-      <blockquote class="review-note mt-quote">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</blockquote>
-      <p><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p>
-      <div class="mt-figs">
-        <div class="mt-fig"><small>Liquidity goal</small><b>${money(p.liquidity)}</b></div>
-        <div class="mt-fig mt-fig-ring">${progressRing(Number(p.retained) || 0, 100, `${esc(p.retained)}%`, "")}<small>Desired retained ownership</small></div>
-      </div>
-      <div class="mt-horizon"><small>${esc(p.timeline)}-year horizon</small>${horizonBar(p.timeline)}</div>
-      <a class="btn secondary small" href="#/discovery">${c.mode === "owner" ? "Update discovery" : "View discovery"}</a>
-    </section>
-  </div>
-  <div class="mt-grid">
-    <section class="mt-card mt-review"><div class="mt-head"><h2>Advisor review</h2>${badge(d.review ? "Recorded" : "Pending", d.review ? "" : "amber")}</div>${d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`}</section>
-    <section class="mt-card"><div class="mt-head"><h2>Your next conversation</h2></div>${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}</section>
-  </div>
-  ${managementPanel(c)}
-</div>`;
+    done = journey.filter((j) => j.status === "Complete").length;
+  return {
+    badges: `${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}`,
+    chips: `${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}`,
+    assistant: contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation"),
+    brief: button("Download meeting brief", "downloadBrief", "quiet small"),
+    reviewBadge: badge(d.review ? "Recorded" : "Pending", d.review ? "" : "amber"),
+    review: `${d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`}`,
+    meeting: `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`,
+    management: managementPanel(c),
+    liquidity: money(p.liquidity),
+    retainedRing: progressRing(Number(p.retained) || 0, 100, `${esc(p.retained)}%`, ""),
+    horizon: horizonBar(p.timeline),
+    journeyRing: progressRing(done, journey.length),
+  };
+}
+// Avatar button with the account menu, used in the dashboard-style header.
+function accountMenu(name, mode) {
+  const who = state.demo ? "Illustrative sample" : state.user?.name || state.user?.email || "",
+    roleLabel = mode === "owner" ? "Business owner" : mode === "advisor" ? "Relationship advisor" : "Approved referral recipient",
+    letters = String(name ?? "")
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((x) => x[0].toUpperCase())
+      .join("");
+  return `<div class="acct"><button type="button" class="ld-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(letters || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div>`;
 }
 function discovery(c) {
   const p = c?.data.profile ?? {
@@ -965,10 +949,23 @@ function render() {
   else if (!state.user && !state.demo) {
     location.hash = "#/signin";
     return;
+  } else if (r === "overview" && c && c.mode !== "specialist") {
+    html = linkTransition({
+      side: sideNav(r, c),
+      menu: menuButton,
+      account: accountMenu(c.mode === "owner" ? c.data.profile.name : state.user?.name || "Advisor", c.mode),
+      theme: wsTheme(),
+      c,
+      user: state.user,
+      demo: state.demo,
+      demoRole: state.demoRole,
+      parts: transitionParts(c),
+    });
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
       side: sideNav(r, c),
       menu: menuButton,
+      account: accountMenu(state.user?.id === "local-guest" ? "Guest" : state.user?.name || state.user?.email, "owner"),
       theme: wsTheme(),
       user: state.user,
       guest: state.user?.id === "local-guest",
@@ -978,6 +975,7 @@ function render() {
     html = linkDashboard({
       side: sideNav(r, c),
       menu: menuButton,
+      account: accountMenu(c.mode === "owner" ? c.data.profile.name : state.user?.name || "Advisor", c.mode),
       theme: wsTheme(),
       c,
       user: state.user,
