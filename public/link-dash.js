@@ -177,17 +177,6 @@ function evidenceFunnel(rd) {
   return `<div class="rd-funnel" role="img" aria-label="${rd.total} categories, ${rd.reported} available, ${rd.verified} verified">${bar("n", "All categories", rd.total)}${bar("a", "Owner marked available", rd.reported)}${bar("v", "Advisor verified", rd.verified)}</div>`;
 }
 
-// Each category on the same three-step path, so it is clear where it stands and what comes next.
-function evidenceLadder(evidence) {
-  const lvl = (e) => (e.verified ? 3 : e.reported ? 2 : 1);
-  return `<div class="rd-ladder" role="table" aria-label="Evidence progress by category"><div class="rd-ld-head" role="row"><span role="columnheader">Category</span>${EV_LEVEL.map((l) => `<span role="columnheader">${l}</span>`).join("")}</div>${evidence
-    .map((e) => {
-      const n = lvl(e);
-      return `<div class="rd-ld-row s${n}" role="row"><span role="rowheader">${esc(EV_SHORT[e.label] ?? e.label)}</span><div class="rd-steps" role="cell" aria-label="${EV_LEVEL[n - 1]}">${[1, 2, 3].map((k) => `<i class="${k < n ? "done" : k === n ? "now" : ""}"></i>`).join("")}</div></div>`;
-    })
-    .join("")}</div>`;
-}
-
 function gauge(v) {
   const a = Math.PI * (1 - Math.max(0.001, v) / 100),
     x = 42 + 34 * Math.cos(a),
@@ -760,7 +749,8 @@ ${side}
           <div class="ld-ch"><div><small class="ld-eyebrow">Seven evidence categories</small><h2>Evidence status</h2></div><div class="ld-score">${rd.verified}<small>/${rd.total} verified</small></div></div>
           ${evidenceFunnel(rd)}
           <p class="rd-cap">${none ? `${none} still to confirm, ${pending} waiting for advisor review.` : pending ? `All categories available; ${pending} waiting for advisor review.` : "Every category is advisor verified."}</p>
-          ${evidenceLadder(d.evidence ?? [])}
+          <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
+          <div class="ld-legend"><span><i class="v"></i>Verified</span><span><i class="a"></i>Available</span><span><i class="n"></i>Not confirmed</span></div>
         </section>
         <section class="ld-card ld-pad">
           <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
