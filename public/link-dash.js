@@ -57,6 +57,16 @@ const I = {
   swap: '<path d="M4 8h14M14.5 4.5L18 8l-3.5 3.5M20 16H6M9.5 12.5L6 16l3.5 3.5"/>',
   spark: '<path d="M12 3l2 6.2 6.2 2-6.2 2L12 19.5l-2-6.3-6.2-2 6.2-2z"/>',
 };
+// Line icons for the seven transition paths
+const PATH_ICONS = {
+  "Strategic sale": '<path d="M2.5 11.5l4-4 3 1.5 3-1.5 4 2 5 2"/><path d="M6.5 7.5l5.5 5.5a1.6 1.6 0 0 0 2.3-2.3"/><path d="M10 15l1.5 1.5a1.6 1.6 0 0 0 2.3-2.3M13 17.5a1.6 1.6 0 0 0 2.3-2.3l-1-1M2.5 11.5l3 3M21.5 11.5l-3.5 3.5-2.5-2.5"/>',
+  "PE with rollover": '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8.5 8V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2"/><path d="M14.8 12.3a3.3 3.3 0 1 0 .7 3.2M15.5 10.8v1.8h-1.8"/>',
+  "Family transfer": '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/><path d="M12 17.5s-3-1.8-3-3.8a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.8-3 3.8z"/>',
+  "Management transfer": '<circle cx="7.5" cy="8" r="2.8"/><circle cx="16.5" cy="8" r="2.8"/><path d="M2.5 19c.5-3 2.4-4.6 5-4.6s4.5 1.6 5 4.6M14 15c.8-.4 1.6-.6 2.5-.6 2.6 0 4.5 1.6 5 4.6"/><path d="M10.5 5h3M12.5 3.8l1.2 1.2-1.2 1.2"/>',
+  ESOP: '<circle cx="12" cy="6.5" r="2.5"/><circle cx="5.5" cy="9.5" r="2.2"/><circle cx="18.5" cy="9.5" r="2.2"/><path d="M8 19.5c.4-3 1.9-4.6 4-4.6s3.6 1.6 4 4.6M2 18.5c.3-2.4 1.6-3.7 3.5-3.7 1 0 1.8.3 2.4 1M22 18.5c-.3-2.4-1.6-3.7-3.5-3.7-1 0-1.8.3-2.4 1"/>',
+  "Partial recapitalization": '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 2.5A7.5 7.5 0 0 1 21.5 9H15z"/>',
+  "Prepare / delayed exit": '<path d="M6.5 3h11M6.5 21h11"/><path d="M7.5 3c0 4.5 4.5 5.5 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 5.5-4.5 9s4.5 4.5 4.5 9"/><path d="M9.5 18.5h5"/>',
+};
 const markLogo = `<svg width="30" height="30" viewBox="0 0 96 96" aria-hidden="true"><g stroke-width="9" stroke-linecap="round"><path d="M48 43V23" stroke="currentColor"/><path d="M43 54 25 65M53 54 71 65" stroke="#00A3B1"/></g><circle cx="48" cy="18" r="11" fill="currentColor"/><circle cx="48" cy="50" r="9" fill="currentColor"/><circle cx="20" cy="70" r="11" fill="#00A3B1"/><circle cx="76" cy="70" r="11" fill="#00A3B1"/></svg>`;
 const roundLink = (href, label, icon = I.arrow, cls = "") =>
   `<a class="ld-round ${cls}" href="${href}" aria-label="${esc(label)}">${svg(icon, 18)}</a>`;
@@ -326,7 +336,7 @@ ${side}
           <section class="ld-card ld-pad">
             <div class="ld-ch"><h2>Transition paths</h2>${roundLink("#/pathways", "Open transition options")}</div>
             <div class="ld-invest">${pathRows
-              .map((x, i) => `<a class="ld-inv c${i}" href="#/pathways"><span class="ld-letter">${esc(x.name[0])}</span><span class="nm"><b>${esc(x.name)}</b><small>${x.name === chosen ? "Working direction" : suggested.includes(x.name) ? "Discuss with advisor" : "Alternative"}</small></span><span class="val"><b>${esc(x.liquidity)}</b><small>Liquidity</small></span></a>`)
+              .map((x, i) => `<a class="ld-inv c${i}" href="#/pathways"><span class="ld-letter">${svg(PATH_ICONS[x.name] ?? I.split, 24)}</span><span class="nm"><b>${esc(x.name)}</b><small>${x.name === chosen ? "Working direction" : suggested.includes(x.name) ? "Discuss with advisor" : "Alternative"}</small></span><span class="val"><b>${esc(x.liquidity)}</b><small>Liquidity</small></span></a>`)
               .join("")}</div>
           </section>
           <section class="ld-card ld-pad">
