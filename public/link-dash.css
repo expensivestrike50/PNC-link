@@ -1812,28 +1812,220 @@ button.ld-day.on {
 .rd-note {
   margin-top: 16px !important;
 }
-.rd-stack {
+/* Info button and explanation on each evidence row */
+.ld .rd-row {
+  flex-wrap: wrap;
+}
+.rd-txt b {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  gap: 8px;
+}
+.rd-i,
+.rd-i-inline {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  color: var(--muted);
+  font: italic 600 11px/1 Georgia, serif;
+}
+.rd-i-inline {
+  width: 15px;
+  height: 15px;
+  font-size: 9.5px;
+  vertical-align: -2px;
+  margin: 0 1px;
+}
+.rd-i {
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ld .rd-i:hover,
+.ld .rd-i[aria-expanded="true"] {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #111;
+}
+.rd-i:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+.rd-help {
+  flex-basis: 100%;
+  margin-left: 56px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.rd-help[hidden] {
+  display: none;
+}
+.ld .rd-help p {
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+.rd-help dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.rd-help dl div {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 8px;
+}
+.rd-help dt {
+  font-weight: 600;
+}
+.rd-help dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Funnel: all categories → available → verified */
+.rd-funnel {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 10px;
+}
+.rd-fn-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 28px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.rd-fn-row b {
+  text-align: right;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rd-fn-track {
   height: 14px;
-  margin: 4px 0 12px;
+  border-radius: 7px;
+  background: var(--soft);
 }
-.rd-stack i {
+.rd-fn-track i {
+  display: block;
   height: 100%;
-  border-radius: 4px;
+  min-width: 4px;
+  border-radius: 7px;
 }
-.rd-stack i.v {
-  background: var(--good);
-}
-.rd-stack i.a {
-  background: var(--mark);
-}
-.rd-stack i.n {
+.rd-fn-track i.n {
   background: var(--track);
 }
-.rd-legend {
-  justify-content: flex-start;
-  margin: 0 0 4px;
+.rd-fn-track i.a {
+  background: var(--mark);
+}
+.rd-fn-track i.v {
+  background: var(--good);
+}
+.ld .rd-cap {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Ladder: each category on the same three-step path */
+.rd-ladder {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+.rd-ld-head,
+.rd-ld-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.rd-ld-head {
+  grid-template-columns: 130px repeat(3, 1fr);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.rd-ld-head span:not(:first-child) {
+  text-align: center;
+}
+.rd-ld-row {
+  padding: 7px 0;
+}
+.rd-ld-row > span {
+  color: var(--ink);
+}
+.rd-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+}
+.rd-steps::before,
+.rd-steps::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 16.67%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--track);
+}
+.rd-steps::before {
+  right: 16.67%;
+}
+.rd-steps::after {
+  width: 0;
+}
+.s2 .rd-steps::after {
+  width: 33.33%;
+  background: var(--mark);
+}
+.s3 .rd-steps::after {
+  width: 66.67%;
+  background: var(--good);
+}
+.rd-steps i {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--track);
+}
+.rd-steps i.done,
+.rd-steps i.now {
+  border-color: transparent;
+}
+.s1 .rd-steps i.now {
+  background: var(--muted);
+  width: 16px;
+  height: 16px;
+}
+.s2 .rd-steps i.done,
+.s2 .rd-steps i.now {
+  background: var(--mark);
+}
+.s3 .rd-steps i.done,
+.s3 .rd-steps i.now {
+  background: var(--good);
+}
+.s2 .rd-steps i.now,
+.s3 .rd-steps i.now {
+  width: 18px;
+  height: 18px;
+  box-shadow: 0 0 0 4px var(--soft);
 }
 .ld .rd-judge {
   min-height: 0;
@@ -1860,6 +2052,21 @@ button.ld-day.on {
   .rd-sws {
     width: 100%;
     padding-left: 56px;
+  }
+  .rd-help {
+    margin-left: 0;
+  }
+  .rd-fn-row {
+    grid-template-columns: 112px 1fr 24px;
+    font-size: 12px;
+  }
+  .rd-ld-head,
+  .rd-ld-row {
+    grid-template-columns: 92px 1fr;
+  }
+  .rd-ld-head {
+    grid-template-columns: 92px repeat(3, 1fr);
+    font-size: 10.5px;
   }
 }
 

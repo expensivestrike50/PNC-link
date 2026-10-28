@@ -154,6 +154,40 @@ function evidenceRadar(evidence) {
   return `<svg viewBox="0 0 500 320" width="100%" role="img" aria-label="Evidence status across ${n} categories">${g}</svg>`;
 }
 
+// Plain-language description of each evidence category, shown behind the row's info button.
+const EV_INFO = {
+  "Financial statements": "Recent financials for the business: usually the last three years of income statements, balance sheets and tax returns, plus year-to-date figures.",
+  "Ownership and debt schedule": "Who owns what share of the business and what it owes: loans, lines of credit, leases and any personal guarantees.",
+  "Successor / key-person plan": "Who could lead the business after you, and which people it depends on today. A written plan or an informal list both count.",
+  "Family priorities": "What matters to your family in this decision, such as who joins the business, fairness between heirs and income needs.",
+  "Tax and estate review": "A recent look at your will, trusts or estate plan and how a transition could be taxed, usually with your CPA or attorney.",
+  "Operating procedures": "How the business runs day to day without you: written processes, key customer and supplier relationships, and systems access.",
+  "Transition timeline": "When you would like to step back, and dates that matter, such as a target retirement age, a lease end or a loan maturity.",
+};
+
+function evidenceHelp(label, owner, id) {
+  return `<div class="rd-help" id="${id}" hidden><p>${esc(EV_INFO[label] ?? "")}</p><dl><div><dt>Available</dt><dd>${owner ? "You confirm you have this and can bring it to a meeting. You switch this on; nothing is uploaded." : "The owner confirms they have this and can bring it to a meeting. Only the owner switches this on."}</dd></div><div><dt>Verified</dt><dd>${owner ? "Your advisor has reviewed it with you. Only your advisor can switch this on, after you mark it available." : "You have reviewed it with the owner. You can switch this on once the owner marks it available."}</dd></div></dl></div>`;
+}
+
+// Funnel: every category, those the owner marked available, those the advisor verified.
+function evidenceFunnel(rd) {
+  const pct = (n) => ((n / (rd.total || 1)) * 100).toFixed(1),
+    bar = (cls, label, n) =>
+      `<div class="rd-fn-row"><span>${label}</span><div class="rd-fn-track"><i class="${cls}" data-w="${pct(n)}"></i></div><b>${n}</b></div>`;
+  return `<div class="rd-funnel" role="img" aria-label="${rd.total} categories, ${rd.reported} available, ${rd.verified} verified">${bar("n", "All categories", rd.total)}${bar("a", "Owner marked available", rd.reported)}${bar("v", "Advisor verified", rd.verified)}</div>`;
+}
+
+// Each category on the same three-step path, so it is clear where it stands and what comes next.
+function evidenceLadder(evidence) {
+  const lvl = (e) => (e.verified ? 3 : e.reported ? 2 : 1);
+  return `<div class="rd-ladder" role="table" aria-label="Evidence progress by category"><div class="rd-ld-head" role="row"><span role="columnheader">Category</span>${EV_LEVEL.map((l) => `<span role="columnheader">${l}</span>`).join("")}</div>${evidence
+    .map((e) => {
+      const n = lvl(e);
+      return `<div class="rd-ld-row s${n}" role="row"><span role="rowheader">${esc(EV_SHORT[e.label] ?? e.label)}</span><div class="rd-steps" role="cell" aria-label="${EV_LEVEL[n - 1]}">${[1, 2, 3].map((k) => `<i class="${k < n ? "done" : k === n ? "now" : ""}"></i>`).join("")}</div></div>`;
+    })
+    .join("")}</div>`;
+}
+
 function gauge(v) {
   const a = Math.PI * (1 - Math.max(0.001, v) / 100),
     x = 42 + 34 * Math.cos(a),
@@ -570,11 +604,11 @@ ${side}
     <div class="ld-grid ld-fill">
       <div class="ld-col">
         <section class="ld-card ld-pad">
-          <div class="ld-ch"><div><h2>Readiness evidence</h2><small>${owner ? "Mark what is available; your advisor verifies it." : "Verify categories the owner marked available."}</small></div>${roundLink("#/discovery", "Open discovery profile")}</div>
+          <div class="ld-ch"><div><h2>Readiness evidence</h2><small>${owner ? "Mark what is available; your advisor verifies it." : "Verify categories the owner marked available."} Select <span class="rd-i-inline" aria-hidden="true">i</span> to see what each item covers.</small></div>${roundLink("#/discovery", "Open discovery profile")}</div>
           <div class="checklist rd-list">${parts.rows
             .map(
               (r, i) =>
-                `<div class="check-row rd-row ${r.state}"><span class="ld-ic ${tones[i % 5]}">${svg(EV_ICON[r.label] ?? I.target, 18)}</span><div class="rd-txt"><b>${esc(r.label)}</b><small>${r.status}</small></div><div class="rd-sws">${r.available}${r.verified}</div></div>`,
+                `<div class="check-row rd-row ${r.state}"><span class="ld-ic ${tones[i % 5]}">${svg(EV_ICON[r.label] ?? I.target, 18)}</span><div class="rd-txt"><b>${esc(r.label)}<button type="button" class="rd-i" data-rd-info="rd-help-${i}" aria-expanded="false" aria-controls="rd-help-${i}" aria-label="What ${esc(r.label)} means">i</button></b><small>${r.status}</small></div><div class="rd-sws">${r.available}${r.verified}</div>${evidenceHelp(r.label, owner, `rd-help-${i}`)}</div>`,
             )
             .join("")}</div>
           <p class="ld-foot rd-note"><span>The checklist measures evidence completeness, not financial health or readiness to sell. Advisor verification is a recorded review, not an automated document check.</span></p>
@@ -583,9 +617,9 @@ ${side}
       <div class="ld-col">
         <section class="ld-card ld-pad">
           <div class="ld-ch"><div><small class="ld-eyebrow">Seven evidence categories</small><h2>Evidence status</h2></div><div class="ld-score">${rd.verified}<small>/${rd.total} verified</small></div></div>
-          <div class="rd-stack" role="img" aria-label="${rd.verified} verified, ${pending} available, ${none} not confirmed">${rd.verified ? `<i class="v" data-w="${((rd.verified / rd.total) * 100).toFixed(1)}"></i>` : ""}${pending ? `<i class="a" data-w="${((pending / rd.total) * 100).toFixed(1)}"></i>` : ""}${none ? `<i class="n" data-w="${((none / rd.total) * 100).toFixed(1)}"></i>` : ""}</div>
-          <div class="ld-legend rd-legend"><span><i class="v"></i>${rd.verified} verified</span><span><i class="a"></i>${pending} available</span><span><i class="n"></i>${none} not confirmed</span></div>
-          <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
+          ${evidenceFunnel(rd)}
+          <p class="rd-cap">${none ? `${none} still to confirm, ${pending} waiting for advisor review.` : pending ? `All categories available; ${pending} waiting for advisor review.` : "Every category is advisor verified."}</p>
+          ${evidenceLadder(d.evidence ?? [])}
         </section>
         <section class="ld-card ld-pad">
           <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
@@ -608,6 +642,18 @@ export function mountLinkDashboard() {
   root.querySelectorAll("[data-w]").forEach((el) => (el.style.width = `${el.dataset.w}%`));
   // Keep the knob inside the track at 0% and 100%.
   root.querySelectorAll("[data-left]").forEach((el) => (el.style.left = `clamp(20px, ${el.dataset.left}%, calc(100% - 20px))`));
+  // Evidence info buttons open one explanation at a time.
+  root.querySelectorAll("[data-rd-info]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const open = btn.getAttribute("aria-expanded") !== "true";
+      root.querySelectorAll("[data-rd-info]").forEach((b) => {
+        b.setAttribute("aria-expanded", "false");
+        document.getElementById(b.dataset.rdInfo).hidden = true;
+      });
+      btn.setAttribute("aria-expanded", String(open));
+      document.getElementById(btn.dataset.rdInfo).hidden = !open;
+    }),
+  );
 }
 
 /* ---------------- Advisor calendar (My transition) ---------------- */
