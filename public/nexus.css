@@ -2108,3 +2108,150 @@ body:has(.ld.light) {
   border-radius: 50%;
   background: #111 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5l3 3 6-6.5' fill='none' stroke='%23f2d50f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat;
 }
+
+/* ---------- Discovery profile (section cards) ---------- */
+.dv-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.dv-row {
+  display: grid;
+  gap: 24px;
+  align-items: stretch;
+}
+.dv-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.dv-row.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dv-card {
+  background: var(--ws-card);
+  border-radius: 28px;
+  padding: 24px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dv-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.nx .dv-head h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.dv-head small {
+  display: block;
+  margin-top: 2px;
+}
+.dv-ic {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #111;
+}
+.dv-ic.y { background: #fff5bd; }
+.dv-ic.b { background: #cfe8fb; }
+.dv-ic.g { background: #d5f4c2; }
+.dv-ic.p { background: #fdd8db; }
+.dv-ic.l { background: #f0d8fb; }
+.dv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dv-body .priority-choices {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.dv-body .priority-choices legend {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.dv-body .priority-choices .row {
+  gap: 8px;
+}
+.dv-body .priority-choices .check {
+  padding: 8px 12px;
+  border-radius: 30px;
+  background: var(--ws-soft);
+  font-size: 13px;
+}
+.dv-save {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  border-radius: 28px;
+  background: var(--ws-card);
+}
+.dv-save .check {
+  max-width: 820px;
+  font-size: 13.5px;
+}
+.dv-save .form-footer {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-shrink: 0;
+}
+@media (max-width: 1280px) {
+  .dv-row.three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dv-row.three > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 900px) {
+  .dv-row.three,
+  .dv-row.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dv-row.three > :last-child {
+    grid-column: auto;
+  }
+  .dv-save {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+@media (max-width: 560px) {
+  .dv-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.nx input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+.dv-body .priority-choices .check,
+.dv-save .check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dv-save .check {
+  align-items: flex-start;
+}
