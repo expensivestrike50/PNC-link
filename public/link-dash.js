@@ -1,4 +1,4 @@
-// PNC-link Dashboard: a card-based summary of one case on a black canvas.
+// PNC-link Dashboard: a card-based summary of one case, in light and dark themes.
 // Figures come from the recorded case and the transparent rules in domain.mjs.
 import {
   defaultScenario,
@@ -136,7 +136,7 @@ function relationshipMap(d) {
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ side, c, user, demo, demoRole, history }) {
+export function linkDashboard({ side, theme, c, user, demo, demoRole, history }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -173,7 +173,7 @@ export function linkDashboard({ side, c, user, demo, demoRole, history }) {
     ? `<div class="ld-switch" role="group" aria-label="Sample view"><button type="button" class="${demoRole === "owner" ? "on" : ""}" ${demoRole === "owner" ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch"'}>Client</button><button type="button" class="${demoRole === "owner" ? "" : "on"}" ${demoRole === "owner" ? 'data-action="demoSwitch"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
 
-  return `<div class="ld dark" data-ld>
+  return `<div class="ld ${theme}" data-ld>
 ${side}
 
   <div class="ld-body">
@@ -278,7 +278,7 @@ ${side}
 }
 
 // Signed in (or guest) without a case yet: same frame, with a way to start.
-export function linkDashboardEmpty({ side, user, guest }) {
+export function linkDashboardEmpty({ side, theme, user, guest }) {
   const staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
     name = guest ? "Guest" : user?.name || user?.email || "there";
   const steps = [
@@ -287,7 +287,7 @@ export function linkDashboardEmpty({ side, user, guest }) {
     [I.split, "g", "Compare transition paths", "pathways"],
     [I.team, "p", "Approve each specialist handoff", "referrals"],
   ];
-  return `<div class="ld dark" data-ld>
+  return `<div class="ld ${theme}" data-ld>
 ${side}
   <div class="ld-body">
     <header class="ld-head ld-card">

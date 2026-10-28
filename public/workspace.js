@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js?v=202610281806";
+import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js?v=202610281810";
 import {
   newData,
   profileInput,
@@ -532,15 +532,26 @@ function navItems(c) {
     ["resources", "Planning resources", "↗"],
   ];
 }
+const themeKey = "pnc-link-dash-theme";
+const wsTheme = () => {
+  try {
+    return localStorage.getItem(themeKey) === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+};
+const logoFor = (theme) =>
+  theme === "light" ? "./assets/pnc-link-logo.svg" : "./assets/pnc-link-logo-light.svg";
 function sideNav(r, c) {
+  const theme = wsTheme();
   const mode =
     c?.mode ?? ((state.user?.roles ?? []).includes("advisor") ? "advisor" : "owner");
-  return `<aside class="sidebar ws-side"><a class="brand-box" href="#/home"><img class="logo" src="./assets/pnc-link-logo-light.svg" alt="PNC-link home"></a><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${navItems(c)
+  return `<aside class="sidebar ws-side"><a class="brand-box" href="#/home"><img class="logo" src="${logoFor(theme)}" alt="PNC-link home"></a><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${navItems(c)
     .map(
       ([id, label]) =>
         `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}"><span class="nav-icon i-${id}" aria-hidden="true"></span>${label}</a>`,
     )
-    .join("")}</nav></aside>`;
+    .join("")}</nav><div class="ws-promo"><div class="ws-promo-img"><img src="./assets/family.png" alt=""></div><div class="ws-promo-body"><b>Prepare smarter with PNC\u2011link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ws-yellow" href="#/assistant">Ask PNC\u2011link AI</a></div></div><div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside>`;
 }
 function shell(body, r) {
   const c = current(),
@@ -561,7 +572,7 @@ function shell(body, r) {
   const viewSwitch = state.demo
     ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
-  return `<div class="shell nx">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -913,6 +924,7 @@ function render() {
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
       side: sideNav(r, c),
+      theme: wsTheme(),
       user: state.user,
       guest: state.user?.id === "local-guest",
       isAdvisor: isAdvisor(),
@@ -920,6 +932,7 @@ function render() {
   } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
       side: sideNav(r, c),
+      theme: wsTheme(),
       c,
       user: state.user,
       demo: state.demo,
@@ -1077,6 +1090,26 @@ document.addEventListener("click", (e) => {
   if (!acct && menu.contains(e.target) && !e.target.closest("a,button")) return;
   menu.hidden = !open;
   $("[data-acct]").setAttribute("aria-expanded", String(open));
+});
+document.addEventListener("click", (e) => {
+  const pick = e.target.closest("[data-ws-theme]");
+  if (!pick) return;
+  const theme = pick.dataset.wsTheme;
+  try {
+    localStorage.setItem(themeKey, theme);
+  } catch {
+    /* The theme still switches for this visit. */
+  }
+  document.querySelectorAll(".shell.nx, .ld").forEach((el) => {
+    el.classList.toggle("dark", theme === "dark");
+    el.classList.toggle("light", theme === "light");
+  });
+  document.querySelectorAll("[data-ws-theme]").forEach((b) => {
+    b.classList.toggle("on", b === pick);
+    b.setAttribute("aria-pressed", String(b === pick));
+  });
+  const logo = $(".ws-side .brand-box img");
+  if (logo) logo.src = logoFor(theme);
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && $(".acct-menu") && !$(".acct-menu").hidden) {
