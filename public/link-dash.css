@@ -1185,3 +1185,21 @@ button.ld-avatar[aria-expanded="true"] {
     font-size: 22px;
   }
 }
+/* Advisor review and Your next conversation share a row so their heights match */
+.ld-pair {
+  align-items: stretch;
+}
+.ld-pair > .ld-card {
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 1560px) {
+  .ld-pair {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .ld-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

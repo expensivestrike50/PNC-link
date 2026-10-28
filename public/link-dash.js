@@ -415,10 +415,6 @@ ${side}
             .join("")}</div>
           <div class="ld-btns">${parts.assistant}${parts.brief}</div>
         </section>
-        <section class="ld-card ld-pad">
-          <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
-          ${parts.review}
-        </section>
       </div>
 
       <div class="ld-col">
@@ -450,12 +446,18 @@ ${side}
             <div class="mt-horizon"><small>${esc(p.timeline)}-year horizon</small>${parts.horizon}</div>
           </section>
         </div>
+        ${parts.management}
+      </div>
+    </div>
+    <div class="ld-grid ld-pair">
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
+          ${parts.review}
+        </section>
         <section class="ld-card ld-pad ld-meet">
           <div class="ld-ch"><h2>Your next conversation</h2></div>
           ${parts.meeting}
         </section>
-        ${parts.management}
-      </div>
     </div>
   </div>
 </div>`;
