@@ -482,7 +482,7 @@ ${side}
     <div class="ld-sched">
         <section class="ld-card ld-pad ld-meet">
           <div class="ld-ch"><h2>Your next conversation</h2></div>
-          ${parts.meeting}
+          <div class="ld-meet-body">${parts.meeting}</div>
         </section>
         <section class="ld-card ld-pad ld-cal" data-cal>
           <div class="ld-adv" role="radiogroup" aria-label="Choose an advisor">${ADVISORS.map(

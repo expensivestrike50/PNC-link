@@ -1468,3 +1468,11 @@ button.ld-day.on {
   line-height: 1.55;
   color: #111;
 }
+
+/* Your next conversation: content centred in the card */
+.ld-meet-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
