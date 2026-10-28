@@ -416,7 +416,7 @@ export function linkTransition({ side, menu, account, theme, c, user, demo, demo
 ${side}
   <div class="ld-body">
     ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
-    <div class="ld-grid">
+    <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
           <a class="ld-pill" href="#/discovery">${svg(I.plus, 18)}${owner ? "Update discovery" : "View discovery"}</a>
@@ -475,10 +475,21 @@ ${side}
         ${parts.management}
       </div>
     </div>
-    <div class="ld-solo">
+    <div class="ld-sched">
         <section class="ld-card ld-pad ld-meet">
           <div class="ld-ch"><h2>Your next conversation</h2></div>
           ${parts.meeting}
+        </section>
+        <section class="ld-card ld-pad ld-cal" data-cal>
+          <div class="ld-ch"><div><small class="ld-eyebrow">Advisor schedule</small><h2>Pick a day</h2><small>${esc(parts.advisor)}</small></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
+          <p class="ld-cal-title" data-cal-title></p>
+          <div class="ld-cal-grid" data-cal-grid role="grid" aria-label="Available days"></div>
+          <small class="ld-cal-note">Illustrative availability · Eastern Time</small>
+        </section>
+        <section class="ld-card ld-pad ld-slots">
+          <div class="ld-ch"><div><small class="ld-eyebrow">Available times</small><h2 data-slot-day>Select a day</h2></div></div>
+          <div class="ld-slot-list" data-slot-list></div>
+          <p class="ld-slot-note" data-slot-note>Choosing a time adds it to your meeting request. Your advisor confirms the time.</p>
         </section>
     </div>
   </div>
@@ -492,4 +503,106 @@ export function mountLinkDashboard() {
   root.querySelectorAll("[data-w]").forEach((el) => (el.style.width = `${el.dataset.w}%`));
   // Keep the knob inside the track at 0% and 100%.
   root.querySelectorAll("[data-left]").forEach((el) => (el.style.left = `clamp(20px, ${el.dataset.left}%, calc(100% - 20px))`));
+}
+
+/* ---------------- Advisor calendar (My transition) ---------------- */
+
+const SLOT_TIMES = ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"];
+const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+// Illustrative advisor availability: weekdays in the next six weeks, with some
+// busy days and taken slots so the schedule looks like a real calendar.
+function slotsFor(date, today) {
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1),
+    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 42),
+    wd = date.getDay();
+  if (date < start || date > end || wd === 0 || wd === 6) return [];
+  const seed = date.getDate() * 7 + date.getMonth() * 3;
+  if (seed % 5 === 0) return [];
+  return SLOT_TIMES.filter((_, i) => (seed + i * 5) % 3 !== 0);
+}
+
+export function mountAdvisorCalendar() {
+  const cal = document.querySelector("[data-cal]");
+  if (!cal) return;
+  const today = new Date(),
+    grid = cal.querySelector("[data-cal-grid]"),
+    title = cal.querySelector("[data-cal-title]"),
+    list = document.querySelector("[data-slot-list]"),
+    dayLabel = document.querySelector("[data-slot-day]"),
+    note = document.querySelector("[data-slot-note]"),
+    topic = document.querySelector('form[data-form="meeting"] input[name="topic"]'),
+    baseTopic = topic ? topic.value.split(" · ")[0] : "";
+  let month = new Date(today.getFullYear(), today.getMonth(), 1),
+    picked = null,
+    pickedTime = "";
+  // Start on the first day with open times.
+  for (let i = 1; i <= 42 && !picked; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    if (slotsFor(d, today).length) picked = d;
+  }
+  if (picked) month = new Date(picked.getFullYear(), picked.getMonth(), 1);
+  const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  const drawSlots = () => {
+    if (!picked) {
+      dayLabel.textContent = "Select a day";
+      list.innerHTML = "";
+      return;
+    }
+    dayLabel.textContent = fmtDay(picked);
+    list.innerHTML = slotsFor(picked, today)
+      .map((t) => `<button type="button" class="ld-slot ${t === pickedTime ? "on" : ""}" data-slot="${t}">${t}</button>`)
+      .join("");
+  };
+  const drawMonth = () => {
+    title.textContent = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const first = month.getDay(),
+      days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    let html = ["S", "M", "T", "W", "T", "F", "S"].map((d) => `<span class="ld-cal-h">${d}</span>`).join("");
+    for (let i = 0; i < first; i++) html += "<span></span>";
+    for (let n = 1; n <= days; n++) {
+      const d = new Date(month.getFullYear(), month.getMonth(), n),
+        open = slotsFor(d, today).length > 0,
+        on = picked && dayKey(d) === dayKey(picked),
+        isToday = dayKey(d) === dayKey(today);
+      html += open
+        ? `<button type="button" class="ld-day open ${on ? "on" : ""}" data-day="${n}" aria-label="${fmtDay(d)}, times available" ${on ? 'aria-pressed="true"' : ""}>${n}</button>`
+        : `<span class="ld-day ${isToday ? "today" : ""}">${n}</span>`;
+    }
+    grid.innerHTML = html;
+    const min = new Date(today.getFullYear(), today.getMonth(), 1),
+      max = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    cal.querySelector('[data-cal-step="-1"]').disabled = month <= min;
+    cal.querySelector('[data-cal-step="1"]').disabled = month >= max;
+  };
+
+  cal.addEventListener("click", (e) => {
+    const step = e.target.closest("[data-cal-step]");
+    if (step && !step.disabled) {
+      month = new Date(month.getFullYear(), month.getMonth() + Number(step.dataset.calStep), 1);
+      drawMonth();
+      return;
+    }
+    const day = e.target.closest("[data-day]");
+    if (day) {
+      picked = new Date(month.getFullYear(), month.getMonth(), Number(day.dataset.day));
+      pickedTime = "";
+      drawMonth();
+      drawSlots();
+    }
+  });
+  list.addEventListener("click", (e) => {
+    const slot = e.target.closest("[data-slot]");
+    if (!slot) return;
+    pickedTime = slot.dataset.slot;
+    drawSlots();
+    const when = `${picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}, ${pickedTime} ET`;
+    if (topic) {
+      topic.value = `${baseTopic} · ${when}`;
+      note.textContent = `${when} added to your meeting request. Send it with Request advisor meeting.`;
+    } else note.textContent = `${when} selected. A meeting request is already on record; your advisor confirms the time.`;
+  });
+  drawMonth();
+  drawSlots();
 }

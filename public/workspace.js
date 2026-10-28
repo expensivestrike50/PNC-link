@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281908";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=202610281912";
 import {
   newData,
   profileInput,
@@ -684,8 +684,9 @@ function transitionParts(c) {
   return {
     badges: `${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}`,
     chips: `${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}`,
-    assistant: contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation"),
-    brief: button("Download meeting brief", "downloadBrief", "quiet small"),
+    assistant: `<button type="button" class="ld-black" data-ask="${esc(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.")}">Prepare my next conversation</button>`,
+    brief: `<button type="button" class="ld-black" data-action="downloadBrief">Download meeting brief</button>`,
+    advisor: p.advisorEmail || "Your relationship advisor",
     meeting: `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`,
     management: managementPanel(c),
     liquidity: money(p.liquidity),
@@ -1032,6 +1033,7 @@ function render() {
   document.title = `${r === "home" ? "Business transitions" : r.charAt(0).toUpperCase() + r.slice(1)} · PNC-link`;
   document.querySelector("h1")?.focus({ preventScroll: true });
   if (r === "dashboard") mountLinkDashboard();
+  if (r === "overview") mountAdvisorCalendar();
   app.querySelectorAll(".mt-pin[data-left]").forEach((el) => (el.style.left = `${el.dataset.left}%`));
   if (r === "assistant") $("#thread")?.scrollTo(0, $("#thread").scrollHeight);
 }

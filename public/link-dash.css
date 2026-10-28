@@ -1185,9 +1185,129 @@ button.ld-avatar[aria-expanded="true"] {
     font-size: 22px;
   }
 }
-/* Your next conversation on its own row */
-.ld-solo > .ld-card .inline-form {
-  max-width: 720px;
+/* Your next conversation + advisor calendar + times (three columns) */
+.ld-sched {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 0.8fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.ld-sched > .ld-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ld-cal-nav {
+  display: flex;
+  gap: 8px;
+}
+.ld-cal-nav .ld-round {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+.ld-cal-nav .ld-round:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ld .ld-cal-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.ld-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  text-align: center;
+}
+.ld-cal-h {
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+.ld-day {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  max-height: 44px;
+  border-radius: 50%;
+  font-size: 13.5px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+.ld-day.today {
+  box-shadow: inset 0 0 0 1px var(--muted);
+  opacity: 1;
+}
+button.ld-day {
+  border: 0;
+  cursor: pointer;
+  font: 600 13.5px "Poppins", sans-serif;
+  opacity: 1;
+  background: var(--pale-y);
+  color: #111;
+  transition: transform 0.12s;
+}
+button.ld-day:hover {
+  transform: scale(1.08);
+}
+button.ld-day.on {
+  background: var(--fill);
+  color: var(--card);
+}
+.ld .ld-cal-note {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 12px;
+}
+.ld-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ld-slot {
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: 500 14.5px "Poppins", sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ld-slot:hover {
+  border-color: var(--yellow);
+}
+.ld-slot.on {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #111;
+}
+.ld .ld-slot-note {
+  margin-top: auto !important;
+  padding-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Black buttons on My transition */
+.ld-black {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #000;
+  color: #fff;
+  font: 500 14px "Poppins", sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ld-black:hover {
+  background: #222;
 }
 
 /* Dashboard: the last card in each column grows so both columns end level */
@@ -1218,4 +1338,17 @@ button.ld-avatar[aria-expanded="true"] {
   paint-order: stroke;
   stroke: #eceee8;
   stroke-width: 3px;
+}
+@media (max-width: 1280px) {
+  .ld-sched {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ld-sched > .ld-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 760px) {
+  .ld-sched {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
