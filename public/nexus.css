@@ -1151,36 +1151,6 @@ th {
     justify-content: flex-end;
   }
 }
-@media (max-width: 960px) {
-  .shell.nx,
-  .ld {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 14px;
-    gap: 14px;
-  }
-  .ws-side {
-    position: static;
-    height: auto;
-    padding: 16px 12px;
-  }
-  .ws-side .brand-box {
-    margin-bottom: 12px;
-  }
-  .ws-side .side-label {
-    display: none;
-  }
-  .ws-side nav {
-    display: flex;
-    overflow-x: auto;
-    gap: 6px;
-  }
-  .ws-side .nav-link {
-    height: 42px;
-    font-size: 14px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-}
 @media (max-width: 600px) {
   .lp-head .lp-wrap {
     height: 76px;
@@ -1714,17 +1684,52 @@ body:has(.ld.light) {
 .nx .workspace-disclosure {
   color: var(--ws-faint);
 }
+/* Menu button and slide-out sidebar on tablets and phones (same sidebar content) */
+.ws-menu {
+  display: none;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--ws-line2);
+  background: none;
+  color: var(--ws-text);
+  place-items: center;
+  cursor: pointer;
+}
+.ws-scrim {
+  display: none;
+}
 @media (max-width: 960px) {
   .shell.nx {
     grid-template-columns: minmax(0, 1fr);
     padding: 14px;
     gap: 14px;
   }
-  .ws-promo {
-    display: none;
+  .ws-menu {
+    display: grid;
   }
-  .ws-theme {
-    margin-top: 0;
+  .ws-side {
+    position: fixed;
+    top: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: 280px;
+    height: auto;
+    z-index: 60;
+    transform: translateX(-110%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+  body.ws-open .ws-side {
+    transform: none;
+  }
+  body.ws-open .ws-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.5);
   }
 }
 @media (min-width: 961px) and (max-height: 1000px) {
@@ -1741,4 +1746,324 @@ body:has(.ld.light) {
     gap: 2px;
     margin-bottom: 16px;
   }
+}
+
+/* ---------- My transition (app layout) ---------- */
+.mt {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.mt-hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 32px;
+  border-radius: 28px;
+  background: #fff5bd;
+  color: #111;
+}
+.mt-hero-copy {
+  flex: 1;
+  min-width: 0;
+}
+.nx .mt-hero .eyebrow,
+.nx .mt-hero p {
+  color: #4a4a4a;
+}
+.nx .mt-hero h1 {
+  color: #111;
+  font-size: clamp(26px, 2.4vw, 36px);
+  margin: 4px 0 10px;
+}
+.nx .mt-hero .badge {
+  background: #111;
+  color: #fff;
+}
+.mt-progress {
+  margin: 0;
+  text-align: center;
+  flex-shrink: 0;
+}
+.mt-progress figcaption {
+  font-size: 13px;
+  color: #4a4a4a;
+  margin-top: 4px;
+}
+.mt-ring-track,
+.mt-ring-track-fill {
+  stroke: rgba(0, 0, 0, 0.1);
+  fill: rgba(0, 0, 0, 0.1);
+}
+.mt-ring-track {
+  fill: none;
+}
+.mt-ring-fill {
+  stroke: #111;
+}
+.mt-ring-num {
+  font: 600 24px "Poppins", sans-serif;
+  fill: #111;
+}
+.mt-ring-sub {
+  font: 400 12px "Poppins", sans-serif;
+  fill: #6b6b6b;
+}
+.mt-fig-ring .mt-ring-track {
+  stroke: var(--ws-soft2);
+}
+.mt-fig-ring .mt-ring-fill {
+  stroke: #f2d50f;
+}
+.mt-fig-ring .mt-ring-num {
+  fill: var(--ws-text);
+}
+.mt-journey {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+.nx .mt-step {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 24px;
+  background: var(--ws-card);
+  color: var(--ws-text);
+  text-decoration: none;
+  min-height: 150px;
+  border: 2px solid transparent;
+  transition: transform 0.15s;
+}
+.nx .mt-step:hover {
+  transform: translateY(-2px);
+}
+.nx .mt-step.current {
+  border-color: #f2d50f;
+}
+.nx .mt-step.upcoming {
+  opacity: 0.6;
+}
+.mt-step-ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #111;
+  margin-bottom: auto;
+}
+.mt-step-ic.c0 { background: #fff5bd; }
+.mt-step-ic.c1 { background: #cfe8fb; }
+.mt-step-ic.c2 { background: #d5f4c2; }
+.mt-step-ic.c3 { background: #fdd8db; }
+.mt-step-ic.c4 { background: #f0d8fb; }
+.mt-step i {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ws-muted);
+  margin-top: 14px;
+}
+.mt-step b {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.mt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.mt-card {
+  background: var(--ws-card);
+  border-radius: 28px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.mt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.nx .mt-head h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.mt-head small {
+  display: block;
+  margin-top: 4px;
+}
+.mt-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nx .mt-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  color: #111;
+  text-decoration: none;
+}
+.nx .mt-row:first-child {
+  padding-top: 16px;
+}
+.nx .mt-row.c0 { background: #fff5bd; }
+.nx .mt-row.c1 { background: #cfe8fb; }
+.nx .mt-row.c2 { background: #d5f4c2; }
+.nx .mt-row.c3 { background: #fdd8db; }
+.nx .mt-row b {
+  color: #111;
+  font-weight: 600;
+}
+.nx .mt-row p {
+  color: #4a4a4a;
+  margin: 4px 0 0;
+}
+.nx .mt-row .step-number {
+  background: #111;
+  color: #fff;
+}
+.nx .mt-row:hover b {
+  color: #111;
+  text-decoration: underline;
+}
+.mt-actions {
+  margin-top: 4px;
+}
+.nx .mt-quote {
+  margin: 0;
+  padding: 16px 18px;
+  border-left: 4px solid #f2d50f;
+  border-radius: 0 14px 14px 0;
+  background: var(--ws-soft);
+  color: var(--ws-text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.mt-figs {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+}
+.mt-fig {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--ws-soft);
+}
+.mt-fig b {
+  display: block;
+  font-size: 26px;
+  font-weight: 500;
+  margin-top: 4px;
+  color: var(--ws-text);
+}
+.mt-fig-ring {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mt-fig-ring svg {
+  width: 84px;
+  height: 84px;
+}
+.mt-fig-ring small {
+  max-width: 110px;
+}
+.mt-horizon {
+  padding: 14px 18px 8px;
+  border-radius: 16px;
+  background: var(--ws-soft);
+}
+.mt-track {
+  position: relative;
+  margin: 14px 9px 8px;
+}
+.mt-track svg {
+  display: block;
+  width: 100%;
+  height: 8px;
+}
+.mt-pin {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--ws-text);
+  border: 3px solid var(--ws-card);
+}
+.mt-axis-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ws-muted);
+  padding-bottom: 6px;
+}
+.mt-tick {
+  stroke: var(--ws-muted);
+}
+.mt-axis {
+  font: 400 12px "Poppins", sans-serif;
+  fill: var(--ws-muted);
+}
+.mt-horizon .mt-ring-track-fill {
+  fill: var(--ws-soft2);
+}
+.mt-bar {
+  fill: #f2d50f;
+}
+.mt-dot {
+  fill: var(--ws-text);
+  stroke: var(--ws-card);
+  stroke-width: 3;
+}
+.mt-card .btn.secondary {
+  align-self: flex-start;
+}
+.mt-card .empty {
+  padding: 0;
+}
+.mt-card .inline-form {
+  margin-top: 4px;
+}
+@media (max-width: 1280px) {
+  .mt-journey {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1100px) {
+  .mt-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .mt-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px;
+  }
+  .mt-journey {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .mt-figs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mt-card {
+    padding: 20px;
+  }
+}
+.ws-side .ws-promo-body p {
+  color: #555;
 }

@@ -136,7 +136,7 @@ function relationshipMap(d) {
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ side, theme, c, user, demo, demoRole, history }) {
+export function linkDashboard({ side, menu, theme, c, user, demo, demoRole, history }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -178,7 +178,7 @@ ${side}
 
   <div class="ld-body">
     <header class="ld-head ld-card">
-      <div class="ld-avatar">${avatar}</div>
+      ${menu}<div class="ld-avatar">${avatar}</div>
       <div><small>Welcome back!</small><h1 tabindex="-1">${esc(name)}</h1></div>
       <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span>' : ""}
         <a class="ld-round" href="#/plan" aria-label="Shared action plan">${svg(I.bell, 20)}${(d.actions ?? []).some((a) => a.status !== "Completed") ? '<i class="ld-ping"></i>' : ""}</a>
@@ -278,7 +278,7 @@ ${side}
 }
 
 // Signed in (or guest) without a case yet: same frame, with a way to start.
-export function linkDashboardEmpty({ side, theme, user, guest }) {
+export function linkDashboardEmpty({ side, menu, theme, user, guest }) {
   const staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
     name = guest ? "Guest" : user?.name || user?.email || "there";
   const steps = [
@@ -291,7 +291,7 @@ export function linkDashboardEmpty({ side, theme, user, guest }) {
 ${side}
   <div class="ld-body">
     <header class="ld-head ld-card">
-      <div class="ld-avatar"><span>${esc(initials(name) || "?")}</span></div>
+      ${menu}<div class="ld-avatar"><span>${esc(initials(name) || "?")}</span></div>
       <div><small>Welcome${guest ? "" : " back"}!</small><h1 tabindex="-1">${esc(name)}</h1></div>
       <div class="ld-head-r">${guest ? '<span class="ld-sample">Saved only in this browser</span>' : ""}<a class="ld-round" href="#/discovery" aria-label="Discovery profile">${svg(I.settings, 20)}</a></div>
     </header>

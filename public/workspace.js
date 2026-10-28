@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js?v=202610281810";
+import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js?v=202610281845";
 import {
   newData,
   profileInput,
@@ -551,8 +551,9 @@ function sideNav(r, c) {
       ([id, label]) =>
         `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}"><span class="nav-icon i-${id}" aria-hidden="true"></span>${label}</a>`,
     )
-    .join("")}</nav><div class="ws-promo"><div class="ws-promo-img"><img src="./assets/family.png" alt=""></div><div class="ws-promo-body"><b>Prepare smarter with PNC\u2011link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ws-yellow" href="#/assistant">Ask PNC\u2011link AI</a></div></div><div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside>`;
+    .join("")}</nav><div class="ws-promo"><div class="ws-promo-img"><img src="./assets/family.png" alt=""></div><div class="ws-promo-body"><b>Prepare smarter with PNC\u2011link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ws-yellow" href="#/assistant">Ask PNC\u2011link AI</a></div></div><div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
+const menuButton = `<button type="button" class="ws-menu" data-ws-menu aria-label="Open menu"><svg width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="M1 1.5h18M1 8h18M1 14.5h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
 function shell(body, r) {
   const c = current(),
     mode =
@@ -572,7 +573,7 @@ function shell(body, r) {
   const viewSwitch = state.demo
     ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
-  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -580,26 +581,8 @@ function noCase() {
   );
   return `${intro(advisor ? "Your workspace is ready." : "Begin with what matters.", "A shared transition profile connects the owner’s priorities with the right people and next steps.")}<div class="two-col">${panel(advisor ? "No shared cases yet" : "Create your transition profile", `<p>${advisor ? "Owners can name your account email as their advisor and explicitly share their case. Specialist cases appear after owner approval of a referral addressed to your email." : "Start with your goals, business facts, family priorities, and preferred advisor. You can update the profile as your thinking develops."}</p><a class="btn" href="#/discovery">${advisor ? "Create my own owner case" : "Start discovery"}</a>`)}${panel("What happens next", '<ol class="info-list"><li>Owner records goals and evidence availability.</li><li>Assigned advisor reviews and verifies the case.</li><li>Owner approves each specialist and scope.</li><li>Named recipient acknowledges the referral.</li></ol>')}</div>`;
 }
-function stages(c) {
-  return `<div class="progress" aria-label="Journey progress">${transitionJourney(
-    c.data,
-  )
-    .map(
-      (step, i) =>
-        `<a href="#/${esc(step.route)}" class="stage ${step.status === "Complete" || step.status === "Current" ? "active" : ""}" ${step.status === "Current" ? 'aria-current="step"' : ""}><i>0${i + 1} · ${esc(step.status)}</i>${esc(step.label)}</a>`,
-    )
-    .join("")}</div>`;
-}
 function contextAssistant(question, label = "Ask AI for help") {
   return `<button type="button" class="btn ai-button small" data-ask="${esc(question)}"><span aria-hidden="true">✧</span> ${esc(label)}</button>`;
-}
-function nextStepPanel(c) {
-  const steps = nextSteps(c.data, c.mode).slice(0, 4);
-  return panel(
-    c.mode === "advisor" ? "Next best actions to review" : "Your next steps",
-    `<div class="next-steps">${steps.map((step, i) => `<a href="#/${esc(step.route)}" class="next-step"><span class="step-number">${i + 1}</span><div><b>${esc(step.title)}</b><p>${esc(step.detail)}</p></div><span aria-hidden="true">↗</span></a>`).join("")}</div><div class="row">${contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation")} ${button("Download meeting brief", "downloadBrief", "quiet small")}</div>`,
-    "Based on recorded facts and transparent workflow rules. Review before acting.",
-  );
 }
 function managementPanel(c) {
   if (c.mode !== "advisor") return "";
@@ -672,13 +655,74 @@ function resources() {
   const content = `${intro("A stronger plan starts with better questions.", "Use PNC’s published research to frame conversations about business, family and personal wealth.", "Planning resources")}<div class="resource-grid"><article class="panel"><div class="eyebrow">Integrated advice · April 2026</div><h2>Bring the business and personal plan together.</h2><p>PNC’s owner research highlights demand for connected advice and barriers to succession planning. It informs the problem we address; customer interviews must still test this solution.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://pnc.mediaroom.com/2026-04-01-PNC-Private-Bank-Research-Reveals-Business-Owners-Increasingly-Want-Integrated-Financial-Advice-to-Help-Align-Business,-Personal-Goals">Read the research ↗</a><small class="resource-note">Ipsos online survey of 300 U.S. private business owners/co-owners, Nov 19–Dec 10, 2025. Revenue cohorts: $10–50M and $50–125M.</small></article><article class="panel"><div class="eyebrow">Family continuity · November 2024</div><h2>Fairness, ownership and liquidity can differ.</h2><p>PNC’s estate equalization article explores differing family roles and illiquid business interests. Use it to prepare questions for estate and insurance specialists; no single allocation fits every family.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://www.pnc.com/insights/wealth-management/business-continuity-and-succession-planning/estate-equalization-through-life-insurance.html">Explore estate equalization ↗</a></article><article class="panel"><div class="eyebrow">PNC capabilities</div><h2>Connect existing expertise around the owner.</h2><p>PNC’s corporate profile describes banking, business advisory and asset-management services. PNC-link proposes a shared workflow across that ecosystem; the prototype does not connect to internal PNC systems.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://www.pnc.com/en/about-pnc/media/facts-about-pnc.html">View Facts About PNC ↗</a></article></div><section class="panel section-gap"><h2>Questions to take into your next meeting</h2><ul class="info-list"><li>Who wants to operate the business, and who wants an ownership interest?</li><li>How do liquidity, legacy, employee continuity and retained control rank for you?</li><li>What information would you want reviewed before choosing a path?</li><li>How should personal wealth and family conversations begin before a transition?</li></ul>${state.user || state.demo ? contextAssistant("Help me prepare questions for a family business transition, using my recorded priorities and PNC's estate equalization resource.", "Prepare questions with AI") : '<a class="btn" href="#/guest">Start your transition profile</a>'}</section>`;
   return content;
 }
+// Small inline charts for My transition (no inline styles: CSP).
+function progressRing(done, total, label = `${done}/${total}`, sub = "steps") {
+  const r = 46,
+    c = 2 * Math.PI * r,
+    f = total ? done / total : 0;
+  return `<svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><circle cx="60" cy="60" r="${r}" fill="none" class="mt-ring-track" stroke-width="12"/><circle cx="60" cy="60" r="${r}" fill="none" class="mt-ring-fill" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="${sub ? 58 : 66}" text-anchor="middle" class="mt-ring-num">${label}</text>${sub ? `<text x="60" y="78" text-anchor="middle" class="mt-ring-sub">${sub}</text>` : ""}</svg>`;
+}
+function horizonBar(years) {
+  const y0 = Number(years) || 0,
+    max = Math.max(5, Math.ceil(y0)),
+    pct = (Math.min(y0, max) / max) * 100;
+  const labels = Array.from({ length: max + 1 }, (_, y) => `<span>${y === 0 ? "Today" : `${y}y`}</span>`).join("");
+  return `<div class="mt-track"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="8" rx="4" class="mt-ring-track-fill"/><rect width="${pct.toFixed(1)}" height="8" rx="4" class="mt-bar"/></svg><span class="mt-pin" data-left="${pct.toFixed(1)}"></span></div><div class="mt-axis-row">${labels}</div>`;
+}
+const STEP_ICONS = [
+  '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
+  '<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>',
+  '<path d="M6 20v-5a4 4 0 0 1 4-4h8M6 4v16M15 7.5l3.5 3.5-3.5 3.5"/>',
+  '<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>',
+  '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M7 15h3"/>',
+];
+const stepIcon = (i) =>
+  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${STEP_ICONS[i] ?? STEP_ICONS[0]}</svg>`;
 function overview(c) {
   if (!c) return noCase();
   if (c.mode === "specialist")
     return `${intro("Your specialist inbox", "Review the approved purpose and information scope before acknowledging the handoff.")}${referrals(c)}`;
   const d = c.data,
-    p = d.profile;
-  return `${intro(esc(p.business), "A common record of your goals, evidence, decisions, and the people helping you move forward.", `${c.mode === "advisor" ? "Advisor case" : "Owner journey"} · ${esc(p.industry)}`)}<div class="row">${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}</div>${stages(c)}${nextStepPanel(c)}<div class="two-col section-gap"><div class="stack">${panel("What matters to the owner", `<div class="row">${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}</div><p class="review-note">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</p><p><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p><p><strong>Liquidity goal</strong> ${money(p.liquidity)} · <strong>Desired retained ownership</strong> ${p.retained}%</p><a class="btn secondary small" href="#/discovery">${c.mode === "owner" ? "Update discovery" : "View discovery"}</a>`)}${panel("Advisor review", d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`)}</div><div class="stack">${panel("Your next conversation", `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`)}</div></div>${managementPanel(c)}`;
+    p = d.profile,
+    journey = transitionJourney(d),
+    done = journey.filter((j) => j.status === "Complete").length,
+    steps = nextSteps(d, c.mode).slice(0, 4);
+  return `<div class="mt">
+  <section class="mt-hero">
+    <div class="mt-hero-copy"><div class="eyebrow">${c.mode === "advisor" ? "Advisor case" : "Owner journey"} · ${esc(p.industry)}</div><h1 tabindex="-1">${esc(p.business)}</h1><p>A common record of your goals, evidence, decisions, and the people helping you move forward.</p><div class="row">${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}</div></div>
+    <figure class="mt-progress">${progressRing(done, journey.length)}<figcaption>Journey progress</figcaption></figure>
+  </section>
+  <nav class="mt-journey" aria-label="Journey progress">${journey
+    .map(
+      (step, i) =>
+        `<a href="#/${esc(step.route)}" class="mt-step ${step.status.toLowerCase()}" ${step.status === "Current" ? 'aria-current="step"' : ""}><span class="mt-step-ic c${i % 5}">${stepIcon(i)}</span><i>0${i + 1} · ${esc(step.status)}</i><b>${esc(step.label)}</b></a>`,
+    )
+    .join("")}</nav>
+  <div class="mt-grid">
+    <section class="mt-card">
+      <div class="mt-head"><div><h2>${c.mode === "advisor" ? "Next best actions to review" : "Your next steps"}</h2><small>Based on recorded facts and transparent workflow rules. Review before acting.</small></div></div>
+      <div class="mt-steps">${steps.map((step, i) => `<a href="#/${esc(step.route)}" class="next-step mt-row c${i % 4}"><span class="step-number">${i + 1}</span><div><b>${esc(step.title)}</b><p>${esc(step.detail)}</p></div><span aria-hidden="true">↗</span></a>`).join("")}</div>
+      <div class="row mt-actions">${contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation")} ${button("Download meeting brief", "downloadBrief", "quiet small")}</div>
+    </section>
+    <section class="mt-card">
+      <div class="mt-head"><h2>What matters to the owner</h2></div>
+      <div class="row">${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}</div>
+      <blockquote class="review-note mt-quote">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</blockquote>
+      <p><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p>
+      <div class="mt-figs">
+        <div class="mt-fig"><small>Liquidity goal</small><b>${money(p.liquidity)}</b></div>
+        <div class="mt-fig mt-fig-ring">${progressRing(Number(p.retained) || 0, 100, `${esc(p.retained)}%`, "")}<small>Desired retained ownership</small></div>
+      </div>
+      <div class="mt-horizon"><small>${esc(p.timeline)}-year horizon</small>${horizonBar(p.timeline)}</div>
+      <a class="btn secondary small" href="#/discovery">${c.mode === "owner" ? "Update discovery" : "View discovery"}</a>
+    </section>
+  </div>
+  <div class="mt-grid">
+    <section class="mt-card mt-review"><div class="mt-head"><h2>Advisor review</h2>${badge(d.review ? "Recorded" : "Pending", d.review ? "" : "amber")}</div>${d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`}</section>
+    <section class="mt-card"><div class="mt-head"><h2>Your next conversation</h2></div>${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}</section>
+  </div>
+  ${managementPanel(c)}
+</div>`;
 }
 function discovery(c) {
   const p = c?.data.profile ?? {
@@ -924,6 +968,7 @@ function render() {
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
       side: sideNav(r, c),
+      menu: menuButton,
       theme: wsTheme(),
       user: state.user,
       guest: state.user?.id === "local-guest",
@@ -932,6 +977,7 @@ function render() {
   } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
       side: sideNav(r, c),
+      menu: menuButton,
       theme: wsTheme(),
       c,
       user: state.user,
@@ -982,6 +1028,7 @@ function render() {
   document.title = `${r === "home" ? "Business transitions" : r.charAt(0).toUpperCase() + r.slice(1)} · PNC-link`;
   document.querySelector("h1")?.focus({ preventScroll: true });
   if (r === "dashboard") mountLinkDashboard();
+  app.querySelectorAll(".mt-pin[data-left]").forEach((el) => (el.style.left = `${el.dataset.left}%`));
   if (r === "assistant") $("#thread")?.scrollTo(0, $("#thread").scrollHeight);
 }
 app.addEventListener("submit", async (e) => {
@@ -1091,6 +1138,12 @@ document.addEventListener("click", (e) => {
   menu.hidden = !open;
   $("[data-acct]").setAttribute("aria-expanded", String(open));
 });
+// Slide-out sidebar on tablets and phones
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-ws-menu]")) document.body.classList.add("ws-open");
+  else if (e.target.closest("[data-ws-close], .ws-side .nav-link, .ws-side .ws-yellow"))
+    document.body.classList.remove("ws-open");
+});
 document.addEventListener("click", (e) => {
   const pick = e.target.closest("[data-ws-theme]");
   if (!pick) return;
@@ -1112,6 +1165,7 @@ document.addEventListener("click", (e) => {
   if (logo) logo.src = logoFor(theme);
 });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") document.body.classList.remove("ws-open");
   if (e.key === "Escape" && $(".acct-menu") && !$(".acct-menu").hidden) {
     $(".acct-menu").hidden = true;
     $("[data-acct]").setAttribute("aria-expanded", "false");
