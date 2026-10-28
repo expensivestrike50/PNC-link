@@ -481,7 +481,11 @@ ${side}
           ${parts.meeting}
         </section>
         <section class="ld-card ld-pad ld-cal" data-cal>
-          <div class="ld-ch"><div><small class="ld-eyebrow">Advisor schedule</small><h2>Pick a day</h2><small>${esc(parts.advisor)}</small></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
+          <div class="ld-adv" role="radiogroup" aria-label="Choose an advisor">${ADVISORS.map(
+            (a, i) =>
+              `<button type="button" class="ld-adv-row ${i === 0 ? "on" : ""}" role="radio" aria-checked="${i === 0}" data-adv="${i}"><img src="${a.photo}" alt=""><span><b>${a.name}</b><small>${a.role}</small><em>${a.about}</em></span></button>`,
+          ).join("")}</div>
+          <div class="ld-ch"><div><small class="ld-eyebrow">Advisor schedule</small><h2>Pick a day</h2></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
           <p class="ld-cal-title" data-cal-title></p>
           <div class="ld-cal-grid" data-cal-grid role="grid" aria-label="Available days"></div>
           <small class="ld-cal-note">Illustrative availability · Eastern Time</small>
@@ -507,17 +511,39 @@ export function mountLinkDashboard() {
 
 /* ---------------- Advisor calendar (My transition) ---------------- */
 
+// Fictional advisors for the schedule; each has their own illustrative availability.
+const ADVISORS = [
+  {
+    name: "Priya Shah",
+    role: "Relationship advisor",
+    about: "Coordinates your transition plan and brings in the right specialists.",
+    photo: "./assets/people/priya.jpg",
+  },
+  {
+    name: "Daniel Reyes",
+    role: "Private Bank wealth advisor",
+    about: "Liquidity, estate and family distributions before and after a sale.",
+    photo: "./assets/people/daniel.jpg",
+  },
+  {
+    name: "Marcus Hill",
+    role: "Succession planning specialist",
+    about: "Successor readiness, governance and family business continuity.",
+    photo: "./assets/people/marcus.jpg",
+  },
+];
+
 const SLOT_TIMES = ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"];
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 // Illustrative advisor availability: weekdays in the next six weeks, with some
 // busy days and taken slots so the schedule looks like a real calendar.
-function slotsFor(date, today) {
+function slotsFor(date, today, adv = 0) {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1),
     end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 42),
     wd = date.getDay();
   if (date < start || date > end || wd === 0 || wd === 6) return [];
-  const seed = date.getDate() * 7 + date.getMonth() * 3;
+  const seed = date.getDate() * 7 + date.getMonth() * 3 + adv * 11;
   if (seed % 5 === 0) return [];
   return SLOT_TIMES.filter((_, i) => (seed + i * 5) % 3 !== 0);
 }
@@ -533,15 +559,21 @@ export function mountAdvisorCalendar() {
     note = document.querySelector("[data-slot-note]"),
     topic = document.querySelector('form[data-form="meeting"] input[name="topic"]'),
     baseTopic = topic ? topic.value.split(" · ")[0] : "";
-  let month = new Date(today.getFullYear(), today.getMonth(), 1),
+  let adv = 0,
+    month = new Date(today.getFullYear(), today.getMonth(), 1),
     picked = null,
     pickedTime = "";
-  // Start on the first day with open times.
-  for (let i = 1; i <= 42 && !picked; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-    if (slotsFor(d, today).length) picked = d;
-  }
-  if (picked) month = new Date(picked.getFullYear(), picked.getMonth(), 1);
+  // Start on the advisor's first day with open times.
+  const firstOpen = () => {
+    picked = null;
+    pickedTime = "";
+    for (let i = 1; i <= 42 && !picked; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+      if (slotsFor(d, today, adv).length) picked = d;
+    }
+    if (picked) month = new Date(picked.getFullYear(), picked.getMonth(), 1);
+  };
+  firstOpen();
   const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   const drawSlots = () => {
@@ -551,7 +583,7 @@ export function mountAdvisorCalendar() {
       return;
     }
     dayLabel.textContent = fmtDay(picked);
-    list.innerHTML = slotsFor(picked, today)
+    list.innerHTML = slotsFor(picked, today, adv)
       .map((t) => `<button type="button" class="ld-slot ${t === pickedTime ? "on" : ""}" data-slot="${t}">${t}</button>`)
       .join("");
   };
@@ -563,7 +595,7 @@ export function mountAdvisorCalendar() {
     for (let i = 0; i < first; i++) html += "<span></span>";
     for (let n = 1; n <= days; n++) {
       const d = new Date(month.getFullYear(), month.getMonth(), n),
-        open = slotsFor(d, today).length > 0,
+        open = slotsFor(d, today, adv).length > 0,
         on = picked && dayKey(d) === dayKey(picked),
         isToday = dayKey(d) === dayKey(today);
       html += open
@@ -578,6 +610,20 @@ export function mountAdvisorCalendar() {
   };
 
   cal.addEventListener("click", (e) => {
+    const who = e.target.closest("[data-adv]");
+    if (who) {
+      adv = Number(who.dataset.adv);
+      cal.querySelectorAll("[data-adv]").forEach((b) => {
+        b.classList.toggle("on", b === who);
+        b.setAttribute("aria-checked", String(b === who));
+      });
+      firstOpen();
+      drawMonth();
+      drawSlots();
+      if (topic) topic.value = baseTopic;
+      note.textContent = `Showing ${ADVISORS[adv].name}'s availability. Choosing a time adds it to your meeting request.`;
+      return;
+    }
     const step = e.target.closest("[data-cal-step]");
     if (step && !step.disabled) {
       month = new Date(month.getFullYear(), month.getMonth() + Number(step.dataset.calStep), 1);
@@ -599,9 +645,9 @@ export function mountAdvisorCalendar() {
     drawSlots();
     const when = `${picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}, ${pickedTime} ET`;
     if (topic) {
-      topic.value = `${baseTopic} · ${when}`;
-      note.textContent = `${when} added to your meeting request. Send it with Request advisor meeting.`;
-    } else note.textContent = `${when} selected. A meeting request is already on record; your advisor confirms the time.`;
+      topic.value = `${baseTopic} · ${ADVISORS[adv].name} · ${when}`;
+      note.textContent = `${ADVISORS[adv].name}, ${when} added to your meeting request. Send it with Request advisor meeting.`;
+    } else note.textContent = `${ADVISORS[adv].name}, ${when} selected. A meeting request is already on record; your advisor confirms the time.`;
   });
   drawMonth();
   drawSlots();
