@@ -508,6 +508,35 @@ ${side}
 </div>`;
 }
 
+// Small pieces reused by the framed workspace pages.
+export const pathIcon = (name) => svg(PATH_ICONS[name] ?? I.split, 22);
+export const personAvatar = (name, cls = "") =>
+  PHOTOS[name]
+    ? `<img class="ld-person ${cls}" src="${PHOTOS[name]}" alt="">`
+    : `<span class="ld-person ${cls}">${esc(initials(name))}</span>`;
+const TEAM_ICON = {
+  "Harris Williams": '<path d="M12 31l7-7 5 4 9-10"/><path d="M27 18h6v6"/>',
+  "PNC Private Bank": '<path d="M11 18l11-6 11 6"/><path d="M14 19v10M19.5 19v10M24.5 19v10M30 19v10"/><path d="M11 32h22"/>',
+  "Business Credit": '<rect x="11" y="14" width="22" height="16" rx="3"/><path d="M11 19.5h22M15 25.5h5"/>',
+  "Financial Sponsor Coverage": '<rect x="11" y="17" width="22" height="15" rx="3"/><path d="M18 17v-3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3M11 23.5h22"/>',
+  "Succession Planning": '<circle cx="22" cy="14.5" r="3"/><circle cx="15" cy="27" r="3"/><circle cx="29" cy="27" r="3"/><path d="M22 17.5v4M22 21.5l-6 3M22 21.5l6 3"/>',
+};
+export const teamLogo = (team) =>
+  `<svg class="ld-team" viewBox="0 0 44 44" width="44" height="44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#111"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TEAM_ICON[team] ?? TEAM_ICON["PNC Private Bank"]}</g></svg>`;
+
+// Any workspace page in the dashboard frame: shared header, page body below.
+export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body }) {
+  const owner = c.mode === "owner",
+    name = owner ? c.data.profile.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor";
+  return `<div class="ld nx ${theme}" data-ld>
+${side}
+  <div class="ld-body">
+    ${head({ menu, account, name, demo, demoRole, ping: (c.data.actions ?? []).some((a) => a.status !== "Completed") })}
+    <main class="ld-page ld-page-${route}" id="main">${body}</main>
+  </div>
+</div>`;
+}
+
 // Readiness & review in the dashboard frame.
 const EV_ICON = {
   "Financial statements": '<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>',
@@ -531,10 +560,7 @@ export function linkReadiness({ side, menu, account, theme, c, user, demo, demoR
 ${side}
   <div class="ld-body">
     ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
-    <section class="rd-hero">
-      <div><small class="ld-eyebrow">Transition workspace</small><h2>Evidence before conclusions.</h2><p>Track what is available, what the advisor has verified, and what still needs a conversation. No files are uploaded here.</p></div>
-      <div class="rd-hero-chips">${parts.reviewBadge}<span class="badge">${d.qualified ? "Qualified opportunity" : "Discovery in progress"}</span></div>
-    </section>
+    <h2 class="sr-only">Evidence before conclusions.</h2>
     <div class="ld-kpis rd-kpis">
       <div class="ld-card ld-kpi gauge"><div><small>Owner-reported availability</small><b>${rd.score}<em>%</em></b><span>${rd.reported}/${rd.total} categories</span></div>${gauge(rd.score)}</div>
       <div class="ld-card ld-kpi gauge"><div><small>Advisor verification</small><b>${rd.verifiedScore}<em>%</em></b><span>${rd.verified}/${rd.total} categories</span></div>${gauge(rd.verifiedScore)}</div>
