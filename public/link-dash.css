@@ -1194,3 +1194,28 @@ button.ld-avatar[aria-expanded="true"] {
 .ld-fill > .ld-col > :last-child {
   flex-grow: 1;
 }
+
+/* Relationship map portraits */
+.ld-map-ring {
+  fill: none;
+  stroke-width: 3;
+}
+.ld-map-ring.c0 { stroke: #f2d50f; }
+.ld-map-ring.c1 { stroke: #11a6f0; }
+.ld-map-ring.c2 { stroke: #5bcc29; }
+.ld-map-ring.c3 { stroke: #f24848; }
+.ld-map-ring.me,
+.ld-map-node.me {
+  stroke: #111;
+  stroke-width: 3.5;
+}
+.ld-map-node.me {
+  fill: #111;
+}
+.ld-map-name {
+  font: 500 11px "Poppins", sans-serif;
+  fill: #111;
+  paint-order: stroke;
+  stroke: #eceee8;
+  stroke-width: 3px;
+}

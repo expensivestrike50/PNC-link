@@ -158,25 +158,41 @@ function miniRange(lo, hi, mid) {
   return `<svg class="ld-mini" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="5" width="100" height="5" rx="2.5" class="mr-track"/><rect x="${x(lo)}" y="5" width="${Math.max(1, x(hi) - x(lo))}" height="5" class="mr-band"/><rect x="${x(mid) - 0.6}" y="1" width="1.2" height="13" class="mr-mid"/></svg>`;
 }
 
+// Portraits for the sample family; anyone else is shown with initials.
+const PHOTOS = {
+  "James D. Bennett": "./assets/jd-avatar.jpg",
+  "Morgan Bennett": "./assets/people/morgan.jpg",
+  "Alex Bennett": "./assets/people/alex.jpg",
+};
+
+function mapNode(id, x, y, r, name, cls) {
+  const photo = PHOTOS[name];
+  const face = photo
+    ? `<clipPath id="${id}"><circle cx="${x}" cy="${y}" r="${r}"/></clipPath><image href="${photo}" x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/><circle cx="${x}" cy="${y}" r="${r}" class="ld-map-ring ${cls}"/>`
+    : `<circle cx="${x}" cy="${y}" r="${r}" class="ld-map-node ${cls}"/><text x="${x}" y="${y + 4.5}" text-anchor="middle" class="ld-map-t">${esc(initials(name))}</text>`;
+  return face + `<text x="${x}" y="${y + r + 13}" text-anchor="middle" class="ld-map-name">${esc(String(name ?? "").split(" ")[0])}</text>`;
+}
+
 function relationshipMap(d) {
   const people = (d.stakeholders ?? []).slice(0, 6),
     cx = 178,
-    cy = 82;
-  let g = "";
+    cy = 74;
+  let roads = "",
+    nodes = "";
   people.forEach((person, i) => {
     const a = -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / Math.max(people.length, 1),
       px = cx + Math.cos(a) * 118,
-      py = cy + Math.sin(a) * 52;
-    g += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" class="ld-map-road"/>`;
-    g += `<g><circle cx="${px}" cy="${py}" r="17" class="ld-map-node c${i % 4}"/><text x="${px}" y="${py + 4.5}" text-anchor="middle" class="ld-map-t">${esc(initials(person.name))}</text><title>${esc(person.name)} · ${esc(person.relationship)}</title></g>`;
+      py = cy + Math.sin(a) * 46;
+    roads += `<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" class="ld-map-road"/>`;
+    nodes += `<g>${mapNode(`ldp${i}`, px, py, 21, person.name, `c${i % 4}`)}<title>${esc(person.name)} · ${esc(person.relationship)}</title></g>`;
   });
   return `<svg viewBox="0 0 356 164" width="100%" role="img" aria-label="Relationship map with ${people.length} people">
     <rect width="356" height="164" class="ld-map-bg"/>
     <path d="M0 118 C80 104 120 140 210 122 S320 96 356 110" class="ld-map-river"/>
     <path d="M60 0V164M0 40H356M250 0V164M0 140H356" class="ld-map-street"/>
     <rect x="270" y="52" width="40" height="26" rx="5" class="ld-map-park"/><rect x="20" y="64" width="26" height="40" rx="5" class="ld-map-park"/>
-    ${g}
-    <circle cx="${cx}" cy="${cy}" r="22" class="ld-map-me"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" class="ld-map-me-t">${esc(initials(d.profile.name))}</text>
+    ${roads}${nodes}
+    <g>${mapNode("ldme", cx, cy, 27, d.profile.name, "me")}<title>${esc(d.profile.name)} · Business owner</title></g>
   </svg>`;
 }
 
