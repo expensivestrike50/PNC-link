@@ -1411,3 +1411,60 @@ button.ld-day.on {
   opacity: 0.8;
   margin-top: 2px;
 }
+
+/* What matters to the owner */
+.ld-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ld-fact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.ld-fact .ld-ic {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+.ld .ld-fact small {
+  display: block;
+  font-size: 11.5px;
+}
+.ld-fact b {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.ld-note {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #111;
+}
+.ld-note.y {
+  background: var(--pale-y);
+}
+.ld-note.b {
+  background: var(--pale-b);
+}
+.ld-note-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4a4a4a;
+}
+.ld .ld-note p {
+  margin: 6px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #111;
+}

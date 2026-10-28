@@ -436,7 +436,7 @@ ${side}
           <div class="ld-invest">${steps
             .map(
               (st, i) =>
-                `<a class="ld-inv c${i % 4}" href="#/${esc(st.route)}"><span class="ld-letter">${i + 1}</span><span class="nm"><b>${esc(st.title)}</b><small>${esc(st.detail)}</small></span><span class="ld-go">${svg(I.arrow, 16)}</span></a>`,
+                `<a class="ld-inv c${i % 4}" href="#/${esc(st.route)}"><span class="ld-letter">${i + 1}</span><span class="nm"><b>${esc(st.title)}</b><small>${esc(st.detail)}</small></span></a>`,
             )
             .join("")}</div>
           <div class="ld-btns">${parts.assistant}${parts.brief}</div>
@@ -460,10 +460,14 @@ ${side}
         </div>
         <div class="ld-two">
           <section class="ld-card ld-pad">
-            <div class="ld-ch"><h2>What matters to the owner</h2></div>
-            <div class="row">${parts.chips}</div>
-            <blockquote class="review-note mt-quote">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</blockquote>
-            <p class="ld-text"><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p>
+            <div class="ld-ch"><h2>What matters to the owner</h2>${roundLink("#/discovery", owner ? "Update discovery" : "View discovery")}</div>
+            <div class="ld-facts">
+              <div class="ld-fact"><span class="ld-ic y">${svg(I.target, 18)}</span><span><small>Transition trigger</small><b>${esc(p.trigger)}</b></span></div>
+              <div class="ld-fact"><span class="ld-ic b">${svg(I.calendar, 18)}</span><span><small>Horizon</small><b>${esc(p.timeline)}-year horizon</b></span></div>
+              <div class="ld-fact"><span class="ld-ic g">${svg(I.split, 18)}</span><span><small>Future role</small><b>${esc(p.futureRole)}</b></span></div>
+            </div>
+            <div class="ld-note y"><span class="ld-note-h">${svg(PATH_ICONS["Family transfer"], 16)}Family and legacy</span><p class="review-note">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</p></div>
+            <div class="ld-note b"><span class="ld-note-h">${svg(I.team, 16)}Employee priorities</span><p>${esc(p.employeePriorities || "Not yet recorded")}</p></div>
           </section>
           <section class="ld-card ld-pad">
             <div class="ld-ch"><small>Liquidity goal</small>${roundLink("#/proceeds", "Open proceeds and wealth", I.arrow, "solid")}</div>
