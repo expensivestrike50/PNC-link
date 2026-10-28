@@ -508,6 +508,73 @@ ${side}
 </div>`;
 }
 
+// Readiness & review in the dashboard frame.
+const EV_ICON = {
+  "Financial statements": '<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>',
+  "Ownership and debt schedule": '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 2.5A7.5 7.5 0 0 1 21.5 9H15z"/>',
+  "Successor / key-person plan": '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>',
+  "Family priorities": '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/><path d="M12 17.5s-3-1.8-3-3.8a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2-3 3.8-3 3.8z"/>',
+  "Tax and estate review": '<path d="M6 3h9l4 4v14H6z"/><path d="M14.5 3v4.5H19M9 12h7M9 15.5h7M9 9h3"/>',
+  "Operating procedures": '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  "Transition timeline": '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+};
+export function linkReadiness({ side, menu, account, theme, c, user, demo, demoRole, parts }) {
+  const d = c.data,
+    p = d.profile,
+    rd = readiness(d),
+    owner = c.mode === "owner",
+    name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
+    none = rd.total - rd.reported,
+    pending = rd.reported - rd.verified,
+    tones = ["y", "b", "g", "p", "l"];
+  return `<div class="ld nx ${theme}" data-ld>
+${side}
+  <div class="ld-body">
+    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    <section class="rd-hero">
+      <div><small class="ld-eyebrow">Transition workspace</small><h2>Evidence before conclusions.</h2><p>Track what is available, what the advisor has verified, and what still needs a conversation. No files are uploaded here.</p></div>
+      <div class="rd-hero-chips">${parts.reviewBadge}<span class="badge">${d.qualified ? "Qualified opportunity" : "Discovery in progress"}</span></div>
+    </section>
+    <div class="ld-kpis rd-kpis">
+      <div class="ld-card ld-kpi gauge"><div><small>Owner-reported availability</small><b>${rd.score}<em>%</em></b><span>${rd.reported}/${rd.total} categories</span></div>${gauge(rd.score)}</div>
+      <div class="ld-card ld-kpi gauge"><div><small>Advisor verification</small><b>${rd.verifiedScore}<em>%</em></b><span>${rd.verified}/${rd.total} categories</span></div>${gauge(rd.verifiedScore)}</div>
+      <div class="ld-card ld-kpi"><small>Review</small><b>${d.review ? "Recorded" : "Pending"}</b><span>Human findings and next steps</span></div>
+      <div class="ld-card ld-kpi"><small>Opportunity</small><b>${d.qualified ? "Qualified" : "Discovery"}</b><span>Advisor determination</span></div>
+    </div>
+    <div class="ld-grid ld-fill">
+      <div class="ld-col">
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><div><h2>Readiness evidence</h2><small>${owner ? "Mark what is available; your advisor verifies it." : "Verify categories the owner marked available."}</small></div>${roundLink("#/discovery", "Open discovery profile")}</div>
+          <div class="checklist rd-list">${parts.rows
+            .map(
+              (r, i) =>
+                `<div class="check-row rd-row ${r.state}"><span class="ld-ic ${tones[i % 5]}">${svg(EV_ICON[r.label] ?? I.target, 18)}</span><div class="rd-txt"><b>${esc(r.label)}</b><small>${r.status}</small></div><div class="rd-sws">${r.available}${r.verified}</div></div>`,
+            )
+            .join("")}</div>
+          <p class="ld-foot rd-note"><span>The checklist measures evidence completeness, not financial health or readiness to sell. Advisor verification is a recorded review, not an automated document check.</span></p>
+        </section>
+      </div>
+      <div class="ld-col">
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><div><small class="ld-eyebrow">Seven evidence categories</small><h2>Evidence status</h2></div><div class="ld-score">${rd.verified}<small>/${rd.total} verified</small></div></div>
+          <div class="rd-stack" role="img" aria-label="${rd.verified} verified, ${pending} available, ${none} not confirmed">${rd.verified ? `<i class="v" data-w="${((rd.verified / rd.total) * 100).toFixed(1)}"></i>` : ""}${pending ? `<i class="a" data-w="${((pending / rd.total) * 100).toFixed(1)}"></i>` : ""}${none ? `<i class="n" data-w="${((none / rd.total) * 100).toFixed(1)}"></i>` : ""}</div>
+          <div class="ld-legend rd-legend"><span><i class="v"></i>${rd.verified} verified</span><span><i class="a"></i>${pending} available</span><span><i class="n"></i>${none} not confirmed</span></div>
+          <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
+        </section>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
+          ${parts.review}
+        </section>
+        <section class="ld-cc black rd-judge">
+          <span class="ld-cc-brand">${markLogo}Keep professional judgment central</span>
+          <p>Formal valuations, buyer selection, financing, tax, legal matters, and final recommendations remain with qualified professionals. AI can help identify questions; it cannot approve this case.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
 export function mountLinkDashboard() {
   const root = document.querySelector("[data-ld]");
   if (!root) return;

@@ -230,6 +230,19 @@ test("proceeds follow ownership and debt order and expose distribution and debt 
   assert.equal(negative.share, 0);
   assert.equal(negative.cash, 0);
 });
+test("owners can book several meetings and cancel any open one", () => {
+  const row = fixture();
+  apply(row, owner, "meeting", { topic: "Discuss successor interest" }, "2026-10-01T10:00:00Z");
+  apply(row, owner, "meeting", { topic: "Review liquidity" }, "2026-10-02T10:00:00Z");
+  assert.equal(row.data.meeting.topic, "Review liquidity");
+  assert.equal(row.data.meetingHistory[0].status, "Requested");
+  assert.throws(() => apply(row, advisor, "meetingCancel", {}), /role/);
+  apply(row, owner, "meetingCancel", { requestedAt: "2026-10-01T10:00:00Z" });
+  assert.equal(row.data.meetingHistory[0].status, "Cancelled");
+  apply(row, owner, "meetingCancel", {});
+  assert.equal(row.data.meeting, null);
+  assert.throws(() => apply(row, owner, "meetingCancel", {}), /no open meeting/i);
+});
 test("meeting transitions and coordinated actions are role restricted", () => {
   const row = fixture();
   apply(row, owner, "meeting", { topic: "Discuss successor interest" });

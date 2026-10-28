@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028192617";
+import { linkDashboard, linkDashboardEmpty, linkTransition, linkReadiness, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028193121";
 import {
   newData,
   profileInput,
@@ -549,14 +549,14 @@ function sideNav(r, c) {
   const theme = wsTheme();
   const mode =
     c?.mode ?? ((state.user?.roles ?? []).includes("advisor") ? "advisor" : "owner");
-  return `<aside class="sidebar ws-side"><a class="brand-box" href="#/home"><img class="logo" src="${logoFor(theme)}" alt="PNC-link home"></a><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${navItems(c)
+  return `<aside class="sidebar ws-side"><a class="brand-box" href="#/home"><img class="logo" src="${logoFor(theme)}" alt="PNC-link home"></a><button type="button" class="ws-collapse" data-ws-collapse aria-label="Hide sidebar" title="Hide sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15.5 10l-2 2 2 2"/></svg></button><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${navItems(c)
     .map(
       ([id, label]) =>
         `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}"><span class="nav-icon i-${id}" aria-hidden="true"></span>${label}</a>`,
     )
     .join("")}</nav><div class="ws-promo"><div class="ws-promo-img"><img src="./assets/family.png" alt=""></div><div class="ws-promo-body"><b>Prepare smarter with PNC\u2011link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ws-yellow" href="#/assistant">Ask PNC\u2011link AI</a></div></div><div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
-const menuButton = `<button type="button" class="ws-menu" data-ws-menu aria-label="Open menu"><svg width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="M1 1.5h18M1 8h18M1 14.5h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
+const menuButton = `<button type="button" class="ws-menu" data-ws-menu aria-label="Show sidebar" title="Show sidebar"><svg width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="M1 1.5h18M1 8h18M1 14.5h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
 function shell(body, r) {
   const c = current(),
     mode =
@@ -576,7 +576,7 @@ function shell(body, r) {
   const viewSwitch = state.demo
     ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
-  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatarImage(c?.data.profile.name, mode) || `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatarImage(c?.data.profile.name, mode) || `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}</main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -678,6 +678,49 @@ function overview(c) {
   if (!c) return noCase();
   return `${intro("Your specialist inbox", "Review the approved purpose and information scope before acknowledging the handoff.")}${referrals(c)}`;
 }
+// Readiness & review pieces for the dashboard frame (checkbox names and statuses unchanged).
+function readinessParts(c) {
+  const d = c.data;
+  return {
+    rows: d.evidence.map((e) => ({
+      label: e.label,
+      state: e.verified ? "verified" : e.reported ? "available" : "none",
+      status: e.verified ? "Advisor verified" : e.reported ? "Available; verification pending" : "Not yet confirmed",
+      available: `<label class="rd-sw"><input type="checkbox" data-evidence="${esc(e.label)}" ${e.reported ? "checked" : ""} ${c.mode !== "owner" || state.demo ? "disabled" : ""}><i aria-hidden="true"></i>Available</label>`,
+      verified: `<label class="rd-sw"><input type="checkbox" data-evidence="${esc(e.label)}" ${e.verified ? "checked" : ""} ${c.mode !== "advisor" || !e.reported || state.demo ? "disabled" : ""}><i aria-hidden="true"></i>Verified</label>`,
+    })),
+    review:
+      c.mode === "advisor"
+        ? `<form data-form="review" class="inline-form">${textarea("note", "Findings and recommended next steps", d.review?.note ?? "", "required")}<label class="check"><input type="checkbox" name="qualified" ${d.qualified ? "checked" : ""}><span>Qualify this opportunity for specialist discovery. I have reviewed the goals and verified at least two evidence categories.</span></label>${formEnd("Record advisor review")}</form>`
+        : d.review
+          ? `<p class="review-note">${esc(d.review.note)}</p><small>${date(d.review.at)} · ${esc(d.review.by)}</small>`
+          : empty("Review pending", "Your assigned advisor records findings and qualification here."),
+    reviewBadge: badge(d.review ? "Recorded" : "Pending", d.review ? "" : "amber"),
+  };
+}
+// Your next conversation: booked meetings (latest first) with cancel, then the request form.
+function meetingPanel(c) {
+  const d = c.data,
+    owner = c.mode === "owner",
+    all = [...(d.meeting ? [d.meeting] : []), ...(d.meetingHistory ?? [])];
+  const form = owner
+    ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd(all.length ? "Request another meeting" : "Request advisor meeting")}</form>`
+    : "";
+  const ack =
+    c.mode === "advisor" && d.meeting && !["Completed", "Cancelled"].includes(d.meeting.status)
+      ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`)
+      : "";
+  if (!all.length)
+    return `<div class="ld-meet-empty">${empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${form}</div>`;
+  const rows = all
+    .map((m) => {
+      const [what, who, when] = String(m.topic).split(" · "),
+        open = !["Completed", "Cancelled"].includes(m.status);
+      return `<li class="ld-bk ${m.status.toLowerCase()}"><div><b>${esc(who || what)}</b><small>${esc(when || `Requested ${date(m.requestedAt)}`)}</small>${who ? `<small>${esc(what)}</small>` : ""}</div><span class="ld-bk-side">${badge(m.status, m.status === "Cancelled" ? "gray" : "")}${owner && open && !state.demo ? `<button type="button" class="ld-cancel" data-action="meetingCancel" data-at="${esc(m.requestedAt)}">Cancel</button>` : ""}</span></li>`;
+    })
+    .join("");
+  return `<div class="ld-meet-list"><small class="ld-eyebrow">Booked meetings</small><ul class="ld-bks">${rows}</ul>${ack}${form}</div>`;
+}
 // Content pieces for My transition, rendered in the dashboard frame by link-dash.js.
 function transitionParts(c) {
   const d = c.data,
@@ -688,7 +731,7 @@ function transitionParts(c) {
     badges: `${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}`,
     assistant: `<button type="button" class="ld-black" data-ask="${esc(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.")}">Prepare my next conversation</button>`,
     brief: `<button type="button" class="ld-black" data-action="downloadBrief">Download meeting brief</button>`,
-    meeting: `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`,
+    meeting: meetingPanel(c),
     management: managementPanel(c),
     liquidity: money(p.liquidity),
     retainedRing: progressRing(Number(p.retained) || 0, 100, `${esc(p.retained)}%`, ""),
@@ -995,6 +1038,18 @@ function render() {
       demoRole: state.demoRole,
       parts: transitionParts(c),
     });
+  } else if (r === "readiness" && c && c.mode !== "specialist") {
+    html = linkReadiness({
+      side: sideNav(r, c),
+      menu: menuButton,
+      account: accountMenu(c.mode === "owner" ? c.data.profile.name : state.user?.name || "Advisor", c.mode),
+      theme: wsTheme(),
+      c,
+      user: state.user,
+      demo: state.demo,
+      demoRole: state.demoRole,
+      parts: readinessParts(c),
+    });
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
       side: sideNav(r, c),
@@ -1059,7 +1114,7 @@ function render() {
   }
   document.title = `${r === "home" ? "Business transitions" : r.charAt(0).toUpperCase() + r.slice(1)} · PNC-link`;
   document.querySelector("h1")?.focus({ preventScroll: true });
-  if (r === "dashboard") mountLinkDashboard();
+  if (r === "dashboard" || r === "readiness") mountLinkDashboard();
   if (r === "overview") mountAdvisorCalendar();
   app.querySelectorAll(".mt-pin[data-left]").forEach((el) => (el.style.left = `${el.dataset.left}%`));
   if (r === "assistant") $("#thread")?.scrollTo(0, $("#thread").scrollHeight);
@@ -1180,10 +1235,33 @@ document.addEventListener("click", (e) => {
   menu.hidden = !open;
   $("[data-acct]").setAttribute("aria-expanded", String(open));
 });
-// Slide-out sidebar on tablets and phones
+// Sidebar: hide/show on wide screens (remembered), slide-out panel on tablets and phones
+const sideKey = "pnc-link-side";
+const sideHidden = () => {
+  try {
+    return localStorage.getItem(sideKey) === "hidden";
+  } catch {
+    return false;
+  }
+};
+const setSideHidden = (hidden) => {
+  document.body.classList.toggle("ws-collapsed", hidden);
+  try {
+    localStorage.setItem(sideKey, hidden ? "hidden" : "shown");
+  } catch {
+    /* The sidebar still toggles for this visit. */
+  }
+};
+document.body.classList.toggle("ws-collapsed", sideHidden());
 document.addEventListener("click", (e) => {
-  if (e.target.closest("[data-ws-menu]")) document.body.classList.add("ws-open");
-  else if (e.target.closest("[data-ws-close], .ws-side .nav-link, .ws-side .ws-yellow"))
+  const wide = innerWidth > 960;
+  if (e.target.closest("[data-ws-menu]")) {
+    if (wide) setSideHidden(false);
+    else document.body.classList.add("ws-open");
+  } else if (e.target.closest("[data-ws-collapse]")) {
+    if (wide) setSideHidden(true);
+    else document.body.classList.remove("ws-open");
+  } else if (e.target.closest("[data-ws-close], .ws-side .nav-link, .ws-side .ws-yellow"))
     document.body.classList.remove("ws-open");
 });
 document.addEventListener("click", (e) => {
@@ -1318,6 +1396,13 @@ app.addEventListener("click", async (e) => {
         id: b.dataset.id,
         status: b.dataset.status,
       });
+    } else if (action === "meetingCancel") {
+      const c = current(),
+        m = [c?.data.meeting, ...(c?.data.meetingHistory ?? [])].find((x) => x?.requestedAt === b.dataset.at),
+        [, who, when] = String(m?.topic ?? "").split(" · ");
+      b.disabled = true;
+      await update("meetingCancel", { requestedAt: b.dataset.at });
+      notice(who && when ? `Your meeting with ${who} on ${when} has been cancelled.` : "Your meeting request has been cancelled.");
     } else if (action === "meetingStatus") {
       b.disabled = true;
       await update("meetingStatus", { status: b.dataset.status });

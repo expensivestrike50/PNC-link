@@ -2255,3 +2255,41 @@ body:has(.ld.light) {
 .dv-save .check {
   align-items: flex-start;
 }
+
+/* Hide / show the sidebar (the sidebar is sticky or fixed, so the button can sit in its corner) */
+.ws-collapse {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--ws-line2);
+  background: none;
+  color: var(--ws-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.ws-collapse:hover {
+  color: var(--ws-text);
+  background: var(--ws-soft);
+}
+.ws-side .brand-box {
+  padding-right: 54px;
+}
+.ws-side .brand-box .logo {
+  width: 136px;
+}
+@media (min-width: 961px) {
+  body.ws-collapsed .shell.nx,
+  body.ws-collapsed .ld {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body.ws-collapsed .ws-side {
+    display: none;
+  }
+  body.ws-collapsed .ws-menu {
+    display: grid;
+  }
+}

@@ -173,14 +173,31 @@ export function mutate(row, user, op, payload, now = new Date().toISOString()) {
       : "Advisor recorded discovery review";
   } else if (op === "meeting") {
     requireMode("owner");
-    if (d.meeting && d.meeting.status !== "Completed")
-      fail("A meeting request is already open.");
     const topic = text(p.topic ?? "", 500);
     if (!topic) fail("Enter a meeting topic.");
     if (!row.advisorEmail)
       fail("Add your advisor and sharing permission first.");
+    if (d.meeting) d.meetingHistory = [d.meeting, ...(d.meetingHistory ?? [])].slice(0, 20);
     d.meeting = { topic, status: "Requested", requestedAt: now };
     label = "Owner requested an advisor meeting";
+  } else if (op === "meetingCancel") {
+    requireMode("owner");
+    // Cancel the latest request or an earlier open one, identified by its request time.
+    const at = p.requestedAt ?? d.meeting?.requestedAt;
+    const open = (m) => m && m.requestedAt === at && !["Completed", "Cancelled"].includes(m.status);
+    if (open(d.meeting)) {
+      d.meetingHistory = [
+        { ...d.meeting, status: "Cancelled", cancelledAt: now },
+        ...(d.meetingHistory ?? []),
+      ].slice(0, 20);
+      d.meeting = null;
+    } else {
+      const past = (d.meetingHistory ?? []).find(open);
+      if (!past) fail("There is no open meeting request to cancel.");
+      past.status = "Cancelled";
+      past.cancelledAt = now;
+    }
+    label = "Owner cancelled the meeting request";
   } else if (op === "meetingStatus") {
     requireMode("advisor");
     if (!d.meeting) fail("No meeting request exists.");
