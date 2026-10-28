@@ -124,6 +124,18 @@ function guestApi(path, body) {
   guestStore = next;
   return { case: project(next.row, local.user) };
 }
+// A local test account starts from an editable copy of the Bennett sample case.
+function seedLocalCase(user) {
+  const now = new Date().toISOString(),
+    d = structuredClone(sample().data);
+  delete d.management;
+  d.profile = { ...d.profile, advisorEmail: "", shareWithAdvisor: false };
+  d.referrals = [];
+  return {
+    row: { id: "local-case", ownerId: user.id, ownerEmail: user.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: d },
+    history: [{ label: "Started from the Bennett sample case", createdAt: now }],
+  };
+}
 async function openGuest(resume = false, account = null) {
   local = account ? { user: account.user, key: account.key } : { user: guestUser, key: guestKey };
   try {
@@ -134,6 +146,10 @@ async function openGuest(resume = false, account = null) {
     const saved = JSON.parse(localStorage.getItem(local.key) || "null");
     guestStore = saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
   } catch { guestStore = { row: null, history: [] }; }
+  if (account && !guestStore.row) {
+    guestStore = seedLocalCase(account.user);
+    try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
+  }
   state.guest = true;
   state.demo = false;
   state.user = local.user;
