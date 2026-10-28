@@ -583,13 +583,20 @@ export function mountAdvisorCalendar() {
     note = root.querySelector("[data-slot-note]"),
     toggle = root.querySelector("[data-adv-toggle]"),
     menu = root.querySelector(".ld-adv-menu"),
-    topic = root.querySelector('form[data-form="meeting"] input[name="topic"]'),
+    form = root.querySelector('form[data-form="meeting"]'),
+    topic = form?.querySelector('input[name="topic"]'),
     baseTopic = topic ? topic.value.split(" · ")[0] : "";
   let adv = 0,
     month = new Date(today.getFullYear(), today.getMonth(), 1),
     picked = null,
     pickedTime = "";
   const advisor = () => ADVISORS[adv];
+  const remember = (when = "") => {
+    if (!form) return;
+    form.dataset.advisor = advisor().name;
+    form.dataset.when = when;
+  };
+  remember();
   const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   // Start on the advisor's first day with open times.
@@ -678,6 +685,7 @@ export function mountAdvisorCalendar() {
       drawMonth();
       drawSlots();
       if (topic) topic.value = baseTopic;
+      remember();
       note.textContent = `Showing ${advisor().name}'s calendar. Choosing a time adds it to your meeting request.`;
       return;
     }
@@ -699,7 +707,9 @@ export function mountAdvisorCalendar() {
     if (slot) {
       pickedTime = slot.dataset.slot;
       drawSlots();
-      const when = `${picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}, ${pickedTime} ET`;
+      const date = picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+        when = `${date}, ${pickedTime} ET`;
+      remember(`${date} at ${pickedTime} ET`);
       if (topic) {
         topic.value = `${baseTopic} · ${advisor().name} · ${when}`;
         note.textContent = `${advisor().name}, ${when} added to your meeting request. Send it with Request advisor meeting.`;

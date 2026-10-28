@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028192111";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028192252";
 import {
   newData,
   profileInput,
@@ -111,8 +111,11 @@ function guestApi(path, body) {
     next.history.unshift({ label: "Created a local transition profile", createdAt: now });
   } else if (path.includes("/update") && next.row) {
     if (body.op === "profile") body.payload = { ...body.payload, advisorEmail: "", shareWithAdvisor: false };
-    if (["meeting", "referralStatus"].includes(body.op)) throw Error("Sign in to coordinate with an advisor.");
-    const result = mutate(next.row, local.user, body.op, body.payload);
+    if (body.op === "referralStatus") throw Error("Sign in to coordinate with an advisor.");
+    // Local workspaces have no assigned advisor; the advisor chosen in the calendar stands in
+    // so a meeting request can be recorded in this browser.
+    const target = body.op === "meeting" && !next.row.advisorEmail ? { ...next.row, advisorEmail: "advisor@example.test" } : next.row;
+    const result = mutate(target, local.user, body.op, body.payload);
     next.row.data = result.data;
     next.row.revision++;
     next.row.updatedAt = now;
@@ -1122,6 +1125,15 @@ app.addEventListener("submit", async (e) => {
         state.assistantDraft = "";
         render();
       }
+    } else if (kind === "meeting") {
+      const who = f.dataset.advisor,
+        when = f.dataset.when;
+      await update(kind, data);
+      notice(
+        who && when
+          ? `Meeting with ${who} on ${when} has been sent to ${who}.`
+          : `Meeting request has been sent to ${who || "your advisor"}.`,
+      );
     } else await update(kind, data);
   } catch (error) {
     if (err && err.isConnected) err.textContent = error.message;
