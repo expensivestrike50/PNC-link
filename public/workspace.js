@@ -1,5 +1,4 @@
 import { mutate } from "./workflow.mjs";
-import { dashboard, mountDashboard } from "./nexus-dash.js";
 import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js";
 import {
   newData,
@@ -533,6 +532,16 @@ function navItems(c) {
     ["resources", "Planning resources", "↗"],
   ];
 }
+function sideNav(r, c) {
+  const mode =
+    c?.mode ?? ((state.user?.roles ?? []).includes("advisor") ? "advisor" : "owner");
+  return `<aside class="sidebar ws-side"><a class="brand-box" href="#/home"><img class="logo" src="./assets/pnc-link-logo-light.svg" alt="PNC-link home"></a><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${navItems(c)
+    .map(
+      ([id, label]) =>
+        `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}"><span class="nav-icon i-${id}" aria-hidden="true"></span>${label}</a>`,
+    )
+    .join("")}</nav></aside>`;
+}
 function shell(body, r) {
   const c = current(),
     mode =
@@ -552,14 +561,7 @@ function shell(body, r) {
   const viewSwitch = state.demo
     ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
-  return `<div class="shell nx"><aside class="sidebar"><a class="brand-box" href="#/overview"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><p class="side-label">${mode === "advisor" ? "Advisor workspace" : mode === "specialist" ? "Specialist workspace" : "Owner workspace"}</p><nav aria-label="Workspace">${items
-    .map(
-      ([id, label]) =>
-        `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}"><span class="nav-icon i-${id}" aria-hidden="true"></span>${label}</a>`,
-    )
-    .join(
-      "",
-    )}</nav><div class="side-bottom">Business. Family. What comes next.<br>Human judgment at every decision.<br><a href="#/home">About PNC-link</a></div></aside><div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo ? `<div class="demo-bar">${state.user?.id === "local-guest" ? "Guest workspace" : "Test account"} · saved only in this browser · no advisor sharing or live AI.${state.user?.id === "local-guest" ? ' <a href="#/signin">Sign in</a>' : ""}</div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+  return `<div class="shell nx">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo ? `<div class="demo-bar">${state.user?.id === "local-guest" ? "Guest workspace" : "Test account"} · saved only in this browser · no advisor sharing or live AI.${state.user?.id === "local-guest" ? ' <a href="#/signin">Sign in</a>' : ""}</div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -665,7 +667,7 @@ function overview(c) {
     return `${intro("Your specialist inbox", "Review the approved purpose and information scope before acknowledging the handoff.")}${referrals(c)}`;
   const d = c.data,
     p = d.profile;
-  return `${intro(esc(p.business), "A common record of your goals, evidence, decisions, and the people helping you move forward.", `${c.mode === "advisor" ? "Advisor case" : "Owner journey"} · ${esc(p.industry)}`)}<div class="row">${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}</div>${dashboard(c, { canSave: c.mode === "owner" && !state.demo })}<div class="section-gap">${nextStepPanel(c)}</div><div class="two-col section-gap"><div class="stack">${panel("What matters to the owner", `<div class="row">${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}</div><p class="review-note">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</p><p><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p><p><strong>Liquidity goal</strong> ${money(p.liquidity)} · <strong>Desired retained ownership</strong> ${p.retained}%</p><a class="btn secondary small" href="#/discovery">${c.mode === "owner" ? "Update discovery" : "View discovery"}</a>`)}${panel("Advisor review", d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`)}</div><div class="stack">${panel("Your next conversation", `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`)}</div></div>${managementPanel(c)}`;
+  return `${intro(esc(p.business), "A common record of your goals, evidence, decisions, and the people helping you move forward.", `${c.mode === "advisor" ? "Advisor case" : "Owner journey"} · ${esc(p.industry)}`)}<div class="row">${badge(d.review ? "Advisor reviewed" : "Awaiting advisor review", d.review ? "" : "amber")}${badge(d.qualified ? "Qualified opportunity" : "Discovery in progress", "gray")}${badge(`Revision ${c.revision}`, "gray")}</div>${stages(c)}${nextStepPanel(c)}<div class="two-col section-gap"><div class="stack">${panel("What matters to the owner", `<div class="row">${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}</div><p class="review-note">${esc(p.priorities || "Family and legacy priorities have not been recorded.")}</p><p><strong>Employee priorities</strong><br>${esc(p.employeePriorities || "Not yet recorded")}</p><p><strong>Liquidity goal</strong> ${money(p.liquidity)} · <strong>Desired retained ownership</strong> ${p.retained}%</p><a class="btn secondary small" href="#/discovery">${c.mode === "owner" ? "Update discovery" : "View discovery"}</a>`)}${panel("Advisor review", d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`)}</div><div class="stack">${panel("Your next conversation", `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`)}</div></div>${managementPanel(c)}`;
 }
 function discovery(c) {
   const p = c?.data.profile ?? {
@@ -910,12 +912,14 @@ function render() {
     return;
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
+      side: sideNav(r, c),
       user: state.user,
       guest: state.user?.id === "local-guest",
       isAdvisor: isAdvisor(),
     });
   } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
+      side: sideNav(r, c),
       c,
       user: state.user,
       demo: state.demo,
@@ -964,7 +968,6 @@ function render() {
   }
   document.title = `${r === "home" ? "Business transitions" : r.charAt(0).toUpperCase() + r.slice(1)} · PNC-link`;
   document.querySelector("h1")?.focus({ preventScroll: true });
-  if (r === "overview" && c && c.mode !== "specialist") mountDashboard(c);
   if (r === "dashboard") mountLinkDashboard();
   if (r === "assistant") $("#thread")?.scrollTo(0, $("#thread").scrollHeight);
 }

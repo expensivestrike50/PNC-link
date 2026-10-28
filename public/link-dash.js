@@ -1,4 +1,4 @@
-// PNC-link Dashboard: a card-based summary of one case, in light and dark themes.
+// PNC-link Dashboard: a card-based summary of one case on a black canvas.
 // Figures come from the recorded case and the transparent rules in domain.mjs.
 import {
   defaultScenario,
@@ -10,7 +10,6 @@ import {
   nextSteps,
 } from "./domain.mjs";
 
-const THEME_KEY = "pnc-link-dash-theme";
 const esc = (v) =>
   String(v ?? "").replace(
     /[&<>"']/g,
@@ -32,25 +31,12 @@ const initials = (name) =>
     .slice(0, 2)
     .map((x) => x[0].toUpperCase())
     .join("");
-const theme = () => {
-  try {
-    return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
-  } catch {
-    return "dark";
-  }
-};
 
 /* ---------------- Icons ---------------- */
 
 const svg = (d, size = 22) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I = {
-  dashboard: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/>',
-  overview: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 15l3-3 3 2 4-5"/>',
-  portfolio: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.7-3.3 2.9-5 5.5-5s4.8 1.7 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 14.5c1.4.7 2.3 2.2 2.6 4.5"/>',
-  proceeds: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M7 15h3"/>',
-  readiness: '<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/>',
-  referrals: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M9 6V4.5h6V6M3 11.5h18"/>',
   history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
   bell: '<path d="M18 8.5a6 6 0 1 0-12 0c0 7-3 8.5-3 8.5h18s-3-1.5-3-8.5"/><path d="M13.7 20.5a2 2 0 0 1-3.4 0"/>',
@@ -68,8 +54,6 @@ const I = {
   down: '<path d="M12 5v11M7.5 11.5L12 16l4.5-4.5M5 19h14"/>',
   swap: '<path d="M4 8h14M14.5 4.5L18 8l-3.5 3.5M20 16H6M9.5 12.5L6 16l3.5 3.5"/>',
   spark: '<path d="M12 3l2 6.2 6.2 2-6.2 2L12 19.5l-2-6.3-6.2-2 6.2-2z"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
-  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/>',
 };
 const markLogo = `<svg width="30" height="30" viewBox="0 0 96 96" aria-hidden="true"><g stroke-width="9" stroke-linecap="round"><path d="M48 43V23" stroke="currentColor"/><path d="M43 54 25 65M53 54 71 65" stroke="#00A3B1"/></g><circle cx="48" cy="18" r="11" fill="currentColor"/><circle cx="48" cy="50" r="9" fill="currentColor"/><circle cx="20" cy="70" r="11" fill="#00A3B1"/><circle cx="76" cy="70" r="11" fill="#00A3B1"/></svg>`;
 const roundLink = (href, label, icon = I.arrow, cls = "") =>
@@ -148,35 +132,11 @@ function relationshipMap(d) {
   </svg>`;
 }
 
-function sidebar(isAdvisor, owner, mode) {
-  const nav = [
-    ["dashboard", "Dashboard", I.dashboard],
-    ...(isAdvisor ? [["portfolio", "Client portfolio", I.portfolio]] : []),
-    ["overview", owner ? "My transition" : "Case overview", I.overview],
-    ["proceeds", "Proceeds", I.proceeds],
-    ["readiness", "Readiness", I.readiness],
-    ["referrals", "Referrals", I.referrals],
-    ["history", "History", I.history],
-    ["discovery", "Settings", I.settings],
-  ];
-  return `  <aside class="ld-side">
-    <a class="ld-brand" href="#/home">${markLogo}<span>PNC-link</span></a>
-    <nav aria-label="Dashboard">${nav
-      .map(([id, label, ic]) => `<a class="ld-nav ${id === "dashboard" ? "on" : ""}" href="#/${id}" ${id === "dashboard" ? 'aria-current="page"' : ""}>${svg(ic)}<span>${label}</span></a>`)
-      .join("")}</nav>
-    <div class="ld-promo">
-      <div class="ld-promo-img"><img src="./assets/family.png" alt=""></div>
-      <div class="ld-promo-body"><b>Prepare smarter with PNC‑link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ld-yellow" href="#/assistant">Ask PNC‑link AI</a></div>
-    </div>
-    <div class="ld-theme" role="group" aria-label="Theme"><button type="button" data-ld-theme="light" class="${mode === "light" ? "on" : ""}">${svg(I.sun, 16)}Light</button><button type="button" data-ld-theme="dark" class="${mode === "dark" ? "on" : ""}">${svg(I.moon, 16)}Dark</button></div>
-  </aside>`;
-}
-
 /* ---------------- Page ---------------- */
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
+export function linkDashboard({ side, c, user, demo, demoRole, history }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -190,8 +150,7 @@ export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
     owner = c.mode === "owner",
     name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
     coverage = p.liquidity ? Math.min(100, (Math.max(0, r.cash) / p.liquidity) * 100) : 100,
-    diff = r.cash - p.liquidity,
-    mode = theme();
+    diff = r.cash - p.liquidity;
 
   const tiles = [
     [I.target, "y", journey[0]],
@@ -214,8 +173,8 @@ export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
     ? `<div class="ld-switch" role="group" aria-label="Sample view"><button type="button" class="${demoRole === "owner" ? "on" : ""}" ${demoRole === "owner" ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch"'}>Client</button><button type="button" class="${demoRole === "owner" ? "" : "on"}" ${demoRole === "owner" ? 'data-action="demoSwitch"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
 
-  return `<div class="ld ${mode}" data-ld>
-${sidebar(isAdvisor, owner, mode)}
+  return `<div class="ld dark" data-ld>
+${side}
 
   <div class="ld-body">
     <header class="ld-head ld-card">
@@ -319,9 +278,8 @@ ${sidebar(isAdvisor, owner, mode)}
 }
 
 // Signed in (or guest) without a case yet: same frame, with a way to start.
-export function linkDashboardEmpty({ user, guest, isAdvisor }) {
-  const mode = theme(),
-    staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
+export function linkDashboardEmpty({ side, user, guest }) {
+  const staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
     name = guest ? "Guest" : user?.name || user?.email || "there";
   const steps = [
     [I.target, "y", "Record your goals and business facts", "discovery"],
@@ -329,8 +287,8 @@ export function linkDashboardEmpty({ user, guest, isAdvisor }) {
     [I.split, "g", "Compare transition paths", "pathways"],
     [I.team, "p", "Approve each specialist handoff", "referrals"],
   ];
-  return `<div class="ld ${mode}" data-ld>
-${sidebar(isAdvisor, !staff, mode)}
+  return `<div class="ld dark" data-ld>
+${side}
   <div class="ld-body">
     <header class="ld-head ld-card">
       <div class="ld-avatar"><span>${esc(initials(name) || "?")}</span></div>
@@ -363,17 +321,4 @@ export function mountLinkDashboard() {
   root.querySelectorAll("[data-w]").forEach((el) => (el.style.width = `${el.dataset.w}%`));
   // Keep the knob inside the track at 0% and 100%.
   root.querySelectorAll("[data-left]").forEach((el) => (el.style.left = `clamp(20px, ${el.dataset.left}%, calc(100% - 20px))`));
-  root.querySelectorAll("[data-ld-theme]").forEach((b) =>
-    b.addEventListener("click", () => {
-      const mode = b.dataset.ldTheme;
-      try {
-        localStorage.setItem(THEME_KEY, mode);
-      } catch {
-        /* Theme still switches for this visit. */
-      }
-      root.classList.toggle("dark", mode === "dark");
-      root.classList.toggle("light", mode === "light");
-      root.querySelectorAll("[data-ld-theme]").forEach((x) => x.classList.toggle("on", x === b));
-    }),
-  );
 }
