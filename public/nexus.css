@@ -2076,3 +2076,8 @@ body:has(.ld.light) {
   --blue: #f2d50f;
   --blue-dark: #d9bf00;
 }
+
+/* Page descriptions run on one line where the width allows */
+.nx .page-intro p {
+  max-width: none;
+}

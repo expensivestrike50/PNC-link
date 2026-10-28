@@ -246,7 +246,7 @@ ${side}
       <div class="ld-card ld-kpi"><small>Preferred horizon</small><b>${esc(p.timeline)} <em>yrs</em></b><span>Debt ${short(p.debt)}</span></div>
     </div>
 
-    <div class="ld-grid">
+    <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
           <a class="ld-pill" href="#/family">${svg(I.plus, 18)}Add relationship</a>
@@ -449,11 +449,7 @@ ${side}
         ${parts.management}
       </div>
     </div>
-    <div class="ld-grid ld-pair">
-        <section class="ld-card ld-pad">
-          <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
-          ${parts.review}
-        </section>
+    <div class="ld-solo">
         <section class="ld-card ld-pad ld-meet">
           <div class="ld-ch"><h2>Your next conversation</h2></div>
           ${parts.meeting}

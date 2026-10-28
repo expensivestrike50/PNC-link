@@ -1185,21 +1185,12 @@ button.ld-avatar[aria-expanded="true"] {
     font-size: 22px;
   }
 }
-/* Advisor review and Your next conversation share a row so their heights match */
-.ld-pair {
-  align-items: stretch;
+/* Your next conversation on its own row */
+.ld-solo > .ld-card .inline-form {
+  max-width: 720px;
 }
-.ld-pair > .ld-card {
-  display: flex;
-  flex-direction: column;
-}
-@media (max-width: 1560px) {
-  .ld-pair {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  }
-}
-@media (max-width: 760px) {
-  .ld-pair {
-    grid-template-columns: minmax(0, 1fr);
-  }
+
+/* Dashboard: the last card in each column grows so both columns end level */
+.ld-fill > .ld-col > :last-child {
+  flex-grow: 1;
 }

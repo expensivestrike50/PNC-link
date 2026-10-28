@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281857";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281904";
 import {
   newData,
   profileInput,
@@ -686,8 +686,6 @@ function transitionParts(c) {
     chips: `${badge(p.trigger)}${badge(`${p.timeline}-year horizon`, "gray")}${badge(p.futureRole, "gray")}`,
     assistant: contextAssistant(c.mode === "advisor" ? "Prepare a concise advisor meeting brief: owner goals, family dynamics, missing evidence, open decisions and three next actions. Separate known facts from questions." : "Help me understand my next three steps using my business goals and family priorities.", "Prepare my next conversation"),
     brief: button("Download meeting brief", "downloadBrief", "quiet small"),
-    reviewBadge: badge(d.review ? "Recorded" : "Pending", d.review ? "" : "amber"),
-    review: `${d.review ? `<p class="review-note">${esc(d.review.note)}</p><small>Recorded ${date(d.review.at)} · ${esc(d.review.by)}</small>` : `<p>${p.advisorEmail ? "Your named advisor can review this profile and record next steps." : "Add your advisor’s email and sharing permission in Discovery to start the handoff."}</p><a class="btn secondary small" href="#/readiness">Open review</a>`}`,
     meeting: `${d.meeting ? `<p><strong>${esc(d.meeting.topic)}</strong><br>${badge(d.meeting.status)}</p><small>Requested ${date(d.meeting.requestedAt)}</small>` : empty("Align on the next step", "Discuss the transition trigger, missing evidence, and owner outcomes before selecting a path.")}${c.mode === "owner" && !d.meeting ? `<form data-form="meeting" class="inline-form">${input("topic", "Meeting topic", "Discuss my transition priorities", "text", 'required maxlength="500"')}${formEnd("Request advisor meeting")}</form>` : c.mode === "advisor" && d.meeting && d.meeting.status !== "Completed" ? button(d.meeting.status === "Requested" ? "Acknowledge request" : "Mark meeting completed", "meetingStatus", "", `data-status="${d.meeting.status === "Requested" ? "Acknowledged" : "Completed"}" ${locked()}`) : ""}`,
     management: managementPanel(c),
     liquidity: money(p.liquidity),
