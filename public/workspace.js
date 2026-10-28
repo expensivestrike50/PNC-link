@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028191911";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard, mountAdvisorCalendar } from "./link-dash.js?v=20261028192111";
 import {
   newData,
   profileInput,

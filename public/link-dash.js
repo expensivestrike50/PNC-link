@@ -479,25 +479,27 @@ ${side}
         ${parts.management}
       </div>
     </div>
-    <div class="ld-sched">
+    <div class="ld-sched" data-sched>
         <section class="ld-card ld-pad ld-meet">
           <div class="ld-ch"><h2>Your next conversation</h2></div>
-          <div class="ld-meet-body">${parts.meeting}</div>
-        </section>
-        <section class="ld-card ld-pad ld-cal" data-cal>
           <div class="ld-adv">
+            <small class="ld-eyebrow">Meet with</small>
             <button type="button" class="ld-adv-row ld-adv-current" data-adv-toggle aria-haspopup="listbox" aria-expanded="false" aria-label="Choose an advisor">${advisorRow(ADVISORS[0])}${svg('<path d="M6 9l6 6 6-6"/>', 18)}</button>
             <div class="ld-adv-menu" role="listbox" aria-label="Advisors" hidden>${ADVISORS.map(
               (a, i) => `<button type="button" class="ld-adv-row ${i === 0 ? "on" : ""}" role="option" aria-selected="${i === 0}" data-adv="${i}">${advisorRow(a)}</button>`,
             ).join("")}</div>
           </div>
-          <div class="ld-ch"><div><small class="ld-eyebrow">Advisor schedule</small><h2>Pick a day</h2></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
+          <div class="ld-meet-body">${parts.meeting}</div>
+        </section>
+        <section class="ld-card ld-pad ld-cal" data-cal>
+          <div class="ld-ch"><div class="ld-cal-who"><img data-cal-photo src="${ADVISORS[0].photo}" alt=""><div><small class="ld-eyebrow">Advisor calendar</small><h2 data-cal-name>${ADVISORS[0].name}</h2><small data-cal-hours>${ADVISORS[0].hours}</small></div></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
           <p class="ld-cal-title" data-cal-title></p>
-          <div class="ld-cal-grid" data-cal-grid role="grid" aria-label="Available days"></div>
+          <div class="ld-cal-grid" data-cal-grid role="grid" aria-label="Advisor calendar"></div>
+          <div class="ld-cal-key"><span><i class="open"></i>Open times</span><span><i class="full"></i>Fully booked</span><span><i class="off"></i>Not working</span></div>
           <small class="ld-cal-note">Illustrative availability · Eastern Time</small>
         </section>
         <section class="ld-card ld-pad ld-slots">
-          <div class="ld-ch"><div><small class="ld-eyebrow">Available times</small><h2 data-slot-day>Select a day</h2></div></div>
+          <div class="ld-ch"><div><small class="ld-eyebrow">Times</small><h2 data-slot-day>Select a day</h2></div></div>
           <div class="ld-slot-list" data-slot-list></div>
           <p class="ld-slot-note" data-slot-note>Choosing a time adds it to your meeting request. Your advisor confirms the time.</p>
         </section>
@@ -519,72 +521,87 @@ export function mountLinkDashboard() {
 
 const advisorRow = (a) =>
   `<img src="${a.photo}" alt=""><span><b>${a.name}</b><small>${a.role}</small><em>${a.about}</em></span>`;
+const chevron = svg('<path d="M6 9l6 6 6-6"/>', 18);
 
-// Fictional advisors for the schedule; each has their own illustrative availability.
+// Fictional advisors, each with their own working days, meeting times and bookings
+// (illustrative availability, not a live calendar).
 const ADVISORS = [
   {
     name: "Priya Shah",
     role: "Relationship advisor",
     about: "Coordinates your transition plan and brings in the right specialists.",
     photo: "./assets/people/priya.jpg",
+    days: [1, 2, 3, 4, 5],
+    times: ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"],
+    hours: "Mon–Fri · 9:00 AM–4:30 PM",
+    seed: 3,
   },
   {
     name: "Daniel Reyes",
     role: "Private Bank wealth advisor",
     about: "Liquidity, estate and family distributions before and after a sale.",
     photo: "./assets/people/daniel.jpg",
+    days: [2, 3, 4],
+    times: ["10:00 AM", "11:30 AM", "2:00 PM", "3:30 PM"],
+    hours: "Tue–Thu · 10:00 AM–4:00 PM",
+    seed: 7,
   },
   {
     name: "Marcus Hill",
     role: "Succession planning specialist",
     about: "Successor readiness, governance and family business continuity.",
     photo: "./assets/people/marcus.jpg",
+    days: [1, 3, 5],
+    times: ["8:30 AM", "12:00 PM", "4:30 PM"],
+    hours: "Mon, Wed, Fri · 8:30 AM–5:00 PM",
+    seed: 11,
   },
 ];
 
-const SLOT_TIMES = ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"];
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
-// Illustrative advisor availability: weekdays in the next six weeks, with some
-// busy days and taken slots so the schedule looks like a real calendar.
-function slotsFor(date, today, adv = 0) {
+// Every meeting time on a working day, marked booked or open, within the next six weeks.
+function scheduleFor(date, today, a) {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1),
-    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 42),
-    wd = date.getDay();
-  if (date < start || date > end || wd === 0 || wd === 6) return [];
-  const seed = date.getDate() * 7 + date.getMonth() * 3 + adv * 11;
-  if (seed % 5 === 0) return [];
-  return SLOT_TIMES.filter((_, i) => (seed + i * 5) % 3 !== 0);
+    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 42);
+  if (date < start || date > end || !a.days.includes(date.getDay())) return null;
+  const seed = date.getDate() * 7 + date.getMonth() * 13 + a.seed;
+  const fullyBooked = seed % 6 === 0;
+  return a.times.map((t, i) => ({ t, booked: fullyBooked || (seed + i * a.seed) % 3 === 0 }));
 }
+const openTimes = (date, today, a) => (scheduleFor(date, today, a) ?? []).filter((x) => !x.booked);
 
 export function mountAdvisorCalendar() {
-  const cal = document.querySelector("[data-cal]");
-  if (!cal) return;
-  const today = new Date(),
+  const root = document.querySelector("[data-sched]");
+  if (!root) return;
+  const cal = root.querySelector("[data-cal]"),
+    today = new Date(),
     grid = cal.querySelector("[data-cal-grid]"),
     title = cal.querySelector("[data-cal-title]"),
-    list = document.querySelector("[data-slot-list]"),
-    dayLabel = document.querySelector("[data-slot-day]"),
-    note = document.querySelector("[data-slot-note]"),
-    topic = document.querySelector('form[data-form="meeting"] input[name="topic"]'),
+    list = root.querySelector("[data-slot-list]"),
+    dayLabel = root.querySelector("[data-slot-day]"),
+    note = root.querySelector("[data-slot-note]"),
+    toggle = root.querySelector("[data-adv-toggle]"),
+    menu = root.querySelector(".ld-adv-menu"),
+    topic = root.querySelector('form[data-form="meeting"] input[name="topic"]'),
     baseTopic = topic ? topic.value.split(" · ")[0] : "";
   let adv = 0,
     month = new Date(today.getFullYear(), today.getMonth(), 1),
     picked = null,
     pickedTime = "";
+  const advisor = () => ADVISORS[adv];
+  const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
   // Start on the advisor's first day with open times.
   const firstOpen = () => {
     picked = null;
     pickedTime = "";
     for (let i = 1; i <= 42 && !picked; i++) {
       const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-      if (slotsFor(d, today, adv).length) picked = d;
+      if (openTimes(d, today, advisor()).length) picked = d;
     }
     if (picked) month = new Date(picked.getFullYear(), picked.getMonth(), 1);
   };
-  firstOpen();
-  const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-
   const drawSlots = () => {
     if (!picked) {
       dayLabel.textContent = "Select a day";
@@ -592,8 +609,12 @@ export function mountAdvisorCalendar() {
       return;
     }
     dayLabel.textContent = fmtDay(picked);
-    list.innerHTML = slotsFor(picked, today, adv)
-      .map((t) => `<button type="button" class="ld-slot ${t === pickedTime ? "on" : ""}" data-slot="${t}">${t}</button>`)
+    list.innerHTML = (scheduleFor(picked, today, advisor()) ?? [])
+      .map((x) =>
+        x.booked
+          ? `<button type="button" class="ld-slot booked" disabled>${x.t}<small>Booked</small></button>`
+          : `<button type="button" class="ld-slot ${x.t === pickedTime ? "on" : ""}" data-slot="${x.t}">${x.t}</button>`,
+      )
       .join("");
   };
   const drawMonth = () => {
@@ -604,12 +625,13 @@ export function mountAdvisorCalendar() {
     for (let i = 0; i < first; i++) html += "<span></span>";
     for (let n = 1; n <= days; n++) {
       const d = new Date(month.getFullYear(), month.getMonth(), n),
-        open = slotsFor(d, today, adv).length > 0,
+        sched = scheduleFor(d, today, advisor()),
+        open = sched && sched.some((x) => !x.booked),
         on = picked && dayKey(d) === dayKey(picked),
         isToday = dayKey(d) === dayKey(today);
       html += open
         ? `<button type="button" class="ld-day open ${on ? "on" : ""}" data-day="${n}" aria-label="${fmtDay(d)}, times available" ${on ? 'aria-pressed="true"' : ""}>${n}</button>`
-        : `<span class="ld-day ${isToday ? "today" : ""}">${n}</span>`;
+        : `<span class="ld-day ${sched ? "full" : ""} ${isToday ? "today" : ""}" ${sched ? `title="${fmtDay(d)}: fully booked"` : ""}>${n}</span>`;
     }
     grid.innerHTML = html;
     const min = new Date(today.getFullYear(), today.getMonth(), 1),
@@ -617,13 +639,18 @@ export function mountAdvisorCalendar() {
     cal.querySelector('[data-cal-step="-1"]').disabled = month <= min;
     cal.querySelector('[data-cal-step="1"]').disabled = month >= max;
   };
-
-  const toggle = cal.querySelector("[data-adv-toggle]"),
-    menu = cal.querySelector(".ld-adv-menu");
+  const showAdvisor = () => {
+    const a = advisor();
+    cal.querySelector("[data-cal-photo]").src = a.photo;
+    cal.querySelector("[data-cal-name]").textContent = a.name;
+    cal.querySelector("[data-cal-hours]").textContent = a.hours;
+    toggle.innerHTML = `${advisorRow(a)}${chevron}`;
+  };
   const setMenu = (open) => {
     menu.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));
   };
+
   document.addEventListener("click", (e) => {
     if (!menu.hidden && !e.target.closest(".ld-adv")) setMenu(false);
   });
@@ -633,7 +660,7 @@ export function mountAdvisorCalendar() {
       toggle.focus();
     }
   });
-  cal.addEventListener("click", (e) => {
+  root.addEventListener("click", (e) => {
     if (e.target.closest("[data-adv-toggle]")) {
       setMenu(menu.hidden);
       return;
@@ -641,17 +668,17 @@ export function mountAdvisorCalendar() {
     const who = e.target.closest("[data-adv]");
     if (who) {
       adv = Number(who.dataset.adv);
-      cal.querySelectorAll("[data-adv]").forEach((b) => {
+      root.querySelectorAll("[data-adv]").forEach((b) => {
         b.classList.toggle("on", b === who);
         b.setAttribute("aria-selected", String(b === who));
       });
-      toggle.innerHTML = `${advisorRow(ADVISORS[adv])}${svg('<path d="M6 9l6 6 6-6"/>', 18)}`;
       setMenu(false);
+      showAdvisor();
       firstOpen();
       drawMonth();
       drawSlots();
       if (topic) topic.value = baseTopic;
-      note.textContent = `Showing ${ADVISORS[adv].name}'s availability. Choosing a time adds it to your meeting request.`;
+      note.textContent = `Showing ${advisor().name}'s calendar. Choosing a time adds it to your meeting request.`;
       return;
     }
     const step = e.target.closest("[data-cal-step]");
@@ -666,19 +693,20 @@ export function mountAdvisorCalendar() {
       pickedTime = "";
       drawMonth();
       drawSlots();
+      return;
+    }
+    const slot = e.target.closest("[data-slot]");
+    if (slot) {
+      pickedTime = slot.dataset.slot;
+      drawSlots();
+      const when = `${picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}, ${pickedTime} ET`;
+      if (topic) {
+        topic.value = `${baseTopic} · ${advisor().name} · ${when}`;
+        note.textContent = `${advisor().name}, ${when} added to your meeting request. Send it with Request advisor meeting.`;
+      } else note.textContent = `${advisor().name}, ${when} selected. A meeting request is already on record; your advisor confirms the time.`;
     }
   });
-  list.addEventListener("click", (e) => {
-    const slot = e.target.closest("[data-slot]");
-    if (!slot) return;
-    pickedTime = slot.dataset.slot;
-    drawSlots();
-    const when = `${picked.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}, ${pickedTime} ET`;
-    if (topic) {
-      topic.value = `${baseTopic} · ${ADVISORS[adv].name} · ${when}`;
-      note.textContent = `${ADVISORS[adv].name}, ${when} added to your meeting request. Send it with Request advisor meeting.`;
-    } else note.textContent = `${ADVISORS[adv].name}, ${when} selected. A meeting request is already on record; your advisor confirms the time.`;
-  });
+  firstOpen();
   drawMonth();
   drawSlots();
 }

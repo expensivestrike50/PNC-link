@@ -1519,3 +1519,80 @@ button.ld-day.on {
   border-color: var(--yellow);
   background: var(--soft);
 }
+
+/* Advisor picker inside Your next conversation; calendar header shows the advisor */
+.ld-meet .ld-adv {
+  margin-bottom: 0;
+}
+.ld-meet .ld-adv .ld-eyebrow {
+  margin-bottom: 8px !important;
+}
+.ld-cal-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ld-cal-who img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px var(--yellow);
+}
+.ld-cal-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ld-cal-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ld-cal-key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.ld-cal-key i.open {
+  background: var(--pale-y);
+}
+.ld-cal-key i.full {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+.ld-cal-key i.off {
+  background: var(--track);
+}
+.ld-day.full {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+  text-decoration: line-through;
+}
+.ld .ld-cal-note {
+  padding-top: 8px;
+}
+.ld-slot.booked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: default;
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.ld-slot.booked:hover {
+  border-color: var(--line);
+}
+.ld-slot.booked small {
+  font-size: 11px;
+  text-decoration: none;
+}
+.ld-meet .ld-meet-body {
+  margin-top: 18px;
+}
