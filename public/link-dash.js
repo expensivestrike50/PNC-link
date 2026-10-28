@@ -485,10 +485,12 @@ ${side}
           <div class="ld-meet-body">${parts.meeting}</div>
         </section>
         <section class="ld-card ld-pad ld-cal" data-cal>
-          <div class="ld-adv" role="radiogroup" aria-label="Choose an advisor">${ADVISORS.map(
-            (a, i) =>
-              `<button type="button" class="ld-adv-row ${i === 0 ? "on" : ""}" role="radio" aria-checked="${i === 0}" data-adv="${i}"><img src="${a.photo}" alt=""><span><b>${a.name}</b><small>${a.role}</small><em>${a.about}</em></span></button>`,
-          ).join("")}</div>
+          <div class="ld-adv">
+            <button type="button" class="ld-adv-row ld-adv-current" data-adv-toggle aria-haspopup="listbox" aria-expanded="false" aria-label="Choose an advisor">${advisorRow(ADVISORS[0])}${svg('<path d="M6 9l6 6 6-6"/>', 18)}</button>
+            <div class="ld-adv-menu" role="listbox" aria-label="Advisors" hidden>${ADVISORS.map(
+              (a, i) => `<button type="button" class="ld-adv-row ${i === 0 ? "on" : ""}" role="option" aria-selected="${i === 0}" data-adv="${i}">${advisorRow(a)}</button>`,
+            ).join("")}</div>
+          </div>
           <div class="ld-ch"><div><small class="ld-eyebrow">Advisor schedule</small><h2>Pick a day</h2></div><div class="ld-cal-nav"><button type="button" class="ld-round" data-cal-step="-1" aria-label="Previous month">${svg('<path d="M15 6l-6 6 6 6"/>', 18)}</button><button type="button" class="ld-round" data-cal-step="1" aria-label="Next month">${svg('<path d="M9 6l6 6-6 6"/>', 18)}</button></div></div>
           <p class="ld-cal-title" data-cal-title></p>
           <div class="ld-cal-grid" data-cal-grid role="grid" aria-label="Available days"></div>
@@ -514,6 +516,9 @@ export function mountLinkDashboard() {
 }
 
 /* ---------------- Advisor calendar (My transition) ---------------- */
+
+const advisorRow = (a) =>
+  `<img src="${a.photo}" alt=""><span><b>${a.name}</b><small>${a.role}</small><em>${a.about}</em></span>`;
 
 // Fictional advisors for the schedule; each has their own illustrative availability.
 const ADVISORS = [
@@ -613,14 +618,35 @@ export function mountAdvisorCalendar() {
     cal.querySelector('[data-cal-step="1"]').disabled = month >= max;
   };
 
+  const toggle = cal.querySelector("[data-adv-toggle]"),
+    menu = cal.querySelector(".ld-adv-menu");
+  const setMenu = (open) => {
+    menu.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+  };
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !e.target.closest(".ld-adv")) setMenu(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu.hidden) {
+      setMenu(false);
+      toggle.focus();
+    }
+  });
   cal.addEventListener("click", (e) => {
+    if (e.target.closest("[data-adv-toggle]")) {
+      setMenu(menu.hidden);
+      return;
+    }
     const who = e.target.closest("[data-adv]");
     if (who) {
       adv = Number(who.dataset.adv);
       cal.querySelectorAll("[data-adv]").forEach((b) => {
         b.classList.toggle("on", b === who);
-        b.setAttribute("aria-checked", String(b === who));
+        b.setAttribute("aria-selected", String(b === who));
       });
+      toggle.innerHTML = `${advisorRow(ADVISORS[adv])}${svg('<path d="M6 9l6 6 6-6"/>', 18)}`;
+      setMenu(false);
       firstOpen();
       drawMonth();
       drawSlots();
