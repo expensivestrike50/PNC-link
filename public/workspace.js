@@ -1,6 +1,6 @@
 import { mutate } from "./workflow.mjs";
 import { dashboard, mountDashboard } from "./nexus-dash.js";
-import { linkDashboard, mountLinkDashboard } from "./link-dash.js";
+import { linkDashboard, linkDashboardEmpty, mountLinkDashboard } from "./link-dash.js";
 import {
   newData,
   profileInput,
@@ -870,7 +870,13 @@ function render() {
   else if (!state.user && !state.demo) {
     location.hash = "#/signin";
     return;
-  } else if (r === "dashboard" && c && c.mode !== "specialist") {
+  } else if (r === "dashboard" && !c) {
+    html = linkDashboardEmpty({
+      user: state.user,
+      guest: state.guest,
+      isAdvisor: isAdvisor(),
+    });
+  } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
       c,
       user: state.user,

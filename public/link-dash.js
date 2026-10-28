@@ -148,6 +148,30 @@ function relationshipMap(d) {
   </svg>`;
 }
 
+function sidebar(isAdvisor, owner, mode) {
+  const nav = [
+    ["dashboard", "Dashboard", I.dashboard],
+    ...(isAdvisor ? [["portfolio", "Client portfolio", I.portfolio]] : []),
+    ["overview", owner ? "My transition" : "Case overview", I.overview],
+    ["proceeds", "Proceeds", I.proceeds],
+    ["readiness", "Readiness", I.readiness],
+    ["referrals", "Referrals", I.referrals],
+    ["history", "History", I.history],
+    ["discovery", "Settings", I.settings],
+  ];
+  return `  <aside class="ld-side">
+    <a class="ld-brand" href="#/home">${markLogo}<span>PNC-link</span></a>
+    <nav aria-label="Dashboard">${nav
+      .map(([id, label, ic]) => `<a class="ld-nav ${id === "dashboard" ? "on" : ""}" href="#/${id}" ${id === "dashboard" ? 'aria-current="page"' : ""}>${svg(ic)}<span>${label}</span></a>`)
+      .join("")}</nav>
+    <div class="ld-promo">
+      <div class="ld-promo-img"><img src="./assets/family.png" alt=""></div>
+      <div class="ld-promo-body"><b>Prepare smarter with PNC‑link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ld-yellow" href="#/assistant">Ask PNC‑link AI</a></div>
+    </div>
+    <div class="ld-theme" role="group" aria-label="Theme"><button type="button" data-ld-theme="light" class="${mode === "light" ? "on" : ""}">${svg(I.sun, 16)}Light</button><button type="button" data-ld-theme="dark" class="${mode === "dark" ? "on" : ""}">${svg(I.moon, 16)}Dark</button></div>
+  </aside>`;
+}
+
 /* ---------------- Page ---------------- */
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
@@ -169,16 +193,6 @@ export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
     diff = r.cash - p.liquidity,
     mode = theme();
 
-  const nav = [
-    ["dashboard", "Dashboard", I.dashboard],
-    ...(isAdvisor ? [["portfolio", "Client portfolio", I.portfolio]] : []),
-    ["overview", owner ? "My transition" : "Case overview", I.overview],
-    ["proceeds", "Proceeds", I.proceeds],
-    ["readiness", "Readiness", I.readiness],
-    ["referrals", "Referrals", I.referrals],
-    ["history", "History", I.history],
-    ["discovery", "Settings", I.settings],
-  ];
   const tiles = [
     [I.target, "y", journey[0]],
     [I.chart, "b", journey[1]],
@@ -201,17 +215,7 @@ export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
     : "";
 
   return `<div class="ld ${mode}" data-ld>
-  <aside class="ld-side">
-    <a class="ld-brand" href="#/home">${markLogo}<span>PNC-link</span></a>
-    <nav aria-label="Dashboard">${nav
-      .map(([id, label, ic]) => `<a class="ld-nav ${id === "dashboard" ? "on" : ""}" href="#/${id}" ${id === "dashboard" ? 'aria-current="page"' : ""}>${svg(ic)}<span>${label}</span></a>`)
-      .join("")}</nav>
-    <div class="ld-promo">
-      <div class="ld-promo-img"><img src="./assets/family.png" alt=""></div>
-      <div class="ld-promo-body"><b>Prepare smarter with PNC‑link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ld-yellow" href="#/assistant">Ask PNC‑link AI</a></div>
-    </div>
-    <div class="ld-theme" role="group" aria-label="Theme"><button type="button" data-ld-theme="light" class="${mode === "light" ? "on" : ""}">${svg(I.sun, 16)}Light</button><button type="button" data-ld-theme="dark" class="${mode === "dark" ? "on" : ""}">${svg(I.moon, 16)}Dark</button></div>
-  </aside>
+${sidebar(isAdvisor, owner, mode)}
 
   <div class="ld-body">
     <header class="ld-head ld-card">
@@ -310,6 +314,44 @@ export function linkDashboard({ c, user, demo, demoRole, history, isAdvisor }) {
         </section>
       </div>
     </div>
+  </div>
+</div>`;
+}
+
+// Signed in (or guest) without a case yet: same frame, with a way to start.
+export function linkDashboardEmpty({ user, guest, isAdvisor }) {
+  const mode = theme(),
+    staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
+    name = guest ? "Guest" : user?.name || user?.email || "there";
+  const steps = [
+    [I.target, "y", "Record your goals and business facts", "discovery"],
+    [I.chart, "b", "Your advisor reviews and verifies", "readiness"],
+    [I.split, "g", "Compare transition paths", "pathways"],
+    [I.team, "p", "Approve each specialist handoff", "referrals"],
+  ];
+  return `<div class="ld ${mode}" data-ld>
+${sidebar(isAdvisor, !staff, mode)}
+  <div class="ld-body">
+    <header class="ld-head ld-card">
+      <div class="ld-avatar"><span>${esc(initials(name) || "?")}</span></div>
+      <div><small>Welcome${guest ? "" : " back"}!</small><h1 tabindex="-1">${esc(name)}</h1></div>
+      <div class="ld-head-r">${guest ? '<span class="ld-sample">Saved only in this browser</span>' : ""}<a class="ld-round" href="#/discovery" aria-label="Discovery profile">${svg(I.settings, 20)}</a></div>
+    </header>
+    <section class="ld-start">
+      <div class="ld-start-copy">
+        <span class="ld-cc-brand">${markLogo}PNC-link</span>
+        <h2>${staff ? "No shared cases yet." : "Your dashboard fills in from your transition profile."}</h2>
+        <p>${
+          staff
+            ? "Cases appear here when an owner names your account email and shares their case, or approves a referral addressed to you."
+            : "Add your business facts, goals and family priorities. Valuation range, proceeds, evidence and transition paths appear here as soon as you save."
+        }</p>
+        <div class="ld-start-btns"><a class="ld-yellow" href="#/discovery">${staff ? "Create my own owner case" : "Start your transition profile"}</a><button type="button" class="ld-ghost" data-action="demo">Explore the sample</button></div>
+      </div>
+    </section>
+    <div class="ld-tiles">${steps
+      .map(([ic, col, label, route], i) => `<a class="ld-card ld-tile" href="#/${route}"><span class="ld-ic ${col}">${svg(ic, 20)}</span><b>${label}</b><small>Step ${i + 1}</small></a>`)
+      .join("")}</div>
   </div>
 </div>`;
 }
