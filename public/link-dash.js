@@ -83,7 +83,7 @@ function niceStep(span) {
 // Enterprise value by scenario: hypothetical ±1x range, working point, advisor range.
 function valueField(sens, s, review) {
   const rows = [
-    { l: "Hypothetical range", sub: `${sens[0].multiple.toFixed(1)}–${sens[2].multiple.toFixed(1)}x EBITDA`, band: [sens[0].ev, sens[2].ev], mid: sens[1].ev },
+    { l: "Prediction range", sub: `${sens[0].multiple.toFixed(1)}–${sens[2].multiple.toFixed(1)}x EBITDA`, band: [sens[0].ev, sens[2].ev], mid: sens[1].ev },
     { l: "Your working scenario", sub: `${s.multiple.toFixed(1)}x EBITDA`, pt: sens[1].ev },
     review
       ? { l: "Advisor perspective", sub: "Recorded by your advisor", band: [review.low, review.high], adv: true }
@@ -335,7 +335,7 @@ ${side}
         </div>
 
         <section class="ld-card ld-pad">
-          <div class="ld-ch"><div><small class="ld-eyebrow">Enterprise value by scenario</small><h2>Valuation range</h2></div><div class="ld-row"><span class="ld-tag">Hypothetical</span>${roundLink("#/proceeds", "Open proceeds and wealth")}</div></div>
+          <div class="ld-ch"><div><small class="ld-eyebrow">Enterprise value by scenario</small><h2>Valuation range</h2></div><div class="ld-row"><span class="ld-tag">Prediction</span>${roundLink("#/proceeds", "Open proceeds and wealth")}</div></div>
           <div class="ld-vf">${valueField(sens, s, d.valuationReview)}</div>
           <p class="ld-foot"><b>${usd(r.cash)}</b><span>Estimated cash at your ${s.multiple.toFixed(1)}x working multiple. Not a certified valuation.</span></p>
         </section>
@@ -559,6 +559,147 @@ export const teamLogo = (team) =>
   `<svg class="ld-team" viewBox="0 0 44 44" width="44" height="44" aria-hidden="true"><rect width="44" height="44" rx="12" fill="#111"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TEAM_ICON[team] ?? TEAM_ICON["PNC Private Bank"]}</g></svg>`;
 
 // Any workspace page in the dashboard frame: shared header, page body below.
+/* ---------------- Case history ---------------- */
+
+const HS_ACTORS = [
+  ["owner", "Owner"],
+  ["advisor", "Advisor"],
+  ["specialist", "Specialist"],
+  ["shared", "Shared / system"],
+];
+// Topics are read from the recorded labels in workflow.mjs; order matters (family before review).
+const HS_TOPICS = [
+  ["Family", /family|relationship/i],
+  ["Discovery", /discovery|profile|sharing permission|sample case/i],
+  ["Evidence", /evidence/i],
+  ["Review", /review|qualif|opportunity/i],
+  ["Value & proceeds", /proceeds|value perspective/i],
+  ["Transition path", /path/i],
+  ["Meetings", /meeting/i],
+  ["Referrals", /referral/i],
+  ["Actions", /action|next step|coordination|outcomes/i],
+];
+const DAY_MS = 864e5;
+const hsActor = (label) => {
+  const w = String(label).split(" ")[0].toLowerCase();
+  return ["owner", "advisor", "specialist"].includes(w) ? w : "shared";
+};
+const hsTopic = (label) => HS_TOPICS.find(([, re]) => re.test(label))?.[0] ?? "Other";
+const ago = (ms) => {
+  const d = Math.floor(ms / DAY_MS);
+  if (d >= 1) return `${d} day${d === 1 ? "" : "s"} ago`;
+  const h = Math.floor(ms / 36e5);
+  return h >= 1 ? `${h} hour${h === 1 ? "" : "s"} ago` : "Just now";
+};
+const span = (ms) => {
+  const d = ms / DAY_MS;
+  return d >= 1 ? `${Math.round(d)} day${Math.round(d) === 1 ? "" : "s"}` : `${Math.max(1, Math.round(ms / 36e5))} hours`;
+};
+
+// One lane per actor on a shared time axis, ending at today. Close dots stack so none hide.
+function historyLanes(ev, now) {
+  const lanes = HS_ACTORS.filter(([k]) => k !== "shared" || ev.some((e) => e.actor === k)),
+    t0 = Math.min(...ev.map((e) => e.t)),
+    pad = Math.max((now - t0) * 0.04, 36e5),
+    lo = t0 - pad,
+    hi = now + pad,
+    X0 = 120,
+    X1 = 980,
+    x = (t) => X0 + ((t - lo) / (hi - lo)) * (X1 - X0),
+    LH = 64,
+    top = 30,
+    H = top + lanes.length * LH;
+  let g = "";
+  lanes.forEach(([k, l], i) => {
+    const y = top + LH / 2 + i * LH;
+    g += `<text x="0" y="${y + 5}" class="hs-lane-l">${l}</text><line x1="${X0}" x2="${X1}" y1="${y}" y2="${y}" class="hs-lane"/>`;
+    let prev = -1e9,
+      stack = 0;
+    ev.filter((e) => e.actor === k).forEach((e) => {
+      const cx = x(e.t);
+      stack = cx - prev < 14 ? stack + 1 : 0;
+      prev = cx;
+      const dy = stack ? (stack % 2 ? -1 : 1) * Math.ceil(stack / 2) * 11 : 0;
+      g += `<circle cx="${cx.toFixed(1)}" cy="${y + Math.max(-26, Math.min(26, dy))}" r="6" class="hs-dot ${k}"><title>${esc(e.label)} · ${day(e.t)}</title></circle>`;
+    });
+  });
+  // Midnight ticks, thinned to at most eight labels.
+  const start = new Date(lo);
+  start.setHours(24, 0, 0, 0);
+  const n = Math.max(1, Math.ceil((hi - start) / DAY_MS)),
+    step = Math.ceil(n / 8);
+  for (let t = start.getTime(); t <= hi; t += step * DAY_MS)
+    g += `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${top}" y2="${H}" class="hs-vline"/><text x="${x(t).toFixed(1)}" y="${H + 18}" text-anchor="middle" class="hs-tick">${new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>`;
+  g += `<line x1="${x(now).toFixed(1)}" x2="${x(now).toFixed(1)}" y1="${top - 6}" y2="${H}" class="hs-now"/><text x="${x(now).toFixed(1)}" y="${top - 12}" text-anchor="middle" class="hs-tick hs-today">Today</text>`;
+  return `<svg viewBox="0 0 1000 ${H + 26}" width="100%" role="img" aria-label="${ev.length} recorded updates by owner, advisor and specialist over time">${g}</svg>`;
+}
+
+function hsBars(rows, total) {
+  return `<div class="hs-bars">${rows
+    .map(([cls, label, n]) => `<div class="hs-bar"><span>${label}</span><div class="rd-fn-track">${n ? `<i class="${cls}" data-w="${((n / (total || 1)) * 100).toFixed(1)}"></i>` : ""}</div><b>${n}</b></div>`)
+    .join("")}</div>`;
+}
+
+export function linkHistory(history, now = Date.now()) {
+  const ev = (history ?? [])
+    .map((e) => ({ label: e.label, t: Date.parse(e.createdAt), actor: hsActor(e.label), topic: hsTopic(e.label) }))
+    .filter((e) => Number.isFinite(e.t))
+    .sort((a, b) => a.t - b.t);
+  if (!ev.length)
+    return `<section class="ld-card ld-pad"><div class="ld-ch"><h2>Case history</h2></div><p class="hs-empty">No changes recorded yet. Updates to discovery, evidence, family, proceeds, meetings and referrals appear here automatically.</p></section>`;
+  const first = ev[0],
+    last = ev[ev.length - 1],
+    count = (k) => ev.filter((e) => e.actor === k).length,
+    lastBy = (k) => [...ev].reverse().find((e) => e.actor === k),
+    byDay = ev.reduce((m, e) => m.set(day(e.t), (m.get(day(e.t)) ?? 0) + 1), new Map()),
+    busiest = [...byDay].sort((a, b) => b[1] - a[1])[0],
+    gaps = ev.slice(1).map((e, i) => ({ ms: e.t - ev[i].t, from: ev[i], to: e })),
+    gap = gaps.sort((a, b) => b.ms - a.ms)[0],
+    age = now - first.t,
+    weeks = age / (7 * DAY_MS),
+    topics = HS_TOPICS.map(([t]) => [t, ev.filter((e) => e.topic === t).length])
+      .concat([["Other", ev.filter((e) => e.topic === "Other").length]])
+      .filter(([, n]) => n)
+      .sort((a, b) => b[1] - a[1]),
+    actors = HS_ACTORS.map(([k, l]) => [k, l, count(k)]).filter(([k, , n]) => n || k !== "shared"),
+    lead = [...actors].sort((a, b) => b[2] - a[2])[0],
+    insight = [
+      ["Case open", `${span(age)} since ${day(first.t)}`],
+      ["Pace", weeks >= 1 ? `${(ev.length / weeks).toFixed(1)} updates per week` : `${ev.length} updates in the first week`],
+      ["Busiest day", `${busiest[0]} · ${busiest[1]} update${busiest[1] === 1 ? "" : "s"}`],
+      ["Most active", `${lead[1]} · ${lead[2]} of ${ev.length} updates`],
+      ["Longest quiet gap", gap ? `${span(gap.ms)} before “${esc(gap.to.label)}”` : "Only one update so far"],
+      ["Last owner update", lastBy("owner") ? ago(now - lastBy("owner").t) : "None yet"],
+      ["Last advisor update", lastBy("advisor") ? ago(now - lastBy("advisor").t) : "None yet"],
+    ],
+    days = new Map();
+  [...ev].reverse().forEach((e) => days.set(day(e.t), [...(days.get(day(e.t)) ?? []), e]));
+  return `<h2 class="sr-only">Case history</h2>
+    <div class="ld-kpis rd-kpis">
+      <div class="ld-card ld-kpi"><small>Recorded updates</small><b>${ev.length}</b><span>Across ${topics.length} topic${topics.length === 1 ? "" : "s"}</span></div>
+      <div class="ld-card ld-kpi"><small>Case open</small><b>${Math.max(1, Math.ceil(age / DAY_MS))}<em> days</em></b><span>Since ${day(first.t)}</span></div>
+      <div class="ld-card ld-kpi"><small>Last activity</small><b class="hs-kpi-sm">${ago(now - last.t)}</b><span>${esc(HS_ACTORS.find(([k]) => k === last.actor)[1])} · ${esc(last.topic)}</span></div>
+      <div class="ld-card ld-kpi"><small>Owner · advisor</small><b>${count("owner")}<em> · </em>${count("advisor")}</b><span>Updates by each side</span></div>
+    </div>
+    <section class="ld-card ld-pad">
+      <div class="ld-ch"><div><h2>Activity over time</h2><small>Each dot is one recorded update. Hover a dot for details.</small></div><div class="ld-legend hs-legend">${actors.map(([k, l]) => `<span><i class="${k}"></i>${l}</span>`).join("")}</div></div>
+      <div class="hs-lanes">${historyLanes(ev, now)}</div>
+    </section>
+    <div class="ld-grid hs-grid">
+      <section class="ld-card ld-pad"><div class="ld-ch"><div><h2>Who is moving the case</h2><small>Share of recorded updates</small></div></div>${hsBars(actors.map(([k, l, n]) => [k, l, n]), ev.length)}
+        <div class="ld-ch hs-sub"><div><h2>What changed</h2><small>Updates by topic</small></div></div>${hsBars(topics.map(([t, n]) => ["t", esc(t), n]), ev.length)}</section>
+      <section class="ld-card ld-pad"><div class="ld-ch"><div><h2>Analysis</h2><small>Calculated from the recorded history</small></div></div>
+        <dl class="hs-facts">${insight.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+        <p class="hs-note">Counts reflect recorded changes, not effort or progress quality. AI conversations stay private and are not included.</p></section>
+    </div>
+    <section class="ld-card ld-pad">
+      <div class="ld-ch"><div><h2>Timeline</h2><small>Newest first</small></div></div>
+      <div class="hs-days">${[...days]
+        .map(([d, list]) => `<div class="hs-day"><h3>${d}</h3><ul>${list.map((e) => `<li class="${e.actor}"><b>${esc(e.label)}</b><span><em class="hs-chip ${e.actor}">${esc(HS_ACTORS.find(([k]) => k === e.actor)[1])}</em><em class="hs-chip">${esc(e.topic)}</em>${new Date(e.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span></li>`).join("")}</ul></div>`)
+        .join("")}</div>
+    </section>`;
+}
+
 export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body }) {
   const owner = c.mode === "owner",
     name = owner ? c.data.profile.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor";

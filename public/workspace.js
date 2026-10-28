@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261028235900";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029010000";
 import {
   newData,
   profileInput,
@@ -459,6 +459,8 @@ async function loadHistory() {
   state.assistantDraft = "";
   if (!c || c.mode === "specialist") return;
   if (state.demo) {
+    // Illustrative sample history between the case's creation and its last update.
+    const at = (h) => new Date(Date.parse(c.createdAt) + h * 36e5).toISOString();
     state.history = [
       {
         label: "Advisor proposed a Private Bank referral for owner approval",
@@ -468,6 +470,13 @@ async function loadHistory() {
         label: "Advisor reviewed the opportunity",
         createdAt: c.data.review?.at ?? c.createdAt,
       },
+      { label: "Advisor updated evidence verification", createdAt: at(24.6) },
+      { label: "Advisor updated evidence verification", createdAt: at(24.5) },
+      { label: "Owner recorded transition path discussion preference", createdAt: at(2.5) },
+      { label: "Owner updated working proceeds assumptions", createdAt: at(2) },
+      { label: "Owner updated family continuity assumptions", createdAt: at(1.3) },
+      { label: "Owner updated family and trusted-advisor relationships", createdAt: at(1) },
+      { label: "Owner updated evidence availability", createdAt: at(0.5) },
       { label: "Owner created a discovery profile", createdAt: c.createdAt },
     ];
     return;
@@ -964,7 +973,7 @@ function assistant(c) {
   return `${intro(advisor ? "A second set of eyes for your case." : "Support for your next conversation.", advisor ? "Prepare a focused conversation and proposed actions using this client’s recorded context. Your judgment stays central." : "Understand your options, find missing information and prepare questions for your advisor. You choose what happens next.")}<div class="assistant-context"><span class="ai-symbol" aria-hidden="true">✧</span><div><strong>Working with ${esc(d.profile.business)}</strong><small>${esc(d.profile.trigger)} · ${esc(d.pathDecision?.path || "Options open")} · ${readiness(d).verified}/${readiness(d).total} evidence categories verified</small></div>${badge("Private to your account", "gray")}</div><div class="chat-layout"><section class="panel"><div class="chat-thread" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${state.chat.length ? state.chat.map((m) => `<div class="chat-message question"><b>You</b>${esc(m.question)}</div><div class="chat-message"><b>PNC-link AI · suggestion</b>${esc(m.answer)}</div>`).join("") : empty(advisor ? "Prepare for the next client conversation." : "Start with your most important question.", "Choose a conversation starter or ask a question grounded in this case.")}</div>${state.demo ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>` : `<form data-form="assist" class="inline-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div><label class="check"><input type="checkbox" name="consent" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label>${formEnd("Ask PNC-link AI")}</form>`}</section><aside class="chat-aside"><div class="eyebrow">${advisor ? "Advisor preparation" : "Conversation starters"}</div>${prompts.map((x) => `<button class="prompt-button" data-prompt="${esc(x)}">${esc(x)} <span aria-hidden="true">↗</span></button>`).join("")}<div class="assistant-evidence"><h3>Grounded in your case</h3><ul class="info-list"><li>Owner-reported business and family priorities</li><li>Verified evidence counts and advisor findings</li><li>Saved assumptions and open next steps</li><li>Selected published PNC resources</li></ul><a href="#/resources">Review the source resources →</a></div><p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour.</p></aside></div>`;
 }
 function historyPage() {
-  return `${intro("A visible record of progress.", "Case changes and handoff milestones are recorded automatically. AI conversations remain private to the person who asked.")}<section class="panel"><ul class="timeline">${state.history.map((e) => `<li>${esc(e.label)}<small>${date(e.createdAt)}</small></li>`).join("") || "<li>No changes recorded yet.</li>"}</ul></section>`;
+  return linkHistory(state.history);
 }
 function metricsPage() {
   const m = state.metrics;
