@@ -4,6 +4,7 @@ import {
   defaultScenario,
   proceeds,
   readiness,
+  valuationSensitivity,
   paths,
   suggestedPaths,
   transitionJourney,
@@ -62,53 +63,99 @@ const roundLink = (href, label, icon = I.arrow, cls = "") =>
 
 /* ---------------- Charts ---------------- */
 
-function smooth(pts) {
-  let d = `M${pts[0][0]},${pts[0][1]}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i],
-      p1 = pts[i],
-      p2 = pts[i + 1],
-      p3 = pts[i + 2] || p2;
-    d += ` C${p1[0] + (p2[0] - p0[0]) / 6},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
-  }
-  return d;
+function niceStep(span) {
+  const raw = span / 5,
+    pow = 10 ** Math.floor(Math.log10(raw || 1)),
+    n = raw / pow;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
 }
 
-// Available cash and enterprise value across hypothetical multiples around the working one.
-function multipleCurve(p, s) {
-  const start = Math.max(1, Math.round(s.multiple) - 5),
-    ms = Array.from({ length: 10 }, (_, i) => start + i),
-    rows = ms.map((m) => ({ m, ...proceeds(p, { ...s, multiple: m }) })),
-    work = proceeds(p, s);
-  const W = 800,
-    H = 190,
-    T = 36,
-    max = Math.max(...rows.map((r) => r.ev), 1),
-    min = Math.min(0, ...rows.map((r) => r.cash));
-  const x = (m) => 20 + ((m - start) / 9) * (W - 40),
-    y = (v) => H - ((v - min) / (max - min)) * (H - T);
-  const evPts = rows.map((r) => [x(r.m), y(r.ev)]),
-    cashPts = rows.map((r) => [x(r.m), y(r.cash)]);
-  const area = `${smooth(evPts)} L${x(start + 9)},${H} L${x(start)},${H} Z`;
-  const wx = x(s.multiple),
-    wy = y(work.cash),
-    label = short(work.cash),
-    lw = label.length * 8.6 + 26;
-  return {
-    svg: `<svg viewBox="0 0 ${W} ${H + 6}" width="100%" role="img" aria-label="Available cash and enterprise value by hypothetical multiple">
-      <defs><linearGradient id="ldArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" class="ld-area-top"/><stop offset="1" class="ld-area-bot"/></linearGradient></defs>
-      <path d="${area}" fill="url(#ldArea)"/>
-      <path d="${smooth(cashPts)}" fill="none" class="ld-line" stroke-width="2"/>
-      <line x1="${wx}" x2="${wx}" y1="${T - 2}" y2="${H}" class="ld-guide"/>
-      <rect x="${wx - lw / 2}" y="2" width="${lw}" height="28" rx="14" class="ld-pin"/>
-      <text x="${wx}" y="21" text-anchor="middle" class="ld-pin-t">${label}</text>
-      <circle cx="${wx}" cy="${wy}" r="7" class="ld-dot"/>
-    </svg>`,
-    pills: ms
-      .map((m) => `<span class="${Math.abs(m - s.multiple) < 0.5 ? "on" : ""}">${m}x</span>`)
-      .join(""),
-    work,
-  };
+// Enterprise value by scenario: hypothetical ±1x range, working point, advisor range.
+function valueField(sens, s, review) {
+  const rows = [
+    { l: "Hypothetical range", sub: `${sens[0].multiple.toFixed(1)}–${sens[2].multiple.toFixed(1)}x EBITDA`, band: [sens[0].ev, sens[2].ev], mid: sens[1].ev },
+    { l: "Your working scenario", sub: `${s.multiple.toFixed(1)}x EBITDA`, pt: sens[1].ev },
+    review
+      ? { l: "Advisor perspective", sub: "Recorded by your advisor", band: [review.low, review.high], adv: true }
+      : { l: "Advisor perspective", sub: "Not recorded yet", none: true },
+  ];
+  const values = rows.flatMap((r) => r.band ?? (r.pt !== undefined ? [r.pt] : []));
+  const step = niceStep(Math.max(...values) - Math.min(...values) || Math.max(...values) || 1);
+  const lo = Math.max(0, Math.floor((Math.min(...values) * 0.9) / step) * step),
+    hi = Math.ceil((Math.max(...values) * 1.08) / step) * step || step;
+  const X0 = 190,
+    X1 = 660,
+    x = (v) => X0 + ((v - lo) / (hi - lo || 1)) * (X1 - X0),
+    H = 30 + rows.length * 62;
+  let g = "";
+  for (let t = lo; t <= hi + step / 2; t += step)
+    g += `<line x1="${x(t)}" x2="${x(t)}" y1="10" y2="${H}" class="vf-grid"/><text x="${x(t)}" y="${H + 22}" text-anchor="middle" class="vf-tick">${short(t)}</text>`;
+  rows.forEach((r, i) => {
+    const y = 40 + i * 62;
+    g += `<text x="0" y="${y - 3}" class="vf-name">${r.l}</text><text x="0" y="${y + 15}" class="vf-sub">${r.sub}</text>`;
+    if (r.none) g += `<line x1="${X0}" x2="${X1}" y1="${y}" y2="${y}" class="vf-none"/>`;
+    else if (r.band) {
+      const [a, b] = r.band,
+        k = r.adv ? "adv" : "band";
+      g += `<rect x="${x(a)}" y="${y - 13}" width="${Math.max(4, x(b) - x(a))}" height="26" rx="5" class="vf-${k}"><title>${r.l}: ${short(a)} – ${short(b)}</title></rect><rect x="${x(a)}" y="${y - 13}" width="4" height="26" rx="2" class="vf-${k}-end"/><rect x="${x(b) - 4}" y="${y - 13}" width="4" height="26" rx="2" class="vf-${k}-end"/>`;
+      if (r.mid !== undefined) g += `<rect x="${x(r.mid) - 1.5}" y="${y - 18}" width="3" height="36" rx="1.5" class="vf-mid"/>`;
+      g += `<text x="${x(a) - 9}" y="${y + 5}" text-anchor="end" class="vf-val">${short(a)}</text><text x="${x(b) + 9}" y="${y + 5}" class="vf-val">${short(b)}</text>`;
+    } else
+      g += `<line x1="${X0}" x2="${x(r.pt)}" y1="${y}" y2="${y}" class="vf-stem"/><circle cx="${x(r.pt)}" cy="${y}" r="8" class="vf-pt"><title>${r.l}: ${short(r.pt)}</title></circle><text x="${x(r.pt) + 15}" y="${y + 5}" class="vf-val">${short(r.pt)}</text>`;
+  });
+  return `<svg viewBox="0 0 700 ${H + 30}" width="100%" role="img" aria-label="Enterprise value by scenario">${g}</svg>`;
+}
+
+const EV_SHORT = {
+  "Financial statements": "Financials",
+  "Ownership and debt schedule": "Ownership & debt",
+  "Successor / key-person plan": "Successor plan",
+  "Family priorities": "Family priorities",
+  "Tax and estate review": "Tax & estate",
+  "Operating procedures": "Operations",
+  "Transition timeline": "Timeline",
+};
+const EV_LEVEL = ["Not confirmed", "Available", "Verified"];
+
+// Evidence status per category on three levels (not a score).
+function evidenceRadar(evidence) {
+  const n = evidence.length || 1,
+    cx = 250,
+    cy = 160,
+    R = 112,
+    lvl = (e) => (e.verified ? 3 : e.reported ? 2 : 1),
+    pt = (i, f) => {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      return [cx + R * f * Math.cos(a), cy + R * f * Math.sin(a)];
+    };
+  let g = "";
+  [1 / 3, 2 / 3, 1].forEach((f) => (g += `<polygon points="${evidence.map((_, i) => pt(i, f).join(",")).join(" ")}" class="rd-ring"/>`));
+  evidence.forEach((_, i) => {
+    const [x2, y2] = pt(i, 1);
+    g += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" class="rd-ring"/>`;
+  });
+  g += `<polygon points="${evidence.map((e, i) => pt(i, lvl(e) / 3).join(",")).join(" ")}" class="rd-area"/>`;
+  evidence.forEach((e, i) => {
+    const [x, y] = pt(i, lvl(e) / 3),
+      [lx, ly] = pt(i, 1.2),
+      anchor = Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end";
+    g += `<circle cx="${x}" cy="${y}" r="6" class="rd-dot ${["n", "a", "v"][lvl(e) - 1]}"><title>${esc(e.label)}: ${EV_LEVEL[lvl(e) - 1]}</title></circle><text x="${lx}" y="${ly + 4}" text-anchor="${anchor}" class="rd-label">${esc(EV_SHORT[e.label] ?? e.label)}</text>`;
+  });
+  return `<svg viewBox="0 0 500 320" width="100%" role="img" aria-label="Evidence status across ${n} categories">${g}</svg>`;
+}
+
+function gauge(v) {
+  const a = Math.PI * (1 - Math.max(0.001, v) / 100),
+    x = 42 + 34 * Math.cos(a),
+    y = 40 - 34 * Math.sin(a);
+  return `<svg viewBox="0 0 84 46" width="72" height="40" aria-hidden="true"><path d="M8 40a34 34 0 0 1 68 0" class="g-track"/><path d="M8 40A34 34 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" class="g-fill"/></svg>`;
+}
+
+function miniRange(lo, hi, mid) {
+  const min = lo * 0.85,
+    max = hi * 1.1 || 1,
+    x = (v) => ((v - min) / (max - min)) * 100;
+  return `<svg class="ld-mini" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="5" width="100" height="5" rx="2.5" class="mr-track"/><rect x="${x(lo)}" y="5" width="${Math.max(1, x(hi) - x(lo))}" height="5" class="mr-band"/><rect x="${x(mid) - 0.6}" y="1" width="1.2" height="13" class="mr-mid"/></svg>`;
 }
 
 function relationshipMap(d) {
@@ -165,7 +212,7 @@ export function linkDashboard({ side, menu, account, theme, c, user, demo, demoR
     steps = nextSteps(d, c.mode),
     suggested = suggestedPaths(p),
     chosen = d.pathDecision?.path,
-    curve = multipleCurve(p, s),
+    sens = valuationSensitivity(p, s),
     owner = c.mode === "owner",
     name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
     coverage = p.liquidity ? Math.min(100, (Math.max(0, r.cash) / p.liquidity) * 100) : 100,
@@ -190,6 +237,14 @@ ${side}
 
   <div class="ld-body">
     ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+
+    <div class="ld-kpis">
+      <div class="ld-card ld-kpi"><small>Working enterprise value</small><b>${short(r.ev)}</b><span>${short(sens[0].ev)} – ${short(sens[2].ev)}</span>${miniRange(sens[0].ev, sens[2].ev, r.ev)}</div>
+      <div class="ld-card ld-kpi gauge"><div><small>Evidence available</small><b>${rd.score}<em>%</em></b><span>${rd.verified} of ${rd.total} verified</span></div>${gauge(rd.score)}</div>
+      <div class="ld-card ld-kpi"><small>Revenue</small><b>${short(p.revenue)}</b><span>EBITDA ${short(p.ebitda)} · ${p.revenue ? ((p.ebitda / p.revenue) * 100).toFixed(1) : "0.0"}%</span></div>
+      <div class="ld-card ld-kpi"><small>Estimated cash proceeds</small><b class="${r.cash < 0 ? "neg" : "good"}">${short(r.cash)}</b><span>Liquidity goal ${short(p.liquidity)}</span></div>
+      <div class="ld-card ld-kpi"><small>Preferred horizon</small><b>${esc(p.timeline)} <em>yrs</em></b><span>Debt ${short(p.debt)}</span></div>
+    </div>
 
     <div class="ld-grid">
       <div class="ld-col">
@@ -219,11 +274,21 @@ ${side}
           </section>
         </div>
 
-        <section class="ld-card ld-pad ld-chart">
-          <div class="ld-ch"><h2>Proceeds by multiple</h2><div class="ld-row">${roundLink("#/pathways", "Compare paths", I.sliders)}${roundLink("#/proceeds", "Open proceeds and wealth")}</div></div>
-          ${curve.svg}
-          <div class="ld-months">${curve.pills}</div>
-          <p class="ld-foot"><b>${usd(curve.work.cash)}</b><span>Estimated cash at your ${s.multiple.toFixed(1)}x working multiple. Enterprise value ${short(curve.work.ev)}.</span></p>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><div><small class="ld-eyebrow">Enterprise value by scenario</small><h2>Valuation range</h2></div><div class="ld-row"><span class="ld-tag">Hypothetical</span>${roundLink("#/proceeds", "Open proceeds and wealth")}</div></div>
+          <div class="ld-vf">${valueField(sens, s, d.valuationReview)}</div>
+          <p class="ld-foot"><b>${usd(r.cash)}</b><span>Estimated cash at your ${s.multiple.toFixed(1)}x working multiple. Not a certified valuation.</span></p>
+        </section>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><h2>Case history</h2>${roundLink("#/history", "Open case history")}</div>
+          ${
+            history.length
+              ? `<ul class="ld-hist">${history
+                  .slice(0, 4)
+                  .map((e) => `<li><span class="ld-dotic">${svg(I.history, 16)}</span><span class="t">${esc(e.label)}</span><small>${day(e.createdAt)}</small></li>`)
+                  .join("")}</ul>`
+              : `<p class="ld-empty">${esc(steps[0]?.title ?? "Changes to this case will appear here.")}</p>`
+          }
         </section>
       </div>
 
@@ -266,15 +331,9 @@ ${side}
         </div>
 
         <section class="ld-card ld-pad">
-          <div class="ld-ch"><h2>Case history</h2>${roundLink("#/history", "Open case history")}</div>
-          ${
-            history.length
-              ? `<ul class="ld-hist">${history
-                  .slice(0, 4)
-                  .map((e) => `<li><span class="ld-dotic">${svg(I.history, 16)}</span><span class="t">${esc(e.label)}</span><small>${day(e.createdAt)}</small></li>`)
-                  .join("")}</ul>`
-              : `<p class="ld-empty">${esc(steps[0]?.title ?? "Changes to this case will appear here.")}</p>`
-          }
+          <div class="ld-ch"><div><small class="ld-eyebrow">Seven evidence categories</small><h2>Evidence by category</h2></div><div class="ld-score">${rd.verified}<small>/${rd.total} verified</small></div></div>
+          <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
+          <div class="ld-legend"><span><i class="v"></i>Verified</span><span><i class="a"></i>Available</span><span><i class="n"></i>Not confirmed</span></div>
         </section>
       </div>
     </div>

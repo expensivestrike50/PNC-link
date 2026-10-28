@@ -17,6 +17,8 @@
   --pale-g: #d5f4c2;
   --pale-p: #fdd8db;
   --pale-l: #f0d8fb;
+  --mark: #b38f00;
+  --good: #1f9d58;
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);
   gap: 20px;
@@ -39,6 +41,8 @@
   --fill: #fff;
   --row: #222;
   --row-ink: #fff;
+  --mark: #f2d50f;
+  --good: #2fbf71;
 }
 .ld * {
   box-sizing: border-box;
@@ -416,57 +420,6 @@
   border-color: #fff;
 }
 
-/* Chart */
-.ld-chart svg {
-  display: block;
-  overflow: visible;
-}
-.ld-area-top {
-  stop-color: var(--ink);
-  stop-opacity: 0.16;
-}
-.ld-area-bot {
-  stop-color: var(--ink);
-  stop-opacity: 0;
-}
-.ld-line {
-  stroke: var(--ink);
-}
-.ld-guide {
-  stroke: var(--ink);
-  stroke-width: 1.2;
-}
-.ld-pin {
-  fill: var(--fill);
-}
-.ld-pin-t {
-  fill: var(--card);
-  font: 500 14px "Poppins", sans-serif;
-}
-.ld-dot {
-  fill: var(--ink);
-  stroke: var(--card);
-  stroke-width: 3;
-}
-.ld-months {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-  margin-top: 14px;
-}
-.ld-months span {
-  min-width: 48px;
-  text-align: center;
-  padding: 3px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--muted);
-  font-size: 12.5px;
-}
-.ld-months span.on {
-  background: var(--fill);
-  color: var(--card);
-  border-color: var(--fill);
-}
 .ld-foot {
   display: flex;
   align-items: baseline;
@@ -821,11 +774,6 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  .ld-months span {
-    min-width: 0;
-    padding: 3px 6px;
-    font-size: 11px;
-  }
 }
 @media (max-width: 480px) {
   .ld-tile {
@@ -996,4 +944,244 @@ button.ld-avatar[aria-expanded="true"] {
   height: 40px;
   padding: 0 16px;
   font-size: 13px;
+}
+
+/* KPI strip */
+.ld-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 24px;
+}
+.ld-kpi {
+  padding: 20px 22px;
+  min-width: 0;
+}
+.ld-kpi small {
+  display: block;
+  font-size: 13px;
+}
+.ld-kpi b {
+  display: block;
+  font-size: 28px;
+  font-weight: 500;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+.ld-kpi b em {
+  font-style: normal;
+  font-size: 15px;
+  color: var(--muted);
+}
+.ld-kpi b.good {
+  color: var(--good);
+}
+.ld-kpi b.neg {
+  color: #f24848;
+}
+.ld-kpi span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ld-kpi.gauge {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ld-kpi.gauge > div {
+  min-width: 0;
+}
+.ld-kpi.gauge svg {
+  flex-shrink: 0;
+}
+.g-track {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.g-fill {
+  fill: none;
+  stroke: var(--mark);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.ld-mini {
+  display: block;
+  width: 100%;
+  height: 14px;
+  margin-top: 10px;
+}
+.mr-track {
+  fill: var(--track);
+}
+.mr-band {
+  fill: var(--mark);
+  opacity: 0.55;
+}
+.mr-mid {
+  fill: var(--ink);
+}
+
+/* Valuation range */
+.ld-eyebrow {
+  display: block;
+  font-size: 11px !important;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 4px !important;
+}
+.ld-tag {
+  align-self: center;
+  padding: 6px 12px;
+  border-radius: 30px;
+  background: var(--fill);
+  color: var(--card);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ld-vf svg {
+  display: block;
+}
+.vf-grid {
+  stroke: var(--line);
+}
+.vf-tick {
+  font: 400 12px "Poppins", sans-serif;
+  fill: var(--muted);
+}
+.vf-name {
+  font: 500 14px "Poppins", sans-serif;
+  fill: var(--ink);
+}
+.vf-sub {
+  font: 400 12px "Poppins", sans-serif;
+  fill: var(--muted);
+}
+.vf-val {
+  font: 500 13px "Poppins", sans-serif;
+  fill: var(--ink);
+}
+.vf-band {
+  fill: var(--mark);
+  opacity: 0.22;
+}
+.vf-band-end,
+.vf-pt {
+  fill: var(--mark);
+}
+.vf-pt {
+  stroke: var(--card);
+  stroke-width: 3;
+}
+.vf-mid {
+  fill: var(--ink);
+}
+.vf-stem {
+  stroke: var(--mark);
+  stroke-width: 2;
+  opacity: 0.45;
+}
+.vf-adv {
+  fill: var(--good);
+  opacity: 0.22;
+}
+.vf-adv-end {
+  fill: var(--good);
+}
+.vf-none {
+  stroke: var(--muted);
+  stroke-dasharray: 4 5;
+}
+
+/* Evidence radar */
+.ld-score {
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ld-score small {
+  display: inline !important;
+  font-size: 13px !important;
+}
+.ld-radar svg {
+  display: block;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.rd-ring {
+  fill: none;
+  stroke: var(--line);
+}
+.rd-area {
+  fill: var(--mark);
+  fill-opacity: 0.16;
+  stroke: var(--mark);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.rd-dot {
+  stroke: var(--card);
+  stroke-width: 2;
+}
+.rd-dot.v {
+  fill: var(--good);
+}
+.rd-dot.a {
+  fill: var(--mark);
+}
+.rd-dot.n {
+  fill: var(--muted);
+}
+.rd-label {
+  font: 400 13px "Poppins", sans-serif;
+  fill: var(--muted);
+}
+.ld-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.ld-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.ld-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.ld-legend i.v {
+  background: var(--good);
+}
+.ld-legend i.a {
+  background: var(--mark);
+}
+.ld-legend i.n {
+  background: var(--muted);
+}
+@media (max-width: 1280px) {
+  .ld-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .ld-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ld-kpi b {
+    font-size: 22px;
+  }
 }
