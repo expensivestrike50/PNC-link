@@ -85,43 +85,62 @@ function notice(message) {
 }
 const guestUser = { id: "local-guest", email: "guest@example.test", name: "Guest workspace", roles: [] };
 const guestKey = "pnc-link-guest-v1";
+// Local test account for static hosting (no Netlify Identity). Only the password hash is kept.
+const localAccounts = {
+  "test@gmail.com": {
+    hash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    user: { id: "local-test", email: "test@gmail.com", name: "Test User", roles: [] },
+    key: "pnc-link-test-v1",
+  },
+};
+const localSessionKey = "pnc-link-local-session";
+let local = { user: guestUser, key: guestKey };
+async function sha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 let guestStore = { row: null, history: [] };
 function guestApi(path, body) {
   if (path.includes("/assist")) throw Error("Sign in to use live AI. Your guest case stays in this browser.");
   if (path.includes("/history")) return { history: guestStore.history, chat: [] };
-  if (!body) return { cases: guestStore.row ? [project(guestStore.row, guestUser)] : [], metrics: {} };
+  if (!body) return { cases: guestStore.row ? [project(guestStore.row, local.user)] : [], metrics: {} };
   const next = structuredClone(guestStore);
   const now = new Date().toISOString();
   if (path.includes("/cases")) {
     const profile = profileInput({ ...body, advisorEmail: "", shareWithAdvisor: false });
-    next.row = { id: "guest-case", ownerId: guestUser.id, ownerEmail: guestUser.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: newData(profile) };
+    next.row = { id: "guest-case", ownerId: local.user.id, ownerEmail: local.user.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: newData(profile) };
     next.history.unshift({ label: "Created a local transition profile", createdAt: now });
   } else if (path.includes("/update") && next.row) {
     if (body.op === "profile") body.payload = { ...body.payload, advisorEmail: "", shareWithAdvisor: false };
     if (["meeting", "referralStatus"].includes(body.op)) throw Error("Sign in to coordinate with an advisor.");
-    const result = mutate(next.row, guestUser, body.op, body.payload);
+    const result = mutate(next.row, local.user, body.op, body.payload);
     next.row.data = result.data;
     next.row.revision++;
     next.row.updatedAt = now;
     next.history.unshift({ label: result.label, createdAt: now });
   } else throw Error("This action requires a connected account.");
-  try { localStorage.setItem(guestKey, JSON.stringify(next)); }
+  try { localStorage.setItem(local.key, JSON.stringify(next)); }
   catch { throw Error("Browser storage is unavailable. Enable storage to save your guest case."); }
   guestStore = next;
-  return { case: project(next.row, guestUser) };
+  return { case: project(next.row, local.user) };
 }
-async function openGuest(resume = false) {
+async function openGuest(resume = false, account = null) {
+  local = account ? { user: account.user, key: account.key } : { user: guestUser, key: guestKey };
   try {
-    const saved = JSON.parse(localStorage.getItem(guestKey) || "null");
-    guestStore = saved?.row?.ownerId === guestUser.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
+    if (account) localStorage.setItem(localSessionKey, account.user.email);
+    else localStorage.removeItem(localSessionKey);
+  } catch { /* The workspace still opens for this visit. */ }
+  try {
+    const saved = JSON.parse(localStorage.getItem(local.key) || "null");
+    guestStore = saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
   } catch { guestStore = { row: null, history: [] }; }
   state.guest = true;
   state.demo = false;
-  state.user = guestUser;
+  state.user = local.user;
   state.selected = null;
   await loadCases();
   await loadHistory();
-  if (!resume) location.hash = current() ? "#/overview" : "#/discovery";
+  if (!resume) location.hash = account ? "#/dashboard" : current() ? "#/overview" : "#/discovery";
   render();
 }
 async function api(path, body, retry = true) {
@@ -466,7 +485,10 @@ function authPage(kind) {
   const signup = kind === "signup",
     recover = kind === "recover",
     callback = ["reset", "invite"].includes(kind);
-  return `<div class="au"><aside class="au-side"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="copy"><h2>${signup ? "Start your next chapter with a connected plan." : "Plan your next chapter with us."}</h2><p>Business goals, family priorities and your advisory team in one shared plan.</p><ul><li>Owner-guided discovery</li><li>Advisor-reviewed decisions</li><li>You approve every specialist handoff</li></ul></div><div class="fam"><img src="./assets/family.png" alt=""></div></aside><div class="au-main">${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}<main class="auth au-card" id="main"><a class="au-back" href="#/home">Back to home</a>${intro(callback ? "Set your password" : recover ? "Recover your account" : signup ? "Start your next chapter." : "Welcome back.", callback ? "Use at least 12 characters." : recover ? "Request a link to set a new password." : signup ? "Create an owner account. Your advisor and specialists use separately assigned roles." : "Open your owner or advisor workspace.")}${!callback && !recover ? `<div class="callout">${button("Skip signup — enter portal", "guest", "")}<p>No account needed. Save a personal case in this browser. Shared workflows and live AI require sign in.</p></div>` : ""}<form data-form="auth" data-kind="${kind}">${signup ? input("name", "Your name", "", "text", 'required maxlength="200" autocomplete="name"') : ""}${!callback ? input("email", "Email address", "", "email", 'required autocomplete="email"') : ""}${!recover ? input("password", callback ? "New password" : "Password", "", "password", `required ${signup || callback ? 'minlength="12"' : ""} maxlength="256" autocomplete="${signup || callback ? "new-password" : "current-password"}"`) : ""}<button class="btn">${callback ? "Save password" : recover ? "Send recovery email" : signup ? "Create account" : "Sign in"}</button><p class="form-error" role="alert"></p></form><p class="footer-note">${recover || callback ? '<a href="#/signin">Back to sign in</a>' : signup ? 'Already have an account? <a href="#/signin">Sign in</a>' : '<a href="#/recover">Forgot password?</a> · <a href="#/signup">Create an owner account</a>'}</p>${!signup && !callback && !recover ? `<div class="callout"><p>Advisors and specialists: use your invited account. Access is assigned by a site administrator and by the owner’s case permissions.</p></div>` : ""}</main></div></div>`;
+  const side = `<aside class="au-side"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="copy"><h2>${signup ? "Start your next chapter with a connected plan." : "Plan your next chapter with us."}</h2><p>Business goals, family priorities and your advisory team in one shared plan.</p><ul><li>Owner-guided discovery</li><li>Advisor-reviewed decisions</li><li>You approve every specialist handoff</li></ul></div><div class="fam"><img src="./assets/family.png" alt=""></div></aside>`;
+  if (kind === "signin")
+    return `<div class="au">${side}<div class="au-main"><main class="auth au-card au-min" id="main"><h1 class="sr-only" tabindex="-1">Sign in</h1><form data-form="auth" data-kind="signin">${input("email", "Email address", "", "email", 'required autocomplete="email"')}${input("password", "Password", "", "password", 'required maxlength="256" autocomplete="current-password"')}<button class="btn">Sign in</button><p class="form-error" role="alert"></p></form>${button("Skip signup — enter portal", "guest", "au-skip")}</main></div></div>`;
+  return `<div class="au">${side}<div class="au-main">${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}<main class="auth au-card" id="main"><a class="au-back" href="#/home">Back to home</a>${intro(callback ? "Set your password" : recover ? "Recover your account" : signup ? "Start your next chapter." : "Welcome back.", callback ? "Use at least 12 characters." : recover ? "Request a link to set a new password." : signup ? "Create an owner account. Your advisor and specialists use separately assigned roles." : "Open your owner or advisor workspace.")}${!callback && !recover ? `<div class="callout">${button("Skip signup — enter portal", "guest", "")}<p>No account needed. Save a personal case in this browser. Shared workflows and live AI require sign in.</p></div>` : ""}<form data-form="auth" data-kind="${kind}">${signup ? input("name", "Your name", "", "text", 'required maxlength="200" autocomplete="name"') : ""}${!callback ? input("email", "Email address", "", "email", 'required autocomplete="email"') : ""}${!recover ? input("password", callback ? "New password" : "Password", "", "password", `required ${signup || callback ? 'minlength="12"' : ""} maxlength="256" autocomplete="${signup || callback ? "new-password" : "current-password"}"`) : ""}<button class="btn">${callback ? "Save password" : recover ? "Send recovery email" : signup ? "Create account" : "Sign in"}</button><p class="form-error" role="alert"></p></form><p class="footer-note">${recover || callback ? '<a href="#/signin">Back to sign in</a>' : signup ? 'Already have an account? <a href="#/signin">Sign in</a>' : '<a href="#/recover">Forgot password?</a> · <a href="#/signup">Create an owner account</a>'}</p>${!signup && !callback && !recover ? `<div class="callout"><p>Advisors and specialists: use your invited account. Access is assigned by a site administrator and by the owner’s case permissions.</p></div>` : ""}</main></div></div>`;
 }
 function navItems(c) {
   if (c?.mode === "specialist")
@@ -521,7 +543,7 @@ function shell(body, r) {
     )
     .join(
       "",
-    )}</nav><div class="side-bottom">Business. Family. What comes next.<br>Human judgment at every decision.<br><a href="#/home">About PNC-link</a></div></aside><div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+    )}</nav><div class="side-bottom">Business. Family. What comes next.<br>Human judgment at every decision.<br><a href="#/home">About PNC-link</a></div></aside><div class="content"><header class="topbar"><div class="topbar-title"><p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo ? `<div class="demo-bar">${state.user?.id === "local-guest" ? "Guest workspace" : "Test account"} · saved only in this browser · no advisor sharing or live AI.${state.user?.id === "local-guest" ? ' <a href="#/signin">Sign in</a>' : ""}</div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -873,7 +895,7 @@ function render() {
   } else if (r === "dashboard" && !c) {
     html = linkDashboardEmpty({
       user: state.user,
-      guest: state.guest,
+      guest: state.user?.id === "local-guest",
       isAdvisor: isAdvisor(),
     });
   } else if (r === "dashboard" && c.mode !== "specialist") {
@@ -947,6 +969,14 @@ app.addEventListener("submit", async (e) => {
   try {
     if (kind === "auth") {
       const authKind = f.dataset.kind;
+      const account =
+        authKind === "signin" && localAccounts[String(data.email ?? "").trim().toLowerCase()];
+      if (account) {
+        if ((await sha256(data.password ?? "")) !== account.hash)
+          throw Error("Email or password is incorrect.");
+        await openGuest(false, account);
+        return;
+      }
       const result = await api("/api/auth", {
         ...data,
         action: {
@@ -1119,6 +1149,7 @@ app.addEventListener("click", async (e) => {
       downloadBrief(current());
     } else if (action === "logout") {
       if (!state.guest) await api("/api/auth", { action: "logout" });
+      try { localStorage.removeItem(localSessionKey); } catch { /* Nothing to clear. */ }
       state.guest = false;
       state.user = null;
       state.demo = false;
@@ -1225,7 +1256,11 @@ async function openSample(role) {
 }
 async function init() {
   if (!["home", "guest", "signin", "signup", "recover", "reset", "invite", "resources", "sample-owner", "sample-advisor"].includes(route()) && !location.hash.includes("_token=")) {
-    try { if (localStorage.getItem(guestKey)) { await openGuest(true); return; } } catch { /* Continue with connected sign in. */ }
+    try {
+      const account = localAccounts[localStorage.getItem(localSessionKey)];
+      if (account) { await openGuest(true, account); return; }
+      if (localStorage.getItem(guestKey)) { await openGuest(true); return; }
+    } catch { /* Continue with connected sign in. */ }
   }
   if (route() === "guest") { await openGuest(); return; }
   if (["sample-owner", "sample-advisor"].includes(route())) {

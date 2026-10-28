@@ -1949,3 +1949,20 @@ th {
     font-size: 10.5px;
   }
 }
+
+/* Minimal sign-in */
+.au-min form {
+  margin-top: 0;
+}
+.au .btn.au-skip {
+  width: 100%;
+  background: #fff;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+.au .btn.au-skip:hover {
+  background: var(--brand-bg);
+}
+.au-min .form-error:empty {
+  display: none;
+}
