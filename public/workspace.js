@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281904";
+import { linkDashboard, linkDashboardEmpty, linkTransition, mountLinkDashboard } from "./link-dash.js?v=202610281905";
 import {
   newData,
   profileInput,
@@ -573,7 +573,7 @@ function shell(body, r) {
   const viewSwitch = state.demo
     ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
     : "";
-  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
+  return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${state.cases.length > 1 ? `<label class="case-pick"><span class="eyebrow">Case</span><select id="caseSelect" aria-label="Select case">${state.cases.map((x) => `<option value="${esc(x.id)}" ${x.id === state.selected ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select></label>` : ""}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatarImage(c?.data.profile.name, mode) || `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}<p class="footer-note workspace-disclosure">PNC-link is a case competition concept, not an official PNC service. Planning support only. Financial ranges use hypothetical assumptions; they are not certified valuations or PNC benchmarks. Qualified professionals review transaction, financing, tax, legal, and investment decisions.</p></main></div></div>`;
 }
 function noCase() {
   const advisor = (state.user?.roles ?? []).some((r) =>
@@ -694,6 +694,14 @@ function transitionParts(c) {
     journeyRing: progressRing(done, journey.length),
   };
 }
+// Profile photo: James D. Bennett (sample and test case) has a portrait; the sample advisor
+// keeps the demo photo; everyone else gets initials.
+const JD_NAME = "James D. Bennett";
+function avatarImage(name, mode) {
+  if (mode === "owner" && name === JD_NAME) return '<img src="./assets/jd-avatar.jpg" alt="">';
+  if (state.demo) return '<img src="./assets/icons/hdr-avatar.png" alt="">';
+  return "";
+}
 // Avatar button with the account menu, used in the dashboard-style header.
 function accountMenu(name, mode) {
   const who = state.demo ? "Illustrative sample" : state.user?.name || state.user?.email || "",
@@ -704,7 +712,7 @@ function accountMenu(name, mode) {
       .slice(0, 2)
       .map((x) => x[0].toUpperCase())
       .join("");
-  return `<div class="acct"><button type="button" class="ld-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${state.demo ? '<img src="./assets/icons/hdr-avatar.png" alt="">' : `<span>${esc(letters || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div>`;
+  return `<div class="acct"><button type="button" class="ld-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatarImage(name, mode) || `<span>${esc(letters || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div>`;
 }
 function discovery(c) {
   const p = c?.data.profile ?? {
