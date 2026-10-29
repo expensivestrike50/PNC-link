@@ -243,6 +243,18 @@ test("owners can book several meetings and cancel any open one", () => {
   assert.equal(row.data.meeting, null);
   assert.throws(() => apply(row, owner, "meetingCancel", {}), /no open meeting/i);
 });
+test("meeting requests can carry a proposed time from the advisor's hours", () => {
+  const row = fixture();
+  apply(row, owner, "meeting", { topic: "Review liquidity", at: "2026-10-05T14:00:00Z", minutes: 30 }, "2026-10-01T10:00:00Z");
+  assert.equal(row.data.meeting.at, "2026-10-05T14:00:00.000Z");
+  assert.equal(row.data.meeting.minutes, 30);
+  assert.throws(
+    () => apply(row, owner, "meeting", { topic: "Too late", at: "2026-09-01T09:00:00Z" }, "2026-10-01T10:00:00Z"),
+    /future/,
+  );
+  apply(row, owner, "meeting", { topic: "No time yet" }, "2026-10-02T10:00:00Z");
+  assert.equal(row.data.meeting.at, undefined);
+});
 test("meeting transitions and coordinated actions are role restricted", () => {
   const row = fixture();
   apply(row, owner, "meeting", { topic: "Discuss successor interest" });

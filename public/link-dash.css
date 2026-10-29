@@ -5294,3 +5294,430 @@ button.ld-day.on {
 .ld .ix-head small {
   color: var(--ix-muted);
 }
+
+/* ---------- Shared calendar ---------- */
+.sc {
+  --sc-blue: #1a73ff;
+  --sc-teal: #8ee3ea;
+  --sc-board: var(--soft);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+.sc-main,
+.sc-card {
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--card);
+}
+.sc-side {
+  display: grid;
+  gap: 24px;
+}
+.sc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.ld .sc-top h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+}
+.sc-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.sc-nav > span {
+  margin-right: 8px;
+}
+.ld .sc-arrow,
+.ld .sc-today {
+  height: 30px;
+  min-width: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--ink);
+  font: 500 15px "Poppins", sans-serif;
+  cursor: pointer;
+}
+.ld .sc-today {
+  font-size: 12.5px;
+}
+.sc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sc-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sc-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+.sc-legend i.ok {
+  background: var(--sc-blue);
+}
+.sc-legend i.wait {
+  background: var(--sc-teal);
+}
+.sc-legend i.slot {
+  border: 1.5px dashed #5bcc29;
+}
+.sc-board {
+  padding: 18px 18px 22px;
+  border-radius: 20px;
+  background: var(--sc-board);
+}
+.sc-days-head {
+  display: grid;
+  grid-template-columns: 56px repeat(var(--cols, 6), minmax(0, 1fr));
+  margin-bottom: 10px;
+}
+.sc-days-head span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.sc-days-head b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sc-days-head span.today b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sc-blue);
+  color: #fff;
+}
+.sc-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px repeat(var(--cols, 6), minmax(0, 1fr));
+}
+.sc-hours-col {
+  display: grid;
+  grid-auto-rows: 64px;
+}
+.sc-hours-col span {
+  font-size: 12px;
+  color: var(--muted);
+  transform: translateY(-7px);
+}
+.sc-col {
+  position: relative;
+  border-left: 1px dashed var(--line);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 63px, var(--line) 63px 64px);
+}
+.sc-col.work {
+  background-color: rgba(91, 204, 41, 0.05);
+}
+.sc-col.today {
+  background-color: rgba(26, 115, 255, 0.06);
+}
+.ld .sc-slot {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  margin-top: 2px;
+  border: 1.5px dashed transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+.ld .sc-slot:hover {
+  border-color: #5bcc29;
+  background: rgba(91, 204, 41, 0.12);
+}
+.ld .sc-slot.on {
+  border: 2px solid var(--sc-blue);
+  background: rgba(26, 115, 255, 0.15);
+}
+.sc-ev {
+  position: absolute;
+  z-index: 1;
+  left: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+.sc-ev b {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sc-ev small {
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+.sc-ev.ok {
+  background: var(--sc-blue);
+  color: #fff;
+}
+.sc-ev.wait {
+  background: var(--sc-teal);
+  color: #0b3b40;
+}
+.sc-ev.done {
+  background: var(--track);
+  color: var(--ink);
+}
+.sc-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sc-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ld .sc-h h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.sc-mini {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 6px;
+  text-align: center;
+  font-size: 12.5px;
+}
+.sc-mini b {
+  font-weight: 600;
+  color: var(--muted);
+}
+.sc-mini span {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  color: var(--ink);
+}
+.sc-mini span.wk {
+  background: rgba(26, 115, 255, 0.15);
+}
+.sc-mini span.edge {
+  border-radius: 50%;
+  background: var(--sc-blue);
+  color: #fff;
+}
+.sc-mini span.has:not(.edge) {
+  font-weight: 700;
+  color: var(--sc-blue);
+}
+.sc-up {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-up li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.sc-up li > div {
+  flex: 1;
+  min-width: 0;
+}
+.sc-up b {
+  display: block;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sc-up small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sc-thumb {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.sc-thumb.b {
+  background: var(--sc-blue);
+  color: #fff;
+}
+.sc-thumb.t {
+  background: var(--sc-teal);
+  color: #0b3b40;
+}
+.ld .sc-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--sc-blue);
+  color: #fff;
+  font: 600 12.5px "Poppins", sans-serif;
+  cursor: pointer;
+}
+.ld .sc-btn.ghost {
+  background: var(--card);
+  color: var(--ink);
+}
+.sc-hours fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sc-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.sc-days label {
+  position: relative;
+}
+.sc-days input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.sc-days span {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--soft);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.sc-days input:checked + span {
+  background: var(--sc-blue);
+  color: #fff;
+}
+.sc-days input:focus-visible + span {
+  outline: 2px solid var(--sc-blue);
+}
+.sc-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sc-row label,
+.sc-topic {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ld .ld-page .sc-hours select,
+.ld .ld-page .sc-topic input {
+  height: 38px;
+  min-height: 0;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 13px;
+}
+.ld .sc-save {
+  width: 100%;
+  height: 42px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sc-blue);
+  color: #fff;
+  font: 600 14px "Poppins", sans-serif;
+  cursor: pointer;
+}
+.ld .sc-picked {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(26, 115, 255, 0.15);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+@media (max-width: 1200px) {
+  .sc {
+    grid-template-columns: 1fr;
+  }
+}
+.sc7 {
+  --cols: 7;
+}
+.ix-meet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--ix-line);
+  border-radius: 8px;
+  background: var(--ix-soft);
+}
+.ix-meet b {
+  display: block;
+  font-size: 14px;
+}
+.ld .ix-meet small {
+  font-size: 13px;
+  color: var(--ix-muted);
+}
+.sc {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+}
+.sc-side,
+.sc-main {
+  min-width: 0;
+}
+.sc-up li {
+  flex-wrap: wrap;
+}
+.ld .sc-ev small,
+.ld .sc-ev b {
+  color: inherit;
+}
+.ld .sc-slot {
+  border-color: rgba(91, 204, 41, 0.35);
+}

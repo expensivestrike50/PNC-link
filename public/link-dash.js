@@ -779,6 +779,12 @@ export function mountLinkDashboard() {
   if (!root) return;
   // CSP blocks inline style attributes, so sizes are set through the CSSOM.
   root.querySelectorAll("[data-w]").forEach((el) => (el.style.width = `${el.dataset.w}%`));
+  // Schedule grid: hour rows are 64px; events and slots are placed by start hour and length.
+  root.querySelectorAll("[data-rows]").forEach((el) => (el.style.height = `${el.dataset.rows * 64}px`));
+  root.querySelectorAll("[data-top]").forEach((el) => {
+    el.style.top = `${el.dataset.top * 64}px`;
+    el.style.height = `${el.dataset.h * 64}px`;
+  });
   // Keep the knob inside the track at 0% and 100%.
   root.querySelectorAll("[data-left]").forEach((el) => (el.style.left = `clamp(20px, ${el.dataset.left}%, calc(100% - 20px))`));
   // Case history tabs filter the timeline by who made the change.

@@ -146,11 +146,17 @@ export function mutate(row, user, op, payload, now = new Date().toISOString()) {
     if (mode === "owner") {
       e.reported = p.checked === true;
       e.verified = false;
+      // Timestamps feed the readiness-over-time chart.
+      if (e.reported) e.reportedAt = now;
+      else delete e.reportedAt;
+      delete e.verifiedAt;
       invalidate();
     } else {
       if (p.checked && !e.reported)
         fail("The owner must first confirm that this evidence is available.");
       e.verified = p.checked === true;
+      if (e.verified) e.verifiedAt = now;
+      else delete e.verifiedAt;
       d.review = null;
       d.qualified = false;
     }
@@ -177,8 +183,17 @@ export function mutate(row, user, op, payload, now = new Date().toISOString()) {
     if (!topic) fail("Enter a meeting topic.");
     if (!row.advisorEmail)
       fail("Add your advisor and sharing permission first.");
+    // An optional proposed time from the advisor's published hours.
+    const at = p.at ? new Date(p.at) : null;
+    if (at && (Number.isNaN(at.getTime()) || at.getTime() < Date.parse(now) - 60000))
+      fail("Choose a meeting time in the future.");
     if (d.meeting) d.meetingHistory = [d.meeting, ...(d.meetingHistory ?? [])].slice(0, 20);
-    d.meeting = { topic, status: "Requested", requestedAt: now };
+    d.meeting = {
+      topic,
+      status: "Requested",
+      requestedAt: now,
+      ...(at ? { at: at.toISOString(), minutes: [30, 45, 60].includes(Number(p.minutes)) ? Number(p.minutes) : 60 } : {}),
+    };
     label = "Owner requested an advisor meeting";
   } else if (op === "meetingCancel") {
     requireMode("owner");

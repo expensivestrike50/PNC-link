@@ -1,5 +1,5 @@
-import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029150000";
+import { mutate } from "./workflow.mjs?v=20261029161500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029161500";
 import {
   newData,
   profileInput,
@@ -27,6 +27,7 @@ import {
   transitionJourney,
   portfolioPriority,
   defaultManagement,
+  access,
 } from "./domain.mjs";
 const $ = (s) => document.querySelector(s),
   app = $("#app");
@@ -73,6 +74,10 @@ const state = {
   inboxTab: "All",
   inboxSearch: "",
   inboxOpen: null,
+  calWeek: 0,
+  calPick: null,
+  schedule: null,
+  busy: [],
   portfolioStage: "All stages",
   portfolioAttention: "All clients",
   portfolioSort: "Attention first",
@@ -94,7 +99,7 @@ const localAccounts = {
   "test@gmail.com": {
     hash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     user: { id: "local-test", email: "test@gmail.com", name: "Test User", roles: [] },
-    key: "pnc-link-test-v1",
+    key: "pnc-link-shared-v1",
   },
 };
 // The same test login can open the advisor workspace: a local portfolio of sample clients.
@@ -102,7 +107,7 @@ const localAdvisorAccounts = {
   "test@gmail.com": {
     hash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     user: { id: "local-test-advisor", email: "test@gmail.com", name: "Test Advisor", roles: ["advisor"] },
-    key: "pnc-link-test-advisor-v1",
+    key: "pnc-link-shared-v1",
     advisor: true,
   },
 };
@@ -117,7 +122,7 @@ async function sha256(text) {
 let guestStore = { row: null, history: [] };
 function guestApi(path, body) {
   if (path.includes("/assist")) throw Error("Sign in to use live AI. Your guest case stays in this browser.");
-  if (guestStore.rows) return advisorApi(path, body);
+  if (guestStore.rows) return sharedApi(path, body);
   if (path.includes("/history")) return { history: guestStore.history, chat: [] };
   if (!body) return { cases: guestStore.row ? [project(guestStore.row, local.user)] : [], metrics: {} };
   const next = structuredClone(guestStore);
@@ -144,49 +149,79 @@ function guestApi(path, body) {
   return { case: project(next.row, local.user) };
 }
 // Local advisor workspace: every sample client is assigned to the advisor and editable in this browser.
-function advisorApi(path, body) {
-  const id = new URLSearchParams(path.split("?")[1] ?? "").get("id");
+// Advisor working hours: weekdays (1 = Monday), start and end hour, meeting length in minutes.
+const DEFAULT_SCHEDULE = { days: [1, 2, 3, 4, 5], start: 9, end: 17, length: 60 };
+function scheduleInput(p) {
+  const days = [...new Set((p.days ?? []).map(Number))].filter((d) => d >= 1 && d <= 7).sort(),
+    start = Math.round(Number(p.start)),
+    end = Math.round(Number(p.end)),
+    length = [30, 45, 60].includes(Number(p.length)) ? Number(p.length) : 60;
+  if (!days.length) throw Error("Choose at least one working day.");
+  if (!(start >= 6 && end <= 21 && end > start)) throw Error("Working hours must end after they start, between 6:00 and 21:00.");
+  return { days, start, end, length };
+}
+// The test owner and test advisor share one local store, so requests and confirmations
+// made in one workspace appear in the other. Each sees only the cases its role can access.
+function sharedApi(path, body) {
+  const id = new URLSearchParams(path.split("?")[1] ?? "").get("id"),
+    mine = (r) => !!access(r, local.user);
   if (path.includes("/history")) return { history: guestStore.histories[id] ?? [], chat: [] };
+  if (path.includes("/schedule")) {
+    if (body) {
+      if (!isAdvisor()) throw Error("Only the advisor sets working hours.");
+      guestStore = { ...guestStore, schedule: scheduleInput(body) };
+      try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { throw Error("Browser storage is unavailable."); }
+    }
+    // Busy times across all of the advisor's clients, without client details.
+    const busy = guestStore.rows.flatMap((r) => [r.data.meeting, ...(r.data.meetingHistory ?? [])]).filter((m) => m?.at && ["Requested", "Acknowledged"].includes(m.status)).map((m) => ({ at: m.at, minutes: m.minutes ?? 60 }));
+    return { schedule: guestStore.schedule ?? DEFAULT_SCHEDULE, busy };
+  }
   if (!body) {
-    const cases = guestStore.rows.map((r) => project(r, local.user));
+    const cases = guestStore.rows.filter(mine).map((r) => project(r, local.user));
     return { cases, metrics: metrics(cases) };
   }
-  if (!path.includes("/update")) throw Error("Owners create cases; advisors are assigned to them.");
   const next = structuredClone(guestStore),
-    row = next.rows.find((r) => r.id === id),
     now = new Date().toISOString();
-  if (!row) throw Error("This client case is not in your portfolio.");
+  if (path.includes("/cases")) {
+    if (isAdvisor()) throw Error("Owners create cases; advisors are assigned to them.");
+    const row = { id: `local-${crypto.randomUUID()}`, ownerId: local.user.id, ownerEmail: local.user.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: newData(profileInput({ ...body, advisorEmail: "", shareWithAdvisor: false })) };
+    next.rows.push(row);
+    next.histories[row.id] = [{ label: "Created a local transition profile", createdAt: now }];
+    try { localStorage.setItem(local.key, JSON.stringify(next)); } catch { throw Error("Browser storage is unavailable."); }
+    guestStore = next;
+    return { case: project(row, local.user) };
+  }
+  if (!path.includes("/update")) throw Error("This action requires a connected account.");
+  const row = next.rows.find((r) => r.id === id && mine(r));
+  if (!row) throw Error("This case is not available to you.");
   const result = mutate(row, local.user, body.op, body.payload);
   row.data = result.data;
   row.revision++;
   row.updatedAt = now;
   next.histories[id] = [{ label: result.label, createdAt: now }, ...(next.histories[id] ?? [])];
   try { localStorage.setItem(local.key, JSON.stringify(next)); }
-  catch { throw Error("Browser storage is unavailable. Enable storage to save your portfolio."); }
+  catch { throw Error("Browser storage is unavailable. Enable storage to save your workspace."); }
   guestStore = next;
   return { case: project(row, local.user) };
 }
-function seedAdvisorPortfolio(user) {
+function seedSharedStore() {
   const now = new Date().toISOString(),
+    advisorEmail = "test@gmail.com",
     role = state.demoRole;
   state.demoRole = "advisor";
-  const rows = samplePortfolio().map(({ mode, ...r }) => ({ ...r, id: `local-${r.id}`, advisorEmail: user.email, data: { ...r.data, profile: { ...r.data.profile, advisorEmail: user.email, shareWithAdvisor: true } } }));
+  const rows = samplePortfolio().map(({ mode, ...r }) => ({
+    ...r,
+    id: `local-${r.id}`,
+    // The Bennett case belongs to the test owner; the others are fictional clients.
+    ...(r.id === "sample" ? { ownerId: localAccounts["test@gmail.com"].user.id, ownerEmail: advisorEmail } : {}),
+    advisorEmail,
+    data: { ...r.data, profile: { ...r.data.profile, advisorEmail, shareWithAdvisor: true } },
+  }));
   state.demoRole = role;
   return {
     rows,
     histories: Object.fromEntries(rows.map((r) => [r.id, [{ label: "Owner shared the case with the advisor", createdAt: now }]])),
-  };
-}
-// A local test account starts from an editable copy of the Bennett sample case.
-function seedLocalCase(user) {
-  const now = new Date().toISOString(),
-    d = structuredClone(sample().data);
-  delete d.management;
-  d.profile = { ...d.profile, advisorEmail: "", shareWithAdvisor: false };
-  d.referrals = [];
-  return {
-    row: { id: "local-case", ownerId: user.id, ownerEmail: user.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: d },
-    history: [{ label: "Started from the Bennett sample case", createdAt: now }],
+    schedule: { ...DEFAULT_SCHEDULE },
   };
 }
 async function openGuest(resume = false, account = null) {
@@ -197,15 +232,12 @@ async function openGuest(resume = false, account = null) {
   } catch { /* The workspace still opens for this visit. */ }
   try {
     const saved = JSON.parse(localStorage.getItem(local.key) || "null");
-    guestStore = account?.advisor
+    guestStore = account
       ? Array.isArray(saved?.rows) ? saved : { rows: null, histories: {} }
       : saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
-  } catch { guestStore = account?.advisor ? { rows: null, histories: {} } : { row: null, history: [] }; }
-  if (account?.advisor && !guestStore.rows) {
-    guestStore = seedAdvisorPortfolio(account.user);
-    try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
-  } else if (account && !account.advisor && !guestStore.row) {
-    guestStore = seedLocalCase(account.user);
+  } catch { guestStore = account ? { rows: null, histories: {} } : { row: null, history: [] }; }
+  if (account && !guestStore.rows) {
+    guestStore = seedSharedStore();
     try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
   }
   state.guest = true;
@@ -510,6 +542,18 @@ async function loadCases() {
   state.cases = result.cases;
   state.metrics = result.metrics;
   if (!current()) state.selected = state.cases[0]?.id ?? null;
+  await loadSchedule();
+}
+// Working hours are published by the advisor; connected accounts use the default hours.
+async function loadSchedule() {
+  if (state.guest && guestStore.rows) {
+    const r = await api("/api/nexus/schedule");
+    state.schedule = r.schedule;
+    state.busy = r.busy;
+  } else {
+    state.schedule = DEFAULT_SCHEDULE;
+    state.busy = [];
+  }
 }
 async function loadHistory() {
   const version = ++historyVersion,
@@ -620,6 +664,7 @@ function navItems(c) {
       c?.mode === "advisor" ? "Case overview" : "My transition",
       "01",
     ],
+    ["calendar", "Calendar", "◷"],
     ["discovery", "Discovery profile", "02"],
     ["readiness", "Readiness & review", "03"],
     ["pathways", "Transition options", "04"],
@@ -1380,7 +1425,7 @@ function inboxPage() {
           note = open.c.data.management?.note ?? "";
         return `<div class="ix-tools">${button(ic('<path d="M3 12h18M12 3l9 9-9 9"/>'), "openCase", "ix-tool", `data-id="${esc(open.c.id)}" data-route="${open.route}" aria-label="Open in client page" title="Open in client page"`)}${button(ic('<path d="M5 12.5l4.5 4.5L19 7.5"/>'), "inboxDone", "ix-tool", `data-id="${esc(open.id)}" aria-label="Mark as read" title="Mark as read"`)}<span class="ix-sep"></span>${button(ic(ADV_ICON.calendar), "go", "ix-tool", `data-href="#/calendar" aria-label="Calendar" title="Calendar"`)}</div>
         <div class="ix-head">${personAvatar(p.name)}<div><b>${esc(p.name)}</b><small>${esc(p.business)}</small><small><strong>Re:</strong> ${esc(open.reason)}</small></div><time>${date(open.c.updatedAt)}</time></div>
-        <div class="ix-body"><p>${esc(open.reason)} for ${esc(p.business)}.</p><p>${esc(p.name)} · ${esc(p.industry)} · ${esc(p.trigger)} · ${esc(a.stage)} stage · ${r.verified}/${r.total} evidence categories verified · ${a.openActions} open shared action${a.openActions === 1 ? "" : "s"}.</p>${a.reasons.length > 1 ? `<p>Other signals on this case: ${esc(a.reasons.filter((x) => x !== open.reason).join("; "))}.</p>` : ""}${note ? `<p><strong>Internal note</strong><br>${esc(note)}</p>` : ""}</div>
+        <div class="ix-body"><p>${esc(open.reason)} for ${esc(p.business)}.</p>${open.c.data.meeting?.status === "Requested" && /meeting/i.test(open.reason) ? `<div class="ix-meet"><div><b>${esc(String(open.c.data.meeting.topic).split(" · ")[0])}</b><small>${open.c.data.meeting.at ? new Date(open.c.data.meeting.at).toLocaleString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" }) : "No time proposed"}</small></div>${state.demo ? "" : button("Confirm meeting", "calConfirm", "ix-send", `data-id="${esc(open.c.id)}" data-status="Acknowledged"`)}</div>` : ""}<p>${esc(p.name)} · ${esc(p.industry)} · ${esc(p.trigger)} · ${esc(a.stage)} stage · ${r.verified}/${r.total} evidence categories verified · ${a.openActions} open shared action${a.openActions === 1 ? "" : "s"}.</p>${a.reasons.length > 1 ? `<p>Other signals on this case: ${esc(a.reasons.filter((x) => x !== open.reason).join("; "))}.</p>` : ""}${note ? `<p><strong>Internal note</strong><br>${esc(note)}</p>` : ""}</div>
         ${state.demo ? "" : `<form data-form="inboxNote" class="ix-reply" data-id="${esc(open.c.id)}"><label for="ix-note" class="sr-only">Internal note</label><textarea id="ix-note" name="note" required maxlength="1000" placeholder="Add an internal note on ${esc(p.business)}..."></textarea><div class="ix-reply-foot"><label class="ix-switch"><input type="checkbox" name="markRead" checked><i aria-hidden="true"></i>Mark as read</label><button type="submit" class="ix-send">Save note</button></div><p class="form-error" role="alert"></p></form>`}`;
       })()
     : `<div class="ix-empty">No item selected</div>`;
@@ -1395,41 +1440,103 @@ function inboxPage() {
     <section class="ix-detail">${detail}</section>
   </div>`;
 }
-// Advisor calendar: follow-ups, meeting requests and action due dates for this month.
+// Shared calendar: the advisor publishes working hours; owners request a slot; confirmed
+// meetings appear for both. Follow-ups and due dates are added for advisors.
+const MEETING_LABEL = { Requested: "Pending", Acknowledged: "Confirmed", Completed: "Completed" };
+function calendarMeetings() {
+  return state.cases.flatMap((c) =>
+    [c.data.meeting, ...(c.data.meetingHistory ?? [])]
+      .filter((m) => m && m.status !== "Cancelled")
+      .map((m) => ({ c, m, start: m.at ? new Date(m.at) : null, minutes: m.minutes ?? 60, current: m === c.data.meeting })),
+  );
+}
 function calendarPage() {
-  const now = new Date(),
-    y = now.getFullYear(),
-    m = now.getMonth(),
-    first = new Date(y, m, 1),
-    days = new Date(y, m + 1, 0).getDate(),
-    pad = (first.getDay() + 6) % 7,
-    key = (d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
-    events = state.cases
-      .filter((c) => c.mode === "advisor")
-      .flatMap((c) => {
-        const p = c.data.profile,
-          mg = c.data.management ?? {};
-        return [
-          ...(mg.nextContact ? [{ date: mg.nextContact, label: `Follow up · ${p.business}`, kind: "b", c }] : []),
-          ...(c.data.meeting && !["Completed", "Cancelled"].includes(c.data.meeting.status) ? [{ date: String(c.data.meeting.requestedAt).slice(0, 10), label: `Meeting ${c.data.meeting.status.toLowerCase()} · ${p.business}`, kind: "y", c }] : []),
-          ...(c.data.actions ?? []).filter((a) => a.due && a.status !== "Completed").map((a) => ({ date: a.due, label: `Due: ${a.title} · ${p.business}`, kind: "g", c })),
-        ];
+  const advisor = isAdvisor(),
+    sch = state.schedule ?? DEFAULT_SCHEDULE,
+    now = new Date(),
+    monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7) + state.calWeek * 7),
+    dayCount = sch.days.includes(7) ? 7 : 6,
+    days = Array.from({ length: dayCount }, (_, i) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)),
+    hours = Array.from({ length: sch.end - sch.start }, (_, i) => sch.start + i),
+    meetings = calendarMeetings(),
+    busy = (state.busy ?? []).map((b) => [Date.parse(b.at), Date.parse(b.at) + (b.minutes ?? 60) * 6e4]),
+    rowH = 64,
+    sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(),
+    fmtT = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    range = `${days[0].toLocaleDateString("en-US", { day: "2-digit" })} – ${days[dayCount - 1].toLocaleDateString("en-US", { day: "2-digit", month: "long" })}`,
+    owner = !advisor && current()?.mode === "owner" ? current() : null,
+    pick = state.calPick ? new Date(state.calPick) : null;
+  // Week grid: working-hour cells, open slots for owners, and meeting blocks.
+  let cols = "";
+  days.forEach((d) => {
+    const dow = ((d.getDay() + 6) % 7) + 1,
+      working = sch.days.includes(dow);
+    let cells = "";
+    hours.forEach((h) => {
+      for (let m = 0; m < 60; m += sch.length) {
+        const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m),
+          end = t.getTime() + sch.length * 6e4,
+          taken = busy.some(([a, z]) => t.getTime() < z && end > a),
+          open = working && t > now && !taken && owner && h + (m + sch.length) / 60 <= sch.end;
+        if (open)
+          cells += `<button type="button" class="sc-slot ${pick && pick.getTime() === t.getTime() ? "on" : ""}" data-action="calPick" data-at="${t.toISOString()}" data-top="${((h - sch.start) * 60 + m) / 60}" data-h="${sch.length / 60}" aria-label="Request ${t.toLocaleString("en-US", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}"></button>`;
+      }
+    });
+    const blocks = meetings
+      .filter((x) => x.start && sameDay(x.start, d))
+      .map((x) => {
+        const top = (x.start.getHours() + x.start.getMinutes() / 60 - sch.start),
+          kind = x.m.status === "Acknowledged" ? "ok" : x.m.status === "Requested" ? "wait" : "done",
+          [what] = String(x.m.topic).split(" · ");
+        return `<div class="sc-ev ${kind}" data-top="${top}" data-h="${x.minutes / 60}"><b>${esc(advisor ? x.c.data.profile.business : what)}</b><small>${MEETING_LABEL[x.m.status] ?? x.m.status} · ${fmtT(x.start)}</small></div>`;
       })
-      .sort((a, b) => a.date.localeCompare(b.date)),
-    todayKey = today();
-  let cells = "";
-  for (let i = 0; i < pad; i++) cells += '<div class="cal-cell off"></div>';
-  for (let d = 1; d <= days; d++) {
-    const ev = events.filter((e) => e.date === key(d));
-    cells += `<div class="cal-cell ${key(d) === todayKey ? "today" : ""}"><span>${d}</span>${ev.map((e) => `<i class="cal-ev ${e.kind}" title="${esc(e.label)}">${esc(e.label.split(" · ")[1] ?? e.label)}</i>`).join("")}</div>`;
+      .join("");
+    cols += `<div class="sc-col ${working ? "work" : ""} ${sameDay(d, now) ? "today" : ""}">${cells}${blocks}</div>`;
+  });
+  // Mini month with the shown week highlighted.
+  const mFirst = new Date(monday.getFullYear(), monday.getMonth(), 1),
+    mPad = (mFirst.getDay() + 6) % 7,
+    mDays = new Date(monday.getFullYear(), monday.getMonth() + 1, 0).getDate(),
+    weekEnd = days[dayCount - 1];
+  let mini = "";
+  for (let i = 0; i < mPad; i++) mini += "<span></span>";
+  for (let n = 1; n <= mDays; n++) {
+    const d = new Date(monday.getFullYear(), monday.getMonth(), n),
+      inWeek = d >= days[0] && d <= weekEnd,
+      edge = sameDay(d, days[0]) || sameDay(d, weekEnd),
+      has = meetings.some((x) => x.start && sameDay(x.start, d));
+    mini += `<span class="${inWeek ? "wk" : ""} ${edge ? "edge" : ""} ${has ? "has" : ""}">${n}</span>`;
   }
-  const upcoming = events.filter((e) => e.date >= todayKey).slice(0, 8);
+  const upcoming = meetings.filter((x) => (x.start ? x.start >= new Date(now.getTime() - 36e5) : x.m.status === "Requested")).sort((a, b) => (a.start ?? 0) - (b.start ?? 0)).slice(0, 5),
+    requests = meetings.filter((x) => x.current && ["Requested", "Acknowledged"].includes(x.m.status)),
+    dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const side = advisor
+    ? `<section class="sc-card"><div class="sc-h"><h3>Meeting requests</h3><span class="pl-count">${requests.filter((x) => x.m.status === "Requested").length}</span></div>
+        <ul class="sc-up">${requests.map((x) => `<li><span class="sc-thumb ${x.m.status === "Requested" ? "t" : "b"}">${esc(x.c.data.profile.name.split(" ").map((w) => w[0]).slice(0, 2).join(""))}</span><div><b>${esc(x.c.data.profile.business)}</b><small>${x.start ? `${x.start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${fmtT(x.start)}` : "Time to be agreed"} · ${MEETING_LABEL[x.m.status]}</small></div>${state.demo ? "" : x.m.status === "Requested" ? button("Confirm", "calConfirm", "sc-btn", `data-id="${esc(x.c.id)}" data-status="Acknowledged"`) : button("Done", "calConfirm", "sc-btn ghost", `data-id="${esc(x.c.id)}" data-status="Completed"`)}</li>`).join("") || '<li class="pl-none">No open requests.</li>'}</ul></section>
+      <section class="sc-card"><div class="sc-h"><h3>Working hours</h3></div><small class="pl-sub">Owners can request any open slot in these hours.</small>
+        <form data-form="schedule" class="sc-hours"><fieldset ${state.demo ? "disabled" : ""}><div class="sc-days">${dayNames.map((n, i) => `<label><input type="checkbox" name="days" value="${i + 1}" ${sch.days.includes(i + 1) ? "checked" : ""}><span>${n}</span></label>`).join("")}</div>
+        <div class="sc-row"><label>From<select name="start">${Array.from({ length: 13 }, (_, i) => i + 6).map((h) => `<option value="${h}" ${h === sch.start ? "selected" : ""}>${h}:00</option>`).join("")}</select></label><label>To<select name="end">${Array.from({ length: 13 }, (_, i) => i + 9).map((h) => `<option value="${h}" ${h === sch.end ? "selected" : ""}>${h}:00</option>`).join("")}</select></label><label>Slot<select name="length">${[30, 45, 60].map((m) => `<option value="${m}" ${m === sch.length ? "selected" : ""}>${m} min</option>`).join("")}</select></label></div></fieldset>
+        ${state.demo ? "" : '<button type="submit" class="sc-save">Save working hours</button>'}<p class="form-error" role="alert"></p></form></section>`
+    : `<section class="sc-card"><div class="sc-h"><h3>Request a meeting</h3></div>${
+        !owner
+          ? '<p class="pl-sub">Create your transition profile to book time with an advisor.</p>'
+          : !owner.data.profile.advisorEmail
+            ? '<p class="pl-sub">Add your advisor and sharing permission in your discovery profile to request a meeting.</p>'
+            : pick
+              ? `<p class="sc-picked">${pick.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${fmtT(pick)} · ${sch.length} min</p><form data-form="calRequest" class="sc-hours"><input type="hidden" name="at" value="${pick.toISOString()}"><label class="sc-topic">Topic<input name="topic" required maxlength="400" value="Discuss my transition priorities"></label>${state.demo ? "" : '<button type="submit" class="sc-save">Send request</button>'}<p class="form-error" role="alert"></p></form>`
+              : `<p class="pl-sub">Pick an open slot in the schedule. Your advisor works ${sch.days.map((d) => dayNames[d - 1]).join(", ")}, ${sch.start}:00–${sch.end}:00.</p>`
+      }</section>`;
   return `<h2 class="sr-only">Calendar</h2>
-  <div class="cal-grid-wrap">
-    <section class="panel"><div class="pl-head"><h2>${first.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h2><div class="ld-legend rd-legend"><span><i class="cal-dot b"></i>Follow-up</span><span><i class="cal-dot y"></i>Meeting</span><span><i class="cal-dot g"></i>Action due</span></div></div>
-      <div class="cal-head">${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => `<span>${d}</span>`).join("")}</div><div class="cal-grid">${cells}</div></section>
-    <section class="panel"><div class="pl-head"><h2>Upcoming</h2><span class="pl-count">${upcoming.length}</span></div>
-      <ul class="cal-up">${upcoming.map((e) => `<li><span class="cal-date"><b>${new Date(e.date + "T12:00:00").getDate()}</b>${new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { month: "short" })}</span><div><b>${esc(e.label.split(" · ")[0])}</b><small>${esc(e.label.split(" · ")[1] ?? "")}</small></div>${button("Open", "openCase", "ib-open", `data-id="${esc(e.c.id)}" data-route="${e.kind === "g" ? "plan" : "overview"}"`)}</li>`).join("") || '<li class="pl-none">Nothing scheduled ahead.</li>'}</ul></section>
+  <div class="sc ${dayCount === 7 ? "sc7" : ""}">
+    <section class="sc-main"><div class="sc-top"><div><h2>My Schedule</h2><div class="sc-nav"><span>${range}</span>${button("‹", "calWeek", "sc-arrow", 'data-step="-1" aria-label="Previous week"')}${button("›", "calWeek", "sc-arrow", 'data-step="1" aria-label="Next week"')}${state.calWeek ? button("Today", "calWeek", "sc-today", 'data-step="0"') : ""}</div></div><div class="sc-legend"><span><i class="ok"></i>Confirmed</span><span><i class="wait"></i>Pending</span>${owner ? '<span><i class="slot"></i>Open slot</span>' : ""}<span class="sc-tz">${Intl.DateTimeFormat().resolvedOptions().timeZone.replace("_", " ")}</span></div></div>
+      <div class="sc-board"><div class="sc-days-head"><span></span>${days.map((d) => `<span class="${sameDay(d, now) ? "today" : ""}">${d.toLocaleDateString("en-US", { weekday: "short" })}<b>${String(d.getDate()).padStart(2, "0")}</b></span>`).join("")}</div>
+        <div class="sc-body" data-rows="${hours.length}"><div class="sc-hours-col">${hours.map((h) => `<span>${String(h).padStart(2, "0")}:00</span>`).join("")}</div>${cols}</div></div>
+      ${upcoming.some((x) => !x.start) ? `<p class="sc-note">Requests without a time are listed under Upcoming.</p>` : ""}</section>
+    <aside class="sc-side">
+      <section class="sc-card"><div class="sc-h"><h3>${monday.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</h3></div><div class="sc-mini"><b>Mo</b><b>Tu</b><b>We</b><b>Th</b><b>Fr</b><b>Sa</b><b>Su</b>${mini}</div></section>
+      <section class="sc-card"><div class="sc-h"><h3>Upcoming events</h3></div><ul class="sc-up">${upcoming.map((x) => `<li><span class="sc-thumb ${x.m.status === "Acknowledged" ? "b" : "t"}">${x.start ? x.start.getDate() : "?"}</span><div><b>${esc(advisor ? x.c.data.profile.business : String(x.m.topic).split(" · ")[0])}</b><small>${MEETING_LABEL[x.m.status] ?? x.m.status} · ${x.start ? `${x.start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${fmtT(x.start)}` : "Time to be agreed"}</small></div></li>`).join("") || '<li class="pl-none">No upcoming meetings.</li>'}</ul></section>
+      ${side}
+    </aside>
   </div>`;
 }
 // Settings & data: account, appearance and the local demo data.
@@ -1731,7 +1838,7 @@ function downloadBrief(c) {
 }
 // Pages shown in the dashboard frame (header card, black/light theme, sidebar).
 // Pages that only make sense across an advisor's portfolio.
-const ADVISOR_ROUTES = ["portfolio", "inbox", "calendar"];
+const ADVISOR_ROUTES = ["portfolio", "inbox"];
 const FRAMED = ["pathways", "family", "proceeds", "referrals", "plan", "assistant", "history", "resources", "inbox", "calendar", "settings", "portfolio"];
 function framedPage(r, c) {
   return {
@@ -1978,6 +2085,20 @@ app.addEventListener("submit", async (e) => {
       await loadCases();
       render();
       notice("Note saved to the client's internal record.");
+    } else if (kind === "schedule") {
+      await api("/api/nexus/schedule", { days: new FormData(f).getAll("days"), start: data.start, end: data.end, length: data.length });
+      await loadSchedule();
+      render();
+      notice("Working hours saved. Owners see them when booking.");
+    } else if (kind === "calRequest") {
+      const c = state.cases.find((x) => x.mode === "owner");
+      if (!c) throw Error("Create your transition profile first.");
+      state.selected = c.id;
+      await update("meeting", { topic: data.topic, at: data.at, minutes: (state.schedule ?? DEFAULT_SCHEDULE).length });
+      state.calPick = null;
+      await loadSchedule();
+      render();
+      notice("Request sent. Your advisor sees it in their inbox and confirms it.");
     } else if (kind === "meeting") {
       const who = f.dataset.advisor,
         when = f.dataset.when;
@@ -2102,6 +2223,17 @@ app.addEventListener("click", async (e) => {
       return;
     }
     if (action === "go") { location.hash = b.dataset.href; return; }
+    if (action === "calWeek") { state.calWeek = b.dataset.step === "0" ? 0 : state.calWeek + Number(b.dataset.step); state.calPick = null; render(); return; }
+    if (action === "calPick") { state.calPick = b.dataset.at; render(); $(".sc-topic input")?.focus(); return; }
+    if (action === "calConfirm") {
+      b.disabled = true;
+      state.selected = b.dataset.id;
+      await update("meetingStatus", { status: b.dataset.status });
+      await loadSchedule();
+      render();
+      notice(b.dataset.status === "Acknowledged" ? "Meeting confirmed. It now shows on the owner's calendar." : "Meeting marked as completed.");
+      return;
+    }
     if (action === "addCompany") {
       notice("Owners add companies: an owner shares their case by entering your advisor email in their discovery profile.");
       return;
