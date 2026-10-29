@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029043000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029050000";
 import {
   newData,
   profileInput,
@@ -1079,23 +1079,141 @@ function plan(c) {
     owners = [...new Set(d.actions.map((a) => a.assignee))].map((o) => [o, d.actions.filter((a) => a.assignee === o).length]);
   return `<h2 class="sr-only">Every next step has an owner.</h2><div class="two-col pl-top"><section class="panel"><div class="panel-head"><div><h2>Progress</h2><small>Share of actions by status</small></div></div><div class="pl-stack" role="img" aria-label="${by("Completed")} completed, ${by("In progress")} in progress, ${by("Open")} open">${[["v", "Completed"], ["a", "In progress"], ["n", "Open"]].map(([k, st]) => (by(st) ? `<i class="${k}" data-w="${((by(st) / (total || 1)) * 100).toFixed(1)}"></i>` : "")).join("")}</div><div class="ld-legend rd-legend pl-legend"><span><i class="v"></i>${by("Completed")} completed</span><span><i class="a"></i>${by("In progress")} in progress</span><span><i class="n"></i>${by("Open")} open</span></div></section><section class="panel"><div class="panel-head"><div><h2>Who owns the work</h2><small>Actions per responsible person or team</small></div></div>${barRows(owners.map(([o, k]) => ["t", esc(o), k]), Math.max(1, ...owners.map(([, k]) => k)))}</section></div><div class="two-col section-gap">${panel("Shared action plan", d.actions.map((a) => `<article class="action st-${a.status.toLowerCase().replace(" ", "-")}"><div><div class="eyebrow">${esc(a.kind)}</div><h3>${esc(a.title)}</h3><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small></div><label class="field"><span class="muted">Status</span><select data-task="${a.id}" ${state.demo || (c.mode !== "advisor" && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></label></article>`).join(""))}<div class="stack">${c.mode === "advisor" ? panel("Assign a next step", `<form data-form="addAction" class="inline-form">${input("title", "Action", "", "text", 'required maxlength="500"')}${input("assignee", "Responsible person / team", "", "text", 'required maxlength="200"')}${input("due", "Due date (optional)", "", "date")}${formEnd("Add shared action")}</form>`) : panel("Life beyond the transaction", "<p>Ask your advisor to assign specific actions for income needs, investment policy, estate documents, taxes, and family distributions. Mark your own family-continuity action as work progresses.</p>")}${c.mode === "advisor" ? panel("Observed outcomes", `<p>Record actual results only. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", d.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${d.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", d.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], d.outcomes.retained === null ? "Not recorded" : d.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`) : ""}</div></div>`;
 }
+// Monotone cubic path through points (no overshoot), for the smooth area chart.
+function smoothPath(pts) {
+  const n = pts.length,
+    dx = [],
+    m = [],
+    t = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = pts[i + 1][0] - pts[i][0];
+    m[i] = (pts[i + 1][1] - pts[i][1]) / (dx[i] || 1);
+  }
+  t[0] = m[0];
+  t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
+  let path = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = dx[i] / 3;
+    path += `C${(pts[i][0] + h).toFixed(1)},${(pts[i][1] + h * t[i]).toFixed(1)} ${(pts[i + 1][0] - h).toFixed(1)},${(pts[i + 1][1] - h * t[i + 1]).toFixed(1)} ${pts[i + 1][0].toFixed(1)},${pts[i + 1][1].toFixed(1)}`;
+  }
+  return path;
+}
+// Cumulative recorded updates since the case opened: the context the AI can draw on.
+function contextArea(history, createdAt, now = Date.now()) {
+  const times = history.map((e) => Date.parse(e.createdAt)).filter(Number.isFinite),
+    t0 = Math.min(Date.parse(createdAt) || now, ...times, now - 864e5),
+    W = 420,
+    H = 150,
+    T = 10,
+    B = 128,
+    N = 10,
+    max = Math.max(times.length, 1),
+    x = (t) => ((t - t0) / Math.max(now - t0, 1)) * W,
+    y = (v) => B - (v / max) * (B - T),
+    pts = Array.from({ length: N + 1 }, (_, i) => {
+      const t = t0 + ((now - t0) * i) / N;
+      return [x(t), y(times.filter((s) => s <= t).length)];
+    }),
+    line = smoothPath(pts),
+    fmt = (t) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${times.length} recorded updates since ${fmt(t0)}"><defs><linearGradient id="ai-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="ai-stop" stop-opacity="0.45"/><stop offset="1" class="ai-stop" stop-opacity="0"/></linearGradient></defs><path d="${line}L${W},${B}L0,${B}Z" fill="url(#ai-area)"/><path d="${line}" class="ai-line"/><text x="0" y="${H - 2}" class="ai-tick">${fmt(t0)}</text><text x="${W}" y="${H - 2}" text-anchor="end" class="ai-tick">Today</text></svg>`;
+}
+// How much of each case area is recorded, as a share (a completeness heuristic, not a score).
+function contextCoverage(d) {
+  const p = d.profile,
+    r = readiness(d),
+    keys = ["business", "industry", "trigger", "timeline", "revenue", "ebitda", "debt", "ownership", "liquidity", "futureRole", "successor", "familyReadiness", "estateStatus"],
+    filled = keys.filter((k) => p[k] !== undefined && p[k] !== null && p[k] !== "").length,
+    acts = d.actions ?? [];
+  return [
+    ["Profile", Math.round((filled / keys.length) * 100)],
+    ["Available", r.score],
+    ["Verified", r.verifiedScore],
+    ["Direction", d.pathDecision?.path ? 100 : 0],
+    ["Family", Math.min(100, (d.familyPlan ? 50 : 0) + Math.min(50, (d.stakeholders ?? []).length * 25))],
+    ["Proceeds", d.scenario ? 100 : 0],
+    ["Review", d.review ? 100 : 0],
+    ["Actions", acts.length ? Math.round((acts.filter((a) => a.status === "Completed").length / acts.length) * 100) : 0],
+  ];
+}
+function coverageLollipop(rows) {
+  const W = 560,
+    H = 190,
+    B = 150,
+    T = 18,
+    step = W / rows.length,
+    y = (v) => B - (v / 100) * (B - T),
+    low = rows.reduce((a, r) => (r[1] < a[1] ? r : a), rows[0]),
+    tones = ["y", "b", "g", "p"];
+  let g = [0, 50, 100].map((v) => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="ai-grid"/>`).join("");
+  rows.forEach(([label, v], i) => {
+    const cx = step * i + step / 2;
+    g += `<line x1="${cx}" x2="${cx}" y1="${B}" y2="${y(v)}" class="ai-stem"/><circle cx="${cx}" cy="${y(v)}" r="7" class="ai-pin ${label === low[0] ? "low" : ""}"><title>${label}: ${v}% recorded</title></circle><circle cx="${cx}" cy="${B + 22}" r="15" class="ai-chip ${tones[i % 4]}"/><text x="${cx}" y="${B + 26}" text-anchor="middle" class="ai-chip-t">${v}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Share of each case area recorded: ${rows.map(([l, v]) => `${l} ${v}%`).join(", ")}">${g}</svg><div class="ai-lbls">${rows.map(([l]) => `<span>${l}</span>`).join("")}</div>`;
+}
 function assistant(c) {
   const advisor = c.mode === "advisor",
-    d = c.data;
+    d = c.data,
+    p = d.profile,
+    r = readiness(d),
+    cash = proceeds(p, d.scenario ?? defaultScenario).cash,
+    fam = familyBalance({ ...defaultFamilyPlan, ...d.familyPlan }),
+    acts = d.actions ?? [],
+    cover = contextCoverage(d),
+    low = cover.reduce((a, x) => (x[1] < a[1] ? x : a), cover[0]),
+    weekAgo = Date.now() - 7 * 864e5,
+    recent = state.history.filter((e) => Date.parse(e.createdAt) >= weekAgo).length;
   const prompts = advisor
     ? [
-        "Prepare a client meeting brief: trigger, goals, preferred path, family dynamics, evidence gaps and three next actions. Separate facts from unanswered questions.",
-        "Which specialist conversations are worth reviewing and why? State the appropriate information scope and permission steps.",
-        "Identify gaps between the owner's business transition and personal wealth plan. Suggest shared actions for my review.",
-        "Review the recorded family relationships and discussion preferences. What should I confirm before involving the next generation?",
+        ["Meeting brief", "Goals, gaps and next actions", "Prepare a client meeting brief: trigger, goals, preferred path, family dynamics, evidence gaps and three next actions. Separate facts from unanswered questions."],
+        ["Specialist routing", "Who to involve and why", "Which specialist conversations are worth reviewing and why? State the appropriate information scope and permission steps."],
+        ["Plan gaps", "Business vs personal wealth", "Identify gaps between the owner's business transition and personal wealth plan. Suggest shared actions for my review."],
+        ["Family check", "Before involving heirs", "Review the recorded family relationships and discussion preferences. What should I confirm before involving the next generation?"],
       ]
     : [
-        "Summarize the missing information and my next three questions.",
-        "Compare transition options against my priorities, successor readiness and desired future role.",
-        "Help me understand the family liquidity illustration and questions to ask an estate specialist.",
-        "Explain my proceeds assumptions and what a tax and wealth advisor should review.",
+        ["Next steps", "Missing information and questions", "Summarize the missing information and my next three questions."],
+        ["Compare paths", "Against your priorities", "Compare transition options against my priorities, successor readiness and desired future role."],
+        ["Family liquidity", "Questions for an estate specialist", "Help me understand the family liquidity illustration and questions to ask an estate specialist."],
+        ["Proceeds review", "What a tax advisor should check", "Explain my proceeds assumptions and what a tax and wealth advisor should review."],
       ];
-  return `<h2 class="sr-only">${advisor ? "A second set of eyes for your case." : "Support for your next conversation."}</h2><div class="assistant-context"><span class="ai-symbol" aria-hidden="true">✧</span><div><strong>Working with ${esc(d.profile.business)}</strong><small>${esc(d.profile.trigger)} · ${esc(d.pathDecision?.path || "Options open")} · ${readiness(d).verified}/${readiness(d).total} evidence categories verified</small></div>${badge("Private to your account", "gray")}</div><div class="chat-layout"><section class="panel"><div class="chat-thread" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${state.chat.length ? state.chat.map((m) => `<div class="chat-message question"><b>You</b>${esc(m.question)}</div><div class="chat-message"><b>PNC-link AI · suggestion</b>${esc(m.answer)}</div>`).join("") : empty(advisor ? "Prepare for the next client conversation." : "Start with your most important question.", "Choose a conversation starter or ask a question grounded in this case.")}</div>${state.demo ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>` : `<form data-form="assist" class="inline-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div><label class="check"><input type="checkbox" name="consent" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label>${formEnd("Ask PNC-link AI")}</form>`}</section><aside class="chat-aside"><div class="eyebrow">${advisor ? "Advisor preparation" : "Conversation starters"}</div>${prompts.map((x) => `<button class="prompt-button" data-prompt="${esc(x)}">${esc(x)} <span aria-hidden="true">↗</span></button>`).join("")}<div class="assistant-evidence"><h3>Grounded in your case</h3><ul class="info-list"><li>Owner-reported business and family priorities</li><li>Verified evidence counts and advisor findings</li><li>Saved assumptions and open next steps</li><li>Selected published PNC resources</li></ul><a href="#/resources">Review the source resources →</a></div><p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour.</p></aside></div>`;
+  const pill = (cls, label, pct, value) =>
+    `<div class="ai-pill"><span class="ai-pill-bar"><i class="${cls}" data-w="${Math.max(6, Math.min(100, pct)).toFixed(1)}"></i><b>${label}</b></span><em>${value}</em></div>`;
+  const thread = state.chat.length
+    ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><p>${esc(m.answer)}</p></div>`).join("")
+    : `<div class="ai-empty"><b>${advisor ? "Prepare for the next client conversation." : "Start with your most important question."}</b><span>Pick a conversation starter or write your own question below.</span></div>`;
+  return `<h2 class="sr-only">${advisor ? "A second set of eyes for your case." : "Support for your next conversation."}</h2>
+  <div class="ai-top">
+    <section class="panel ai-card"><div class="panel-head"><div><h2>Case context</h2><small>Recorded updates the AI can draw on</small></div>${badge("Private to your account", "gray")}</div>
+      <div class="ai-big"><b>${state.history.length}</b><span class="ai-delta">+${recent} this week</span></div>
+      <div class="ai-area">${contextArea(state.history, c.createdAt)}</div></section>
+    <section class="panel ai-card"><div class="panel-head"><div><h2>What the AI can draw on</h2><small>Share of each area recorded for ${esc(p.business)}</small></div><span class="ai-callout"><b>${low[1]}%</b> Biggest gap: ${esc(low[0])}</span></div>
+      ${coverageLollipop(cover)}</section>
+  </div>
+  <div class="ai-bottom">
+    <section class="panel ai-card ai-chat"><div class="panel-head"><div><h2>Chat with PNC-link AI</h2><small class="assistant-context">Working with ${esc(p.business)} · ${esc(p.trigger)} · ${esc(d.pathDecision?.path || "Options open")} · ${r.verified}/${r.total} evidence verified</small></div></div>
+      <div class="ai-chat-grid">
+        <ul class="ai-threads" aria-label="${advisor ? "Advisor preparation" : "Conversation starters"}">${prompts
+          .map(([t, sub, q], i) => `<li><button type="button" class="ai-thread ${state.assistantDraft === q ? "on" : ""}" data-ask="${esc(q)}"><span class="ld-ic ${["y", "b", "g", "p"][i]}">${["✎", "⇄", "♥", "$"][i]}</span><span><b>${t}</b><small>${sub}</small></span></button></li>`)
+          .join("")}</ul>
+        <div class="ai-convo">
+          <div class="chat-thread ai-thread-log" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${thread}</div>
+          ${state.demo
+            ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>`
+            : `<form data-form="assist" class="inline-form ai-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div><label class="check"><input type="checkbox" name="consent" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label>${formEnd("Ask PNC-link AI")}</form>`}
+        </div>
+      </div></section>
+    <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2><span class="ai-spark" aria-hidden="true">✧</span>AI insight</h2><small>Where the case stands today</small></div></div>
+      <div class="ai-pills">
+        ${pill("g", "Evidence verified", r.verifiedScore, `${r.verified}/${r.total}`)}
+        ${pill("y", "Liquidity goal", p.liquidity ? (Math.max(0, cash) / p.liquidity) * 100 : 0, `${p.liquidity ? Math.round((Math.max(0, cash) / p.liquidity) * 100) : 0}%`)}
+        ${pill("b", "Actions done", acts.length ? (acts.filter((a) => a.status === "Completed").length / acts.length) * 100 : 0, `${acts.filter((a) => a.status === "Completed").length}/${acts.length}`)}
+        ${pill("p", "Family liquidity covered", fam.nonBusinessTarget ? (fam.liquidAvailable / fam.nonBusinessTarget) * 100 : 100, fam.liquidityGap > 0 ? `Gap ${shortMoney(fam.liquidityGap)}` : "Covered")}
+      </div>
+      <button type="button" class="ld-yellow ai-try" data-ask="${esc(prompts[0][2])}">Try AI insight</button>
+      <p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour. <a href="#/resources">Source resources</a></p></section>
+  </div>`;
 }
 function historyPage() {
   return linkHistory(state.history);
@@ -1369,7 +1487,7 @@ app.addEventListener("submit", async (e) => {
           consent: f.elements.consent.checked,
         });
       if (current()?.id === id && route() === "assistant") {
-        state.chat.push({ question: data.question, answer: result.answer });
+        state.chat.push({ question: data.question, answer: result.answer, createdAt: new Date().toISOString() });
         state.assistantDraft = "";
         render();
       }
