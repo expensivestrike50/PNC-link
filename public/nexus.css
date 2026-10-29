@@ -2652,3 +2652,79 @@ body:has(.ld.light) {
 .lp .lph-dark {
   align-items: flex-start;
 }
+
+/* Get started: choose owner or advisor */
+.lph-dialog {
+  width: min(520px, calc(100vw - 32px));
+  padding: 32px;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  font-family: "Poppins", sans-serif;
+  color: #1f1f1f;
+}
+.lph-dialog::backdrop {
+  background: rgba(17, 17, 17, 0.45);
+}
+.lph-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.lph-dialog > p {
+  margin: 6px 0 20px;
+  font-size: 14px;
+  color: #6b6b6b;
+}
+.lph-roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.lph-roles button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px;
+  border: 1.5px solid #e6e6e6;
+  border-radius: 14px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lph-roles button:hover,
+.lph-roles button:focus-visible {
+  border-color: #f2711c;
+  background: #fff7f1;
+  outline: none;
+}
+.lph-roles .lph-ic {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: #fff1e6;
+  color: #f2711c;
+}
+.lph-roles b {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+.lph-roles small {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+.lph-close {
+  display: block;
+  margin: 18px auto 0;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  font: 500 14px "Poppins", sans-serif;
+  color: #6b6b6b;
+  cursor: pointer;
+}

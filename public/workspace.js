@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029114500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029120000";
 import {
   newData,
   profileInput,
@@ -567,7 +567,7 @@ function home() {
   return `<div class="lp lph">
   <header class="lph-nav"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a>
     <nav aria-label="Explore">${button("For owners", "demo", "lph-navlink")}${button("For advisors", "demoAdvisor", "lph-navlink")}<a class="lph-navlink" href="${research}" target="_blank" rel="noopener noreferrer">Research</a><a class="lph-navlink" href="#/resources">Planning resources</a></nav>
-    <div class="lph-auth"><a class="lph-signin" href="#/signin">Sign in</a><a class="lph-cta" href="#/guest">Get started</a></div></header>
+    <div class="lph-auth"><a class="lph-signin" href="#/signin">Sign in</a><button type="button" class="lph-cta" data-action="getStarted" aria-haspopup="dialog">Get started</button></div></header>
   <main id="main" class="lph-main">
     <div class="lph-shapes" aria-hidden="true"><i class="s1"></i><i class="s2"></i><i class="s3"></i></div>
     <div class="lph-copy">
@@ -583,7 +583,10 @@ function home() {
       <div><span class="lph-ic">${icon('<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>')}</span><div><b>89% · 55%</b><small>value integrated advice · use one advisor for both</small></div></div>
       ${button("Explore demo", "demo", "lph-cta lg")}
     </section>
-  </main></div>`;
+  </main>
+  <dialog class="lph-dialog" id="role-pick" aria-labelledby="role-pick-title"><h2 id="role-pick-title">How would you like to continue?</h2><p>Opens the test workspace for test@gmail.com.</p>
+    <div class="lph-roles"><button type="button" data-action="enterAs" data-role="owner"><span class="lph-ic">${icon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>')}</span><b>Business owner</b><small>Plan your transition</small></button><button type="button" data-action="enterAs" data-role="advisor"><span class="lph-ic">${icon('<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>')}</span><b>Advisor</b><small>See your client portfolio</small></button></div>
+    <button type="button" class="lph-close" data-action="closeRolePick">Cancel</button></dialog></div>`;
 }
 // Owner or advisor workspace, chosen on the sign-in and sign-up forms.
 const roleSwitch = (signup) =>
@@ -1864,6 +1867,13 @@ app.addEventListener("click", async (e) => {
   try {
     if (action === "guest") { await openGuest(); return; }
     // Skip signup goes straight into the local test account.
+    if (action === "getStarted") { $("#role-pick")?.showModal(); return; }
+    if (action === "closeRolePick") { $("#role-pick")?.close(); return; }
+    if (action === "enterAs") {
+      $("#role-pick")?.close();
+      await openGuest(false, localAccountFor("test@gmail.com", b.dataset.role));
+      return;
+    }
     if (action === "testLogin") {
       const role = document.querySelector('input[name="role"]:checked')?.value;
       await openGuest(false, localAccountFor("test@gmail.com", role));
