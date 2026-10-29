@@ -6,8 +6,7 @@ try {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route('**/api/**', route => route.fulfill({status:503, body:'Unavailable'}));
-  await page.goto('http://localhost:8889/#/signup');
-  await page.getByRole('button', {name:'Skip signup and enter portal'}).click();
+  await page.goto('http://localhost:8889/#/guest');
   await page.getByLabel('Owner name', {exact:true}).fill('Guest Owner');
   await page.getByLabel('Business name', {exact:true}).fill('Guest Business');
   await page.getByLabel('Industry', {exact:true}).fill('Manufacturing');
