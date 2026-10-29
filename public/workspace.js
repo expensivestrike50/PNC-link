@@ -75,6 +75,7 @@ const state = {
   inboxTab: "All",
   inboxSearch: "",
   inboxOpen: null,
+  demoChats: {},
   ob: { mode: "assess" },
   obSave: null,
   obError: "",
@@ -131,8 +132,9 @@ async function demoAssist(path, body) {
   const id = new URLSearchParams(path.split("?")[1] ?? "").get("id"),
     c = state.cases.find((x) => x.id === id);
   if (!c) throw Error("Choose a case first.");
-  const chats = guestStore.chats ?? {},
-    key = `${local.user.id}:${id}`,
+  // The demo keeps its chats in memory only; test logins keep them in this browser.
+  const chats = state.demo ? state.demoChats : guestStore.chats ?? {},
+    key = state.demo ? `demo:${state.demoRole}:${id}` : `${local.user.id}:${id}`,
     previous = [...(chats[key] ?? [])].reverse().slice(0, 4);
   let r;
   try {
@@ -147,8 +149,12 @@ async function demoAssist(path, body) {
   const result = await r.json().catch(() => ({}));
   if (!r.ok) throw Error(result.error || "The assistant could not answer right now.");
   const entry = { question: body.question, answer: result.answer, createdAt: new Date().toISOString() };
-  guestStore = { ...guestStore, chats: { ...chats, [key]: [...(chats[key] ?? []), entry].slice(-50) } };
-  try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* The answer still shows for this visit. */ }
+  const nextChats = { ...chats, [key]: [...(chats[key] ?? []), entry].slice(-50) };
+  if (state.demo) state.demoChats = nextChats;
+  else {
+    guestStore = { ...guestStore, chats: nextChats };
+    try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* The answer still shows for this visit. */ }
+  }
   return { answer: result.answer };
 }
 function guestApi(path, body) {
@@ -289,6 +295,7 @@ async function openGuest(resume = false, account = null) {
   render();
 }
 async function api(path, body, retry = true) {
+  if (state.demo && path.startsWith("/api/nexus/assist")) return demoAssist(path, body);
   if (state.guest && !state.demo && path.startsWith("/api/nexus/")) return guestApi(path, body);
   const r = await fetch(path, {
     method: body ? "POST" : "GET",
@@ -622,6 +629,7 @@ async function loadHistory() {
       { label: "Owner updated evidence availability", createdAt: at(0.5) },
       { label: "Owner created a discovery profile", createdAt: c.createdAt },
     ];
+    state.chat = state.demoChats[`demo:${state.demoRole}:${c.id}`] ?? [];
     return;
   }
   const data = await api(`/api/nexus/history?id=${encodeURIComponent(c.id)}`);
@@ -1872,12 +1880,10 @@ function assistant(c) {
         <ul class="ai-threads" aria-label="${advisor ? "Advisor preparation" : "Conversation starters"}">${prompts
           .map(([t, sub, q], i) => `<li><button type="button" class="ai-thread ${state.assistantDraft === q ? "on" : ""}" data-ask="${esc(q)}"><span class="ld-ic ${["y", "b", "g", "p"][i]}">${["✎", "⇄", "♥", "$"][i]}</span><span><b>${t}</b><small>${sub}</small></span></button></li>`)
           .join("")}</ul>
-        ${state.demo ? "" : `<div class="ai-side"><label class="check ai-consent"><input type="checkbox" name="consent" form="ai-assist" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label></div>`}
+        ${`<div class="ai-side"><label class="check ai-consent"><input type="checkbox" name="consent" form="ai-assist" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label></div>`}
         <div class="ai-convo">
           <div class="chat-thread ai-thread-log" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${thread}</div>
-          ${state.demo
-            ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>`
-            : `<form data-form="assist" id="ai-assist" class="inline-form ai-form"><div class="field"><label for="question" class="sr-only">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div>${formEnd("Ask PNC-link AI")}</form>`}
+          ${`<form data-form="assist" id="ai-assist" class="inline-form ai-form"><div class="field"><label for="question" class="sr-only">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div><div class="form-footer"><button class="btn">Ask PNC-link AI</button><p class="form-error" role="alert"></p></div></form>`}
         </div>
       </div></section>
     <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2>AI insight</h2><small>Where the case stands today</small></div></div>
