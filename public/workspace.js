@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029081500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029083000";
 import {
   newData,
   profileInput,
@@ -1155,7 +1155,6 @@ function plan(c) {
     advisor = c.mode === "advisor",
     acts = d.actions ?? [],
     done = acts.filter((a) => a.status === "Completed").length,
-    mine = (a) => /owner/i.test(a.assignee),
     parties = [...new Set(acts.map((a) => a.assignee))].map((name) => {
       const list = acts.filter((a) => a.assignee === name);
       return { name, open: list.filter((a) => a.status !== "Completed").length, total: list.length };
@@ -1166,8 +1165,8 @@ function plan(c) {
     journey = transitionJourney(d),
     people = [p.name, ...(d.stakeholders ?? []).map((x) => x.name)],
     shown = people.slice(0, 5);
-  const bubble = (a) =>
-    `<div class="pl-msg ${mine(a) ? "me" : ""} st-${a.status.toLowerCase().replace(" ", "-")}"><div><small class="pl-kind">${esc(a.kind)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small></div><select data-task="${a.id}" aria-label="Status for ${esc(a.title)}" ${state.demo || (!advisor && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></div>`;
+  const note = (a) =>
+    `<article class="pl-note st-${a.status.toLowerCase().replace(" ", "-")}"><i class="pl-pin" aria-hidden="true"></i><small class="pl-kind">${esc(a.kind)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small><select data-task="${a.id}" aria-label="Status for ${esc(a.title)}" ${state.demo || (!advisor && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></article>`;
   return `<h2 class="sr-only">Every next step has an owner.</h2>
   <div class="pl-grid">
     <section class="panel pl-main">
@@ -1178,7 +1177,7 @@ function plan(c) {
         <div class="pl-quick"><a href="#/overview" aria-label="Open meetings">${planIcon(PI.meet)}</a><a href="#/assistant" aria-label="Ask the AI about this plan">${planIcon(PI.ai)}</a><a href="#/history" aria-label="Open case history">${planIcon(PI.history)}</a></div>
       </div>
       <div class="pl-day"><span>Shared actions · ${done} of ${acts.length} done</span></div>
-      <div class="pl-thread">${acts.map(bubble).join("") || `<p class="pl-none">No shared actions yet.</p>`}</div>
+      <div class="pl-board" aria-label="Shared actions board">${acts.map(note).join("") || `<p class="pl-none">No shared actions yet.</p>`}</div>
       ${advisor
         ? `<form data-form="addAction" class="pl-compose"><label class="sr-only" for="field-title">Action</label><input name="title" id="field-title" required maxlength="500" placeholder="Write a new shared action"><label class="sr-only" for="field-assignee">Responsible person / team</label><input name="assignee" id="field-assignee" required maxlength="200" placeholder="Who is responsible"><label class="sr-only" for="field-due">Due date (optional)</label><input name="due" id="field-due" type="date"><button type="submit" class="pl-send" aria-label="Add shared action" ${locked()}>${planIcon(PI.send)}</button></form>`
         : `<div class="pl-compose readonly">${planIcon(PI.list)}<span>Your advisor assigns shared actions. Update your own as work progresses.</span></div>`}

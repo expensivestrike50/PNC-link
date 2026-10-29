@@ -3406,67 +3406,6 @@ button.ld-day.on {
   height: 1px;
   background: var(--line);
 }
-.pl-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.pl-msg {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  max-width: 88%;
-  padding: 12px 14px;
-  border-radius: 18px 18px 18px 4px;
-  background: var(--soft);
-}
-.pl-msg.me {
-  align-self: flex-end;
-  border-radius: 18px 18px 4px 18px;
-  background: var(--pale-b);
-  color: #111;
-}
-.pl-msg > div {
-  flex: 1;
-  min-width: 0;
-}
-.pl-msg p {
-  margin: 2px 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-.pl-msg small {
-  display: block;
-  font-size: 11.5px;
-  color: var(--muted);
-}
-.pl-msg.me small {
-  color: #4a4a4a;
-}
-.ld .pl-msg .pl-kind {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.pl-msg.st-completed p {
-  text-decoration: line-through;
-  opacity: 0.7;
-}
-.ld .ld-page .pl-msg select {
-  flex-shrink: 0;
-  height: 34px;
-  min-height: 0;
-  padding: 0 10px;
-  border-radius: 17px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--ink);
-  font-size: 12.5px;
-}
-.pl-msg.me select {
-  border-color: rgba(0, 0, 0, 0.12);
-}
 .pl-none {
   color: var(--muted);
   text-align: center;
@@ -3664,10 +3603,6 @@ button.ld-day.on {
   }
 }
 @media (max-width: 760px) {
-  .pl-msg {
-    max-width: 100%;
-    flex-wrap: wrap;
-  }
   .pl-compose {
     flex-wrap: wrap;
     border-radius: 18px;
@@ -3680,21 +3615,6 @@ button.ld-day.on {
     padding-left: 4px;
     border-left: 0;
   }
-}
-.ld .ld-page .pl-msg > div {
-  flex: 1 1 auto;
-}
-.ld .ld-page .pl-msg select {
-  flex: 0 0 auto;
-  width: auto;
-  max-width: 140px;
-}
-.ld .ld-page .pl-msg p {
-  color: inherit;
-}
-.ld .ld-page .pl-msg.me select {
-  background: #fff;
-  color: #111;
 }
 .ld .ld-page .pl-compose input {
   border-top: 0;
@@ -3984,9 +3904,6 @@ button.ld-day.on {
 .pl-grid {
   align-items: stretch;
 }
-.ld .ld-page .pl-main .pl-thread {
-  flex: 1;
-}
 
 /* ---------- Planning resources ---------- */
 .rs-top,
@@ -4222,4 +4139,109 @@ button.ld-day.on {
   .ld .rs-match .rs-link {
     margin-left: 54px;
   }
+}
+
+/* Shared action plan: actions pinned to a cork board */
+.pl-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 26px 22px;
+  flex: 1;
+  align-content: start;
+  padding: 30px 24px;
+  border-radius: 18px;
+  border: 8px solid #8a5a2b;
+  background-color: #c8955c;
+  background-image:
+    radial-gradient(rgba(90, 52, 20, 0.35) 1px, transparent 1.6px),
+    radial-gradient(rgba(255, 235, 200, 0.28) 1px, transparent 1.8px),
+    radial-gradient(rgba(120, 72, 30, 0.3) 1.4px, transparent 2px);
+  background-size: 7px 7px, 11px 11px, 17px 17px;
+  background-position: 0 0, 3px 5px, 8px 2px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.pl-note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 170px;
+  padding: 26px 16px 14px;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s;
+}
+.pl-note:nth-child(4n + 1) {
+  transform: rotate(-3deg);
+}
+.pl-note:nth-child(4n + 2) {
+  transform: rotate(2.5deg);
+}
+.pl-note:nth-child(4n + 3) {
+  transform: rotate(-1.5deg);
+}
+.pl-note:nth-child(4n + 4) {
+  transform: rotate(3.5deg);
+}
+.pl-note:hover,
+.pl-note:focus-within {
+  transform: rotate(0) scale(1.03);
+  z-index: 1;
+}
+.pl-pin {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff7a7a, #e01e1e 55%, #a10f0f);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
+}
+.ld .pl-note .pl-kind {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b8b8b;
+}
+.ld .ld-page .pl-note p {
+  flex: 1;
+  margin: 0;
+  color: #111;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.ld .pl-note > small:not(.pl-kind) {
+  font-size: 12px;
+  color: #6b6b6b;
+}
+.ld .ld-page .pl-note select {
+  align-self: flex-start;
+  width: auto;
+  height: 32px;
+  min-height: 0;
+  margin-top: 4px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: 1px solid #ddd;
+  background: #f6f6f6;
+  color: #111;
+  font-size: 12.5px;
+}
+.pl-note.st-in-progress .pl-pin {
+  background: radial-gradient(circle at 35% 35%, #fff07a, #f2d50f 55%, #b39a00);
+}
+.pl-note.st-completed .pl-pin {
+  background: radial-gradient(circle at 35% 35%, #a6f07a, #5bcc29 55%, #2f8a10);
+}
+.ld .ld-page .pl-note.st-completed p {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.ld .pl-board .pl-none {
+  color: #3a2410;
 }
