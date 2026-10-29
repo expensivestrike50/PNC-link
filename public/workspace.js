@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029143000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029150000";
 import {
   newData,
   profileInput,
@@ -26,6 +26,7 @@ import {
   nextSteps,
   transitionJourney,
   portfolioPriority,
+  defaultManagement,
 } from "./domain.mjs";
 const $ = (s) => document.querySelector(s),
   app = $("#app");
@@ -68,6 +69,10 @@ const state = {
   chat: [],
   callback: null,
   portfolioSearch: "",
+  inboxFolder: "All",
+  inboxTab: "All",
+  inboxSearch: "",
+  inboxOpen: null,
   portfolioStage: "All stages",
   portfolioAttention: "All clients",
   portfolioSort: "Attention first",
@@ -1328,17 +1333,67 @@ const INBOX_ROUTE = [
   [/review/i, "readiness", "Review"],
   [/referral/i, "referrals", "Referral"],
 ];
+const INBOX_READ_KEY = "pnc-link-inbox-read";
+const inboxRead = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(INBOX_READ_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+};
+const inboxId = (x) => `${x.c.id}:${x.reason}`;
+const INBOX_FOLDERS = [
+  ["All", '<path d="M3 13l2.5-7.5A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.9 1.5L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>'],
+  ["Meeting", '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>'],
+  ["Follow-up", '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'],
+  ["Review", '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5M12 16h.01"/>'],
+  ["Referral", '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>'],
+  ["Actions", '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>'],
+  ["Family", '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/>'],
+];
+// Advisor inbox: a three-pane view of every signal across the portfolio.
 function inboxPage() {
-  const items = advisorInbox(),
-    high = items.filter((x) => x.high).length;
+  const read = inboxRead(),
+    all = advisorInbox().map((x) => {
+      const [, route, kind] = INBOX_ROUTE.find(([re]) => re.test(x.reason)) ?? [null, "overview", "Update"];
+      return { ...x, route, kind: kind === "Update" ? "Follow-up" : kind, id: inboxId(x), unread: !read.has(inboxId(x)) };
+    }),
+    count = (f) => (f === "All" ? all : all.filter((x) => x.kind === f)).length,
+    q = state.inboxSearch.trim().toLowerCase(),
+    list = all.filter(
+      (x) =>
+        (state.inboxFolder === "All" || x.kind === state.inboxFolder) &&
+        (state.inboxTab === "All" || x.unread) &&
+        (!q || [x.c.data.profile.business, x.c.data.profile.name, x.reason].some((v) => String(v).toLowerCase().includes(q))),
+    ),
+    open = list.find((x) => x.id === state.inboxOpen) ?? list[0],
+    ago = (iso) => {
+      const d = Math.floor((Date.now() - Date.parse(iso)) / 864e5);
+      return d <= 0 ? "Today" : d === 1 ? "1 day ago" : `${d} days ago`;
+    },
+    ic = (d, w = 18) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const detail = open
+    ? (() => {
+        const p = open.c.data.profile,
+          a = portfolioPriority(open.c, today()),
+          r = readiness(open.c.data),
+          note = open.c.data.management?.note ?? "";
+        return `<div class="ix-tools">${button(ic('<path d="M3 12h18M12 3l9 9-9 9"/>'), "openCase", "ix-tool", `data-id="${esc(open.c.id)}" data-route="${open.route}" aria-label="Open in client page" title="Open in client page"`)}${button(ic('<path d="M5 12.5l4.5 4.5L19 7.5"/>'), "inboxDone", "ix-tool", `data-id="${esc(open.id)}" aria-label="Mark as read" title="Mark as read"`)}<span class="ix-sep"></span>${button(ic(ADV_ICON.calendar), "go", "ix-tool", `data-href="#/calendar" aria-label="Calendar" title="Calendar"`)}</div>
+        <div class="ix-head">${personAvatar(p.name)}<div><b>${esc(p.name)}</b><small>${esc(p.business)}</small><small><strong>Re:</strong> ${esc(open.reason)}</small></div><time>${date(open.c.updatedAt)}</time></div>
+        <div class="ix-body"><p>${esc(open.reason)} for ${esc(p.business)}.</p><p>${esc(p.name)} · ${esc(p.industry)} · ${esc(p.trigger)} · ${esc(a.stage)} stage · ${r.verified}/${r.total} evidence categories verified · ${a.openActions} open shared action${a.openActions === 1 ? "" : "s"}.</p>${a.reasons.length > 1 ? `<p>Other signals on this case: ${esc(a.reasons.filter((x) => x !== open.reason).join("; "))}.</p>` : ""}${note ? `<p><strong>Internal note</strong><br>${esc(note)}</p>` : ""}</div>
+        ${state.demo ? "" : `<form data-form="inboxNote" class="ix-reply" data-id="${esc(open.c.id)}"><label for="ix-note" class="sr-only">Internal note</label><textarea id="ix-note" name="note" required maxlength="1000" placeholder="Add an internal note on ${esc(p.business)}..."></textarea><div class="ix-reply-foot"><label class="ix-switch"><input type="checkbox" name="markRead" checked><i aria-hidden="true"></i>Mark as read</label><button type="submit" class="ix-send">Save note</button></div><p class="form-error" role="alert"></p></form>`}`;
+      })()
+    : `<div class="ix-empty">No item selected</div>`;
   return `<h2 class="sr-only">Inbox</h2>
-  <section class="panel"><div class="pl-head"><h2>Inbox</h2><span class="pl-count">${items.length}</span></div><small class="pl-sub">${high} need a response now · signals come from recorded dates, requests and reviews across your assigned clients</small>
-    <ul class="ib-list">${items
-      .map(({ c, reason, high }) => {
-        const [, route, kind] = INBOX_ROUTE.find(([re]) => re.test(reason)) ?? [null, "overview", "Update"];
-        return `<li class="${high ? "hi" : ""}">${personAvatar(c.data.profile.name)}<div><b>${esc(c.data.profile.business)}</b><small>${esc(c.data.profile.name)} · ${esc(reason)}</small></div><em class="pl-chip ${high ? "hi" : "ok"}">${kind}</em>${button("Open", "openCase", "ib-open", `data-id="${esc(c.id)}" data-route="${route}"`)}</li>`;
-      })
-      .join("") || '<li class="pl-none">Nothing needs a response right now.</li>'}</ul></section>`;
+  <div class="ix">
+    <nav class="ix-folders" aria-label="Inbox categories"><div class="ix-account">${ic('<path d="M3 13l2.5-7.5A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.9 1.5L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>')}<b>${esc(state.user?.name || "Advisor")}</b></div>${INBOX_FOLDERS.map(([f, d]) => `<button type="button" class="ix-folder ${state.inboxFolder === f ? "on" : ""}" data-action="inboxFolder" data-folder="${f}">${ic(d)}<span>${f === "All" ? "Inbox" : f}</span>${count(f) ? `<em>${count(f)}</em>` : ""}</button>`).join("")}</nav>
+    <section class="ix-list"><div class="ix-list-head"><h2>Inbox</h2><div class="ix-tabs" role="group" aria-label="Filter">${["All", "Unread"].map((t) => `<button type="button" data-action="inboxTab" data-tab="${t}" class="${state.inboxTab === t ? "on" : ""}" aria-pressed="${state.inboxTab === t}">${t === "All" ? "All mail" : "Unread"}</button>`).join("")}</div></div>
+      <div class="ix-search">${ic('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>')}<label for="inbox-search" class="sr-only">Search</label><input id="inbox-search" type="search" placeholder="Search" value="${esc(state.inboxSearch)}"></div>
+      <div class="ix-items">${list
+        .map((x) => `<button type="button" class="ix-item ${open?.id === x.id ? "on" : ""}" data-action="inboxOpen" data-id="${esc(x.id)}"><span class="ix-row"><b>${esc(x.c.data.profile.name)}</b>${x.unread ? '<i class="ix-dot" aria-label="Unread"></i>' : ""}<time>${ago(x.c.updatedAt)}</time></span><small>${esc(x.c.data.profile.business)}</small><span class="ix-snip">${esc(x.reason)}. ${esc(x.c.data.profile.trigger)} · ${esc(portfolioPriority(x.c, today()).stage)}.</span><span class="ix-tags"><em class="${x.high ? "dark" : ""}">${x.kind}</em><em>${x.high ? "Priority" : "Update"}</em></span></button>`)
+        .join("") || '<p class="ix-none">Nothing here.</p>'}</div></section>
+    <section class="ix-detail">${detail}</section>
+  </div>`;
 }
 // Advisor calendar: follow-ups, meeting requests and action due dates for this month.
 function calendarPage() {
@@ -1907,6 +1962,22 @@ app.addEventListener("submit", async (e) => {
         state.assistantDraft = "";
         render();
       }
+    } else if (kind === "inboxNote") {
+      // Inbox notes append to the client's internal relationship note; stage and follow-up stay as they are.
+      const c = state.cases.find((x) => x.id === f.dataset.id && x.mode === "advisor");
+      if (!c) throw Error("This client is unavailable.");
+      const m = { ...defaultManagement, ...c.data.management },
+        stamp = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        note = `${m.note ? `${m.note}\n` : ""}${stamp}: ${String(data.note ?? "").trim()}`.slice(-3000);
+      await api(`/api/nexus/update?id=${encodeURIComponent(c.id)}`, { revision: c.revision, op: "caseManagement", payload: { stage: m.stage, nextContact: m.nextContact, note } });
+      if (!data.markRead) {
+        const read = inboxRead();
+        read.delete(state.inboxOpen);
+        try { localStorage.setItem(INBOX_READ_KEY, JSON.stringify([...read])); } catch { /* Read state lasts for this visit. */ }
+      }
+      await loadCases();
+      render();
+      notice("Note saved to the client's internal record.");
     } else if (kind === "meeting") {
       const who = f.dataset.advisor,
         when = f.dataset.when;
@@ -2020,6 +2091,17 @@ app.addEventListener("click", async (e) => {
   try {
     if (action === "guest") { await openGuest(); return; }
     // Skip signup goes straight into the local test account.
+    if (action === "inboxFolder") { state.inboxFolder = b.dataset.folder; state.inboxOpen = null; render(); return; }
+    if (action === "inboxTab") { state.inboxTab = b.dataset.tab; state.inboxOpen = null; render(); return; }
+    if (action === "inboxOpen" || action === "inboxDone") {
+      const read = inboxRead();
+      read.add(b.dataset.id);
+      try { localStorage.setItem(INBOX_READ_KEY, JSON.stringify([...read])); } catch { /* Read state lasts for this visit. */ }
+      if (action === "inboxOpen") state.inboxOpen = b.dataset.id;
+      render();
+      return;
+    }
+    if (action === "go") { location.hash = b.dataset.href; return; }
     if (action === "addCompany") {
       notice("Owners add companies: an owner shares their case by entering your advisor email in their discovery profile.");
       return;
@@ -2140,6 +2222,14 @@ app.addEventListener("click", async (e) => {
 });
 app.addEventListener("input", (e) => {
   if (e.target.id === "question") state.assistantDraft = e.target.value;
+  if (e.target.id === "inbox-search") {
+    state.inboxSearch = e.target.value;
+    const pos = e.target.selectionStart;
+    render();
+    const el = $("#inbox-search");
+    el?.focus();
+    el?.setSelectionRange(pos, pos);
+  }
   if (e.target.id === "portfolio-search") {
     state.portfolioSearch = e.target.value;
     $("#portfolio-results").innerHTML = portfolioResults();
