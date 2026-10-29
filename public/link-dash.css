@@ -3987,3 +3987,239 @@ button.ld-day.on {
 .ld .ld-page .pl-main .pl-thread {
   flex: 1;
 }
+
+/* ---------- Planning resources ---------- */
+.rs-top,
+.rs-mid {
+  display: grid;
+  gap: 24px;
+}
+.rs-top {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+.rs-mid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 24px;
+}
+.rs-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 32px;
+  border-radius: 28px;
+  background: #000;
+  color: #fff;
+}
+.ld .rs-feature h2 {
+  max-width: 520px;
+  color: #fff;
+  font-size: 32px;
+  line-height: 1.2;
+}
+.ld .rs-feature p {
+  max-width: 560px;
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.ld .rs-feature .rs-eyebrow {
+  color: #f2d50f;
+}
+.rs-feature-foot {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+.rs-feature-foot small {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #9a9a9a;
+}
+.ld .rs-btn {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 14px;
+  background: #f2d50f;
+  color: #111;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ld .rs-btn:hover {
+  background: #e6c900;
+}
+.ld .rs-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rs-side {
+  display: grid;
+  gap: 24px;
+}
+.ld .ld-page .rs-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.rs-card .ld-ic {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.ld .rs-card h3 {
+  margin: 6px 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+.ld .rs-card p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.ld .rs-link {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: 1.5px solid var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ld .rs-link:hover {
+  background: #f2d50f;
+  border-color: #f2d50f;
+  color: #111;
+}
+.rs-match,
+.rs-qs {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.rs-match li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--soft);
+}
+.rs-match .ld-ic,
+.rs-qs .ld-ic {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.rs-match li > div {
+  flex: 1;
+  min-width: 0;
+}
+.rs-match b {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.rs-match small {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.rs-qs {
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 18px;
+}
+.rs-qs li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--soft);
+}
+.rs-qs .ld-ic {
+  width: 32px;
+  height: 32px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ld .rs-qs p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.ld .ld-page .rs-terms {
+  margin-top: 24px;
+}
+.rs-terms dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.rs-terms dl div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--soft);
+}
+.rs-terms dt {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rs-terms dd {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+@media (max-width: 1200px) {
+  .rs-top,
+  .rs-mid {
+    grid-template-columns: 1fr;
+  }
+  .rs-terms dl {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .rs-feature {
+    padding: 24px;
+  }
+  .ld .rs-feature h2 {
+    font-size: 24px;
+  }
+  .rs-feature-foot,
+  .rs-match li {
+    flex-wrap: wrap;
+  }
+  .rs-qs,
+  .rs-terms dl {
+    grid-template-columns: 1fr;
+  }
+}
+.ld .rs-match small {
+  display: block;
+  margin-top: 2px;
+  line-height: 1.45;
+}
+@media (max-width: 760px) {
+  .rs-match li > div {
+    flex-basis: calc(100% - 54px);
+  }
+  .ld .rs-match .rs-link {
+    margin-left: 54px;
+  }
+}

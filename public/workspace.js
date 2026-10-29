@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029080000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029081500";
 import {
   newData,
   profileInput,
@@ -674,7 +674,63 @@ function portfolioResults() {
   );
   return `<p class="result-count" role="status">${rows.length} client${rows.length === 1 ? "" : "s"} shown</p>${rows.length ? `<div class="table-wrap"><table class="client-table"><caption class="sr-only">Assigned client portfolio and next steps</caption><thead><tr><th>Client relationship</th><th>Stage & evidence</th><th>Needs a conversation</th><th>Next contact</th><th>Open case</th></tr></thead><tbody>${rows.map(({ c, a }) => `<tr><td><b>${esc(c.data.profile.business)}</b><small>${esc(c.data.profile.name)} · ${esc(c.data.profile.industry)}</small></td><td>${badge(a.stage, "gray")}<small>${readiness(c.data).verified}/${readiness(c.data).total} evidence categories verified</small></td><td>${badge(a.label, a.level === "High" ? "amber" : "")}<small>${esc(a.reasons[0] || c.data.profile.trigger)} · ${a.openActions} open actions</small></td><td>${esc(a.nextContact || "Not scheduled")}<small>${esc(c.data.profile.outreach || "On request")}</small></td><td>${button("Open client", "openCase", "secondary small", `data-id="${esc(c.id)}"`)} ${button("AI brief", "caseBrief", "quiet small", `data-id="${esc(c.id)}"`)}</td></tr>`).join("")}</tbody></table></div>` : empty("No clients match", "Clear search or choose another filter. New client cases appear when an owner explicitly shares them with your invited account.")}`;
 }
+// Planning resources inside the dashboard frame, tied to the current case.
+const RES = {
+  research: "https://pnc.mediaroom.com/2026-04-01-PNC-Private-Bank-Research-Reveals-Business-Owners-Increasingly-Want-Integrated-Financial-Advice-to-Help-Align-Business,-Personal-Goals",
+  estate: "https://www.pnc.com/insights/wealth-management/business-continuity-and-succession-planning/estate-equalization-through-life-insurance.html",
+  facts: "https://www.pnc.com/en/about-pnc/media/facts-about-pnc.html",
+};
+const KEY_TERMS = [
+  ["Enterprise value", "The value of the whole business before debt, fees and each owner’s share are taken out."],
+  ["EBITDA multiple", "A working shorthand for value: earnings before interest, taxes, depreciation and amortization, times a chosen multiple."],
+  ["Rollover equity", "Ownership you keep in the business after a transaction instead of taking cash at close."],
+  ["Estate equalization", "Ways to treat heirs fairly when only some of them receive the business."],
+  ["ESOP", "An employee stock ownership plan, which lets employees become owners through a trust."],
+  ["Partial recapitalization", "Selling part of the company to a partner while you keep a stake and a role."],
+];
+function resourcesFramed() {
+  const c = current(),
+    d = c.data,
+    fam = familyBalance({ ...defaultFamilyPlan, ...d.familyPlan }),
+    acts = d.actions ?? [],
+    planned = LIFE_TOPICS.filter(([, re]) => acts.some((x) => re.test(`${x.title} ${x.kind}`))).length,
+    teams = routingSuggestions(d),
+    questions = [
+      "Who wants to operate the business, and who wants an ownership interest?",
+      "How do liquidity, legacy, employee continuity and retained control rank for you?",
+      "What information would you want reviewed before choosing a path?",
+      "How should personal wealth and family conversations begin before a transition?",
+    ],
+    ext = (href, label, cls = "rs-link") => `<a class="${cls}" target="_blank" rel="noopener noreferrer" href="${href}">${label}</a>`;
+  return `<h2 class="sr-only">A stronger plan starts with better questions.</h2>
+  <div class="rs-top">
+    <article class="rs-feature">
+      <small class="rs-eyebrow">Featured research · April 2026</small>
+      <h2>Bring the business and personal plan together.</h2>
+      <p>PNC’s owner research highlights demand for connected advice and barriers to succession planning. It informs the problem PNC-link addresses; customer interviews must still test this solution.</p>
+      <div class="rs-feature-foot">${ext(RES.research, "Read the research", "rs-btn")}<small>Ipsos online survey of 300 U.S. private business owners/co-owners, Nov 19–Dec 10, 2025. Revenue cohorts: $10–50M and $50–125M.</small></div>
+    </article>
+    <div class="rs-side">
+      <article class="panel rs-card"><span class="ld-ic b">${planIcon('<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/>', 20)}</span><div><small class="rs-eyebrow">Family continuity · November 2024</small><h3>Fairness, ownership and liquidity can differ.</h3><p>Prepare questions for estate and insurance specialists; no single allocation fits every family.</p>${ext(RES.estate, "Explore estate equalization")}</div></article>
+      <article class="panel rs-card"><span class="ld-ic g">${planIcon('<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>', 20)}</span><div><small class="rs-eyebrow">PNC capabilities</small><h3>Connect existing expertise around the owner.</h3><p>Banking, business advisory and asset management. The prototype does not connect to internal PNC systems.</p>${ext(RES.facts, "View Facts About PNC")}</div></article>
+    </div>
+  </div>
+  <div class="rs-mid">
+    <section class="panel"><div class="pl-head"><h2>Matched to your case</h2></div><small class="pl-sub">Where each resource meets what is recorded for ${esc(d.profile.business)}</small>
+      <ul class="rs-match">
+        <li><span class="ld-ic p">${planIcon('<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/>', 18)}</span><div><b>Family liquidity</b><small>${fam.liquidityGap > 0 ? `Gap of ${money(fam.liquidityGap)} against an equal-value target` : "Current liquidity covers the equal-value target"}</small></div>${ext(RES.estate, "Estate equalization")}</li>
+        <li><span class="ld-ic y">${planIcon('<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>', 18)}</span><div><b>Business and personal plan</b><small>${planned} of ${LIFE_TOPICS.length} post-transaction topics have a shared action</small></div>${ext(RES.research, "Owner research")}</li>
+        <li><span class="ld-ic g">${planIcon('<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3"/>', 18)}</span><div><b>Specialist teams</b><small>${(d.referrals ?? []).length} handoff${(d.referrals ?? []).length === 1 ? "" : "s"} proposed · ${teams.length} team${teams.length === 1 ? "" : "s"} suggested to discuss</small></div>${ext(RES.facts, "PNC capabilities")}</li>
+      </ul></section>
+    <section class="panel"><div class="pl-head"><h2>Questions to take into your next meeting</h2></div>
+      <ol class="rs-qs">${questions.map((q, i) => `<li><span class="ld-ic ${["y", "b", "g", "p"][i]}">${i + 1}</span><p>${q}</p></li>`).join("")}</ol>
+      ${contextAssistant("Help me prepare questions for a family business transition, using my recorded priorities and PNC's estate equalization resource.", "Prepare questions with AI", true)}</section>
+  </div>
+  <section class="panel rs-terms"><div class="pl-head"><h2>Key terms</h2></div><small class="pl-sub">Plain-language definitions of terms used across PNC-link</small>
+    <dl>${KEY_TERMS.map(([t, def]) => `<div><dt>${t}</dt><dd>${def}</dd></div>`).join("")}</dl></section>`;
+}
 function resources(framed = false) {
+  if (framed && current()) return resourcesFramed();
   const content = `${framed ? '<h2 class="sr-only">A stronger plan starts with better questions.</h2>' : intro("A stronger plan starts with better questions.", "Use PNC’s published research to frame conversations about business, family and personal wealth.", "Planning resources")}<div class="resource-grid"><article class="panel res-card"><span class="ld-ic y res-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/></svg></span><div class="eyebrow">Integrated advice · April 2026</div><h2>Bring the business and personal plan together.</h2><p>PNC’s owner research highlights demand for connected advice and barriers to succession planning. It informs the problem we address; customer interviews must still test this solution.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://pnc.mediaroom.com/2026-04-01-PNC-Private-Bank-Research-Reveals-Business-Owners-Increasingly-Want-Integrated-Financial-Advice-to-Help-Align-Business,-Personal-Goals">Read the research ↗</a><small class="resource-note">Ipsos online survey of 300 U.S. private business owners/co-owners, Nov 19–Dec 10, 2025. Revenue cohorts: $10–50M and $50–125M.</small></article><article class="panel res-card"><span class="ld-ic b res-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></span><div class="eyebrow">Family continuity · November 2024</div><h2>Fairness, ownership and liquidity can differ.</h2><p>PNC’s estate equalization article explores differing family roles and illiquid business interests. Use it to prepare questions for estate and insurance specialists; no single allocation fits every family.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://www.pnc.com/insights/wealth-management/business-continuity-and-succession-planning/estate-equalization-through-life-insurance.html">Explore estate equalization ↗</a></article><article class="panel res-card"><span class="ld-ic g res-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/></svg></span><div class="eyebrow">PNC capabilities</div><h2>Connect existing expertise around the owner.</h2><p>PNC’s corporate profile describes banking, business advisory and asset-management services. PNC-link proposes a shared workflow across that ecosystem; the prototype does not connect to internal PNC systems.</p><a class="btn secondary small" target="_blank" rel="noopener noreferrer" href="https://www.pnc.com/en/about-pnc/media/facts-about-pnc.html">View Facts About PNC ↗</a></article></div><section class="panel section-gap"><h2>Questions to take into your next meeting</h2><ul class="info-list"><li>Who wants to operate the business, and who wants an ownership interest?</li><li>How do liquidity, legacy, employee continuity and retained control rank for you?</li><li>What information would you want reviewed before choosing a path?</li><li>How should personal wealth and family conversations begin before a transition?</li></ul>${state.user || state.demo ? contextAssistant("Help me prepare questions for a family business transition, using my recorded priorities and PNC's estate equalization resource.", "Prepare questions with AI") : '<a class="btn" href="#/guest">Start your transition profile</a>'}</section>`;
   return content;
 }
