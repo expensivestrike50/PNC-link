@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029133000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029140000";
 import {
   newData,
   profileInput,
@@ -775,12 +775,16 @@ function portfolio() {
     inbox = advisorInbox().length,
     soon = today(),
     horizon = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10),
-    upcoming = rows.flatMap((c) => [c.data.management?.nextContact, ...(c.data.actions ?? []).map((x) => x.due)]).filter((x) => x && x >= soon && x <= horizon).length,
-    who = state.demo ? "Relationship advisor" : state.user?.name || state.user?.email || "Advisor";
+    upcoming = rows.flatMap((c) => [c.data.management?.nextContact, ...(c.data.actions ?? []).map((x) => x.due)]).filter((x) => x && x >= soon && x <= horizon).length;
   return `<h2 class="sr-only">A clearer view of every client.</h2>
-  <section class="wb-head"><div><small class="rs-eyebrow wb-eyebrow">Advisor workbench · ${esc(who)}</small><h2>Who needs attention this week</h2><p>Ranked by signals: priority continuity risks, goals without action, trigger urgency, missing evidence, open tensions and pending advisor review.</p></div>
+  <section class="wb-head"><div><h2>Who needs attention this week</h2><p>Ranked by signals: priority continuity risks, goals without action, trigger urgency, missing evidence, open tensions and pending advisor review.</p></div>
     <div class="wb-actions"><a class="wb-pill" href="#/inbox">Inbox · ${inbox} unread</a><a class="wb-pill" href="#/calendar">Calendar · ${upcoming} in 14 days</a>${button("+ Add company", "addCompany", "wb-add")}</div></section>
-  <div class="wb-kpis"><div><small>Shown</small><b id="wb-shown">${rows.length}</b></div><div><small>Immediate triggers</small><b>${sig.filter((x) => x.horizon === "Immediate").length}</b></div><div><small>Priority risks open</small><b>${sig.reduce((n, x) => n + x.risks, 0)}</b></div><div><small>Pending advisor review</small><b>${sig.filter((x) => !x.reviewed).length}</b></div></div>
+  ${kpis([
+    ["Shown", rows.length, "Clients assigned to you"],
+    ["Immediate triggers", sig.filter((x) => x.horizon === "Immediate").length, "Transition within a year"],
+    ["Priority risks open", sig.reduce((n, x) => n + x.risks, 0), "Across all clients"],
+    ["Pending advisor review", sig.filter((x) => !x.reviewed).length, "Discovery not yet reviewed"],
+  ])}
   <div class="wb-controls"><div class="field wb-search"><label for="portfolio-search" class="sr-only">Search clients</label><input id="portfolio-search" type="search" value="${esc(state.portfolioSearch)}" placeholder="Search company, owner, industry"></div><div class="field"><label for="portfolio-stage" class="sr-only">Stage</label><select id="portfolio-stage" aria-label="Stage">${["All stages", ...caseStages].map((x) => `<option ${state.portfolioStage === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></div><div class="field"><label for="portfolio-attention" class="sr-only">Attention</label><select id="portfolio-attention" aria-label="Attention">${["All clients", "Needs attention", "Awaiting review"].map((x) => `<option ${state.portfolioAttention === x ? "selected" : ""}>${x}</option>`).join("")}</select></div><div class="field"><label for="portfolio-sort" class="sr-only">Sort by</label><select id="portfolio-sort" aria-label="Sort by">${[["Attention first", "Sort: needs attention"], ["Recently updated", "Sort: recently updated"], ["Business name", "Sort: company name"]].map(([v, l]) => `<option value="${v}" ${state.portfolioSort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>
   <div id="portfolio-results">${portfolioResults()}</div>
   <p class="wb-more"><a href="#/metrics">Practice insights</a> · effort and outcomes across your portfolio</p>`;
@@ -820,7 +824,7 @@ function portfolioResults() {
     .map(({ c, a }) => {
       const p = c.data.profile,
         g = workbenchSignals(c);
-      return `<tr class="${a.level === "High" ? "hi" : ""}"><td><b>${esc(p.business)}</b><small>${esc(p.name)} · ${esc(a.stage)} · ${g.horizon} · ${g.range}</small></td><td><div class="wb-chips">${chip(g.risks, "priority risk", "priority risks", g.risks ? "warn" : "")}${chip(g.gaps, "goal gap", "goal gaps", g.gaps ? "warn" : "")}${chip(g.evidenceOpen, "evidence open", "evidence open")}${chip(g.tensions, "tension", "tensions")}<em class="wb-chip ${g.reviewed ? "ok" : ""}">${g.reviewed ? "Evidence reviewed" : "Self-reported"}</em></div></td><td><small class="wb-label">Next decision</small><span class="wb-next" title="${esc(g.next)}">${esc(g.next)}</span><small>${esc(String(c.updatedAt).slice(0, 10))}: ${esc(a.reasons[0] ?? "No open signals")}</small></td><td class="wb-open">${button("Client view", "openCase", "wb-link", `data-id="${esc(c.id)}" data-route="dashboard"`)}${button("Open ↗", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(p.business)}"`)}</td></tr>`;
+      return `<tr class="${a.level === "High" ? "hi" : ""}"><td><b>${esc(p.business)}</b><small>${esc(p.name)} · ${esc(a.stage)} · ${g.horizon} · ${g.range}</small></td><td><div class="wb-chips">${chip(g.risks, "priority risk", "priority risks", g.risks ? "warn" : "")}${chip(g.gaps, "goal gap", "goal gaps", g.gaps ? "warn" : "")}${chip(g.evidenceOpen, "evidence open", "evidence open")}${chip(g.tensions, "tension", "tensions")}<em class="wb-chip ${g.reviewed ? "ok" : ""}">${g.reviewed ? "Evidence reviewed" : "Self-reported"}</em></div></td><td><small class="wb-label">Next decision</small><span class="wb-next" title="${esc(g.next)}">${esc(g.next)}</span><small>${esc(String(c.updatedAt).slice(0, 10))}: ${esc(a.reasons[0] ?? "No open signals")}</small></td><td class="wb-open">${button("Client view", "openCase", "wb-link", `data-id="${esc(c.id)}" data-route="dashboard"`)}${button("Open", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(p.business)}"`)}</td></tr>`;
     })
     .join("")}</tbody></table>` : empty("No clients match", "Clear search or choose another filter. New client cases appear when an owner explicitly shares them with your advisor account.")}`;
 }

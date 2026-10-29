@@ -4896,3 +4896,21 @@ button.ld-day.on {
     padding: 0;
   }
 }
+/* Portfolio rows: plain cards, one chip color, no accent bar */
+.wb-table tr td:first-child::before {
+  display: none;
+}
+.wb-table tr td:first-child {
+  padding-left: 22px;
+}
+.wb-table tr.hi td {
+  box-shadow: none;
+}
+.wb-chip.warn,
+.wb-chip.ok {
+  background: var(--soft);
+  color: var(--ink);
+}
+.ld .ld-page .wb-head + .rd-kpis {
+  margin-top: 24px;
+}
