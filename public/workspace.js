@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029061500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029063000";
 import {
   newData,
   profileInput,
@@ -1236,13 +1236,6 @@ function assistant(c) {
     ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><p>${esc(m.answer)}</p></div>`).join("")
     : `<div class="ai-empty"><b>${advisor ? "Prepare for the next client conversation." : "Start with your most important question."}</b><span>Pick a conversation starter or write your own question below.</span></div>`;
   return `<h2 class="sr-only">${advisor ? "A second set of eyes for your case." : "Support for your next conversation."}</h2>
-  <div class="ai-top">
-    <section class="panel ai-card"><div class="panel-head"><div><h2>Case context</h2><small>Recorded updates the AI can draw on</small></div>${badge("Private to your account", "gray")}</div>
-      <div class="ai-big"><b>${state.history.length}</b><span class="ai-delta">+${recent} this week</span></div>
-      <div class="ai-area">${contextArea(state.history, c.createdAt)}</div></section>
-    <section class="panel ai-card"><div class="panel-head"><div><h2>What the AI can draw on</h2><small>Share of each area recorded for ${esc(p.business)}</small></div><span class="ai-callout"><b>${low[1]}%</b> Biggest gap: ${esc(low[0])}</span></div>
-      ${coverageLollipop(cover)}</section>
-  </div>
   <div class="ai-bottom">
     <section class="panel ai-card ai-chat"><div class="panel-head"><div><h2>Chat with PNC-link AI</h2><small class="assistant-context">Working with ${esc(p.business)} · ${esc(p.trigger)} · ${esc(d.pathDecision?.path || "Options open")} · ${r.verified}/${r.total} evidence verified</small></div></div>
       <div class="ai-chat-grid">
@@ -1266,6 +1259,13 @@ function assistant(c) {
       </div>
       <button type="button" class="ld-yellow ai-try" data-ask="${esc(prompts[0][2])}">Try AI insight</button>
       <p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour. <a href="#/resources">Source resources</a></p></section>
+  </div>
+  <div class="ai-top">
+    <section class="panel ai-card"><div class="panel-head"><div><h2>Case context</h2><small>Recorded updates the AI can draw on</small></div>${badge("Private to your account", "gray")}</div>
+      <div class="ai-big"><b>${state.history.length}</b><span class="ai-delta">+${recent} this week</span></div>
+      <div class="ai-area">${contextArea(state.history, c.createdAt)}</div></section>
+    <section class="panel ai-card"><div class="panel-head"><div><h2>What the AI can draw on</h2><small>Share of each area recorded for ${esc(p.business)}</small></div><span class="ai-callout"><b>${low[1]}%</b> Biggest gap: ${esc(low[0])}</span></div>
+      ${coverageLollipop(cover)}</section>
   </div>`;
 }
 function historyPage() {

@@ -3740,3 +3740,6 @@ button.ld-day.on {
     border-right: 0;
   }
 }
+.ai-bottom + .ai-top {
+  margin-top: 0;
+}
