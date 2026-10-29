@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029070000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029074500";
 import {
   newData,
   profileInput,
@@ -1085,6 +1085,14 @@ const PI = {
   list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
+// Post-transition planning topics, matched against action titles and kinds.
+const LIFE_TOPICS = [
+  ["Income and spending needs", /income|spending|liquidity/i],
+  ["Investment policy", /invest/i],
+  ["Estate documents", /estate|will|trust/i],
+  ["Tax planning", /tax/i],
+  ["Family distributions", /family|distribution/i],
+];
 function plan(c) {
   const d = c.data,
     p = d.profile,
@@ -1098,6 +1106,8 @@ function plan(c) {
     }),
     m = d.meeting,
     [what, who, when] = m ? String(m.topic).split(" · ") : [],
+    steps = nextSteps(d, c.mode),
+    journey = transitionJourney(d),
     people = [p.name, ...(d.stakeholders ?? []).map((x) => x.name)],
     shown = people.slice(0, 5);
   const bubble = (a) =>
@@ -1127,7 +1137,25 @@ function plan(c) {
         ${m ? `<div class="pl-row">${planIcon(PI.clock)}<span>${esc(when || `Requested ${date(m.requestedAt)}`)}</span></div><div class="pl-row">${planIcon(PI.cal)}<span>${esc(m.status)}</span></div>` : ""}
         <h3>Attendees</h3>
         <div class="pl-att"><div class="pl-faces">${shown.map((n) => personAvatar(n)).join("")}${people.length > shown.length ? `<span class="ld-person pl-more">+${people.length - shown.length}</span>` : ""}</div><a href="#/overview">${m ? "Manage meeting" : "Request a meeting"}<span class="pl-round sm">${planIcon(PI.send, 15)}</span></a></div></section>
+      <section class="panel pl-progress"><div class="pl-head"><h2>Progress</h2><span class="pl-count">${acts.length ? Math.round((done / acts.length) * 100) : 0}%</span></div>
+        <div class="pl-ring">${progressRing(done, acts.length, `${done}/${acts.length}`, "done")}<ul>${[["v", "Completed"], ["a", "In progress"], ["n", "Open"]].map(([k, st]) => `<li><i class="${k}"></i>${st}<b>${acts.filter((x) => x.status === st).length}</b></li>`).join("")}</ul></div></section>
     </div>
+  </div>
+  <div class="pl-more">
+    <section class="panel"><div class="pl-head"><h2>Suggested next steps</h2><span class="pl-count">${steps.length}</span></div>
+      <ul class="pl-steps">${steps
+        .slice(0, 4)
+        .map((x) => `<li><a href="#/${x.route}"><span class="pl-dot ${x.priority === "High" ? "hi" : ""}"></span><span><b>${esc(x.title)}</b><small>${esc(x.detail)}</small></span>${x.priority === "High" ? '<em class="pl-chip hi">Priority</em>' : ""}</a></li>`)
+        .join("") || '<li class="pl-none">Nothing outstanding right now.</li>'}</ul></section>
+    <section class="panel"><div class="pl-head"><h2>Transition journey</h2><span class="pl-count">${journey.filter((j) => j.status === "Complete").length}/${journey.length}</span></div>
+      <ol class="pl-journey">${journey
+        .map((j) => `<li class="${j.status === "Complete" ? "done" : j.status === "Current" ? "now" : ""}"><i>${j.status === "Complete" ? planIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 14) : ""}</i><a href="#/${j.route}"><b>${esc(j.label)}</b><small>${esc(j.status)}</small></a></li>`)
+        .join("")}</ol></section>
+    <section class="panel"><div class="pl-head"><h2>Life beyond the transaction</h2></div><small class="pl-sub">Topics to cover in the shared plan after a sale or handover</small>
+      <ul class="pl-life">${LIFE_TOPICS.map(([t, re]) => {
+        const has = acts.some((x) => re.test(`${x.title} ${x.kind}`));
+        return `<li><span>${t}</span><em class="pl-chip ${has ? "ok" : ""}">${has ? "Has an action" : "Not yet planned"}</em></li>`;
+      }).join("")}</ul></section>
   </div>
   ${advisor ? `<div class="section-gap">${panel("Observed outcomes", `<p>Record actual results only. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", d.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${d.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", d.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], d.outcomes.retained === null ? "Not recorded" : d.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`)}</div>` : ""}`;
 }
@@ -1205,6 +1233,29 @@ function coverageLollipop(rows) {
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Share of each case area recorded: ${rows.map(([l, v]) => `${l} ${v}%`).join(", ")}">${g}</svg><div class="ai-lbls">${rows.map(([l]) => `<span>${l}</span>`).join("")}</div>`;
 }
+// Four equal wedges pulled apart; each wedge reaches further out the more complete that area is.
+function insightRose(items) {
+  const C = 160,
+    gap = 7,
+    rad = (a) => (a * Math.PI) / 180,
+    pt = (a, r, dx, dy) => [C + dx + r * Math.cos(rad(a)), C + dy + r * Math.sin(rad(a))];
+  let g = "";
+  items.forEach(([label, pct, value, cls], i) => {
+    const a0 = -135 + i * 90,
+      a1 = a0 + 90,
+      mid = rad(a0 + 45),
+      r = 58 + (Math.min(100, Math.max(0, pct)) / 100) * 92,
+      dx = gap * Math.cos(mid),
+      dy = gap * Math.sin(mid),
+      [x0, y0] = pt(a0, r, dx, dy),
+      [x1, y1] = pt(a1, r, dx, dy),
+      lr = Math.max(34, r * 0.58),
+      lx = C + dx + lr * Math.cos(mid),
+      ly = C + dy + lr * Math.sin(mid);
+    g += `<path d="M${(C + dx).toFixed(1)},${(C + dy).toFixed(1)}L${x0.toFixed(1)},${y0.toFixed(1)}A${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}Z" class="ai-rose ${cls}"><title>${label}: ${value}</title></path><text x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" text-anchor="middle" class="ai-rose-v ${cls}">${value}</text><text x="${lx.toFixed(1)}" y="${(ly + 14).toFixed(1)}" text-anchor="middle" class="ai-rose-l ${cls}">${label.split(" ")[0]}</text>`;
+  });
+  return `<svg viewBox="0 0 320 320" width="100%" role="img" aria-label="${items.map(([l, , v]) => `${l} ${v}`).join(", ")}">${g}</svg>`;
+}
 function assistant(c) {
   const advisor = c.mode === "advisor",
     d = c.data,
@@ -1230,8 +1281,6 @@ function assistant(c) {
         ["Family liquidity", "Questions for an estate specialist", "Help me understand the family liquidity illustration and questions to ask an estate specialist."],
         ["Proceeds review", "What a tax advisor should check", "Explain my proceeds assumptions and what a tax and wealth advisor should review."],
       ];
-  const pill = (cls, label, pct, value) =>
-    `<div class="ai-pill"><div class="ai-pill-top"><b>${label}</b><em>${value}</em></div><span class="ai-pill-bar">${pct > 0 ? `<i data-w="${Math.min(100, pct).toFixed(1)}"></i>` : ""}</span></div>`;
   const thread = state.chat.length
     ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><p>${esc(m.answer)}</p></div>`).join("")
     : `<div class="ai-empty"><b>${advisor ? "Prepare for the next client conversation." : "Start with your most important question."}</b><span>Pick a conversation starter or write your own question below.</span></div>`;
@@ -1251,14 +1300,20 @@ function assistant(c) {
         </div>
       </div></section>
     <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2>AI insight</h2><small>Where the case stands today</small></div></div>
-      <div class="ai-pills">
-        ${pill("g", "Evidence verified", r.verifiedScore, `${r.verified}/${r.total}`)}
-        ${pill("y", "Liquidity goal", p.liquidity ? (Math.max(0, cash) / p.liquidity) * 100 : 0, `${p.liquidity ? Math.round((Math.max(0, cash) / p.liquidity) * 100) : 0}%`)}
-        ${pill("b", "Actions done", acts.length ? (acts.filter((a) => a.status === "Completed").length / acts.length) * 100 : 0, `${acts.filter((a) => a.status === "Completed").length}/${acts.length}`)}
-        ${pill("p", "Family liquidity covered", fam.nonBusinessTarget ? (fam.liquidAvailable / fam.nonBusinessTarget) * 100 : 100, fam.liquidityGap > 0 ? `Gap ${shortMoney(fam.liquidityGap)}` : "Covered")}
-      </div>
-      <button type="button" class="ld-yellow ai-try" data-ask="${esc(prompts[0][2])}">Try AI insight</button>
-      <p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour. <a href="#/resources">Source resources</a></p></section>
+      ${(() => {
+        const cashPct = p.liquidity ? (Math.max(0, cash) / p.liquidity) * 100 : 0,
+          doneN = acts.filter((a) => a.status === "Completed").length,
+          famPct = fam.nonBusinessTarget ? (fam.liquidAvailable / fam.nonBusinessTarget) * 100 : 100,
+          items = [
+            ["Evidence verified", r.verifiedScore, `${r.verified}/${r.total}`, "b"],
+            ["Liquidity goal", cashPct, `${Math.round(cashPct)}%`, "y"],
+            ["Actions done", acts.length ? (doneN / acts.length) * 100 : 0, `${doneN}/${acts.length}`, "g"],
+            ["Family liquidity covered", famPct, fam.liquidityGap > 0 ? `Gap ${shortMoney(fam.liquidityGap)}` : "Covered", "p"],
+          ];
+        return `<div class="ai-rose-wrap">${insightRose(items.map(([l, pct, v, k]) => [l, pct, k === "p" && fam.liquidityGap > 0 ? `${Math.round(famPct)}%` : v, k]))}</div><ul class="ai-rose-key">${items.map(([l, , v, k]) => `<li><i class="${k}"></i>${l}<b>${v}</b></li>`).join("")}</ul>`;
+      })()}
+      <p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour. <a href="#/resources">Source resources</a></p>
+      <button type="button" class="ld-yellow ai-try" data-ask="${esc(prompts[0][2])}">Try AI insight</button></section>
   </div>
   <div class="ai-top">
     <section class="panel ai-card"><div class="panel-head"><div><h2>Case context</h2><small>Recorded updates the AI can draw on</small></div>${badge("Private to your account", "gray")}</div>

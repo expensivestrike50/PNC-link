@@ -3180,38 +3180,76 @@ button.ld-day.on {
 }
 
 /* Insight */
-.ai-pills {
+.ai-rose-wrap {
+  max-width: 300px;
+  margin: 4px auto 8px;
+}
+.ai-rose-wrap svg {
+  display: block;
+}
+.ai-rose.b {
+  fill: #11a6f0;
+}
+.ai-rose.y {
+  fill: #f2d50f;
+}
+.ai-rose.g {
+  fill: #5bcc29;
+}
+.ai-rose.p {
+  fill: #f24848;
+}
+.ai-rose-v {
+  font: 600 16px "Poppins", sans-serif;
+  fill: #fff;
+}
+.ai-rose-l {
+  font: 500 12px "Poppins", sans-serif;
+  fill: #fff;
+}
+.ai-rose-v.y,
+.ai-rose-l.y {
+  fill: #111;
+}
+.ai-rose-key {
   display: grid;
-  gap: 16px;
-  margin: 10px 0 20px;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
 }
-.ai-pill-top {
+.ai-rose-key li {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 7px;
-}
-.ai-pill-top b {
+  align-items: center;
+  gap: 10px;
   font-size: 13px;
-  font-weight: 500;
 }
-.ai-pill-top em {
-  font-style: normal;
-  font-size: 13px;
+.ai-rose-key li b {
+  margin-left: auto;
   font-weight: 600;
 }
-.ai-pill-bar {
-  display: block;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--track);
-  overflow: hidden;
+.ai-rose-key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
 }
-.ai-pill-bar i {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
+.ai-rose-key i.b {
+  background: #11a6f0;
+}
+.ai-rose-key i.y {
   background: #f2d50f;
+}
+.ai-rose-key i.g {
+  background: #5bcc29;
+}
+.ai-rose-key i.p {
+  background: #f24848;
+}
+.ld .ld-page .ai-insight .ai-try {
+  margin-top: auto;
+}
+.ld .ld-page .ai-insight .footer-note {
+  margin: 0 0 14px;
 }
 .ld .ai-try {
   display: flex;
@@ -3732,4 +3770,220 @@ button.ld-day.on {
 }
 .ld .rd-radar .rd-dot {
   r: 7.5px;
+}
+
+/* Shared action plan: progress and the lower row */
+.pl-ring {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.pl-ring svg {
+  flex-shrink: 0;
+}
+.pl-ring .mt-ring-track {
+  stroke: var(--soft);
+}
+.pl-ring .mt-ring-fill {
+  stroke: #5bcc29;
+}
+.pl-ring .mt-ring-num {
+  fill: var(--ink);
+  font: 600 22px "Poppins", sans-serif;
+}
+.pl-ring .mt-ring-sub {
+  fill: var(--muted);
+  font: 400 12px "Poppins", sans-serif;
+}
+.pl-ring ul {
+  display: grid;
+  flex: 1;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pl-ring li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.pl-ring li b {
+  margin-left: auto;
+  font-weight: 600;
+}
+.pl-ring li i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track);
+}
+.pl-ring li i.v {
+  background: #5bcc29;
+}
+.pl-ring li i.a {
+  background: #f2d50f;
+}
+.pl-more {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.pl-sub {
+  display: block;
+  margin: -6px 0 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pl-steps,
+.pl-journey,
+.pl-life {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ld .pl-steps a {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.ld .pl-steps a:hover {
+  background: var(--row);
+}
+.pl-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #11a6f0;
+}
+.pl-dot.hi {
+  background: #f24848;
+}
+.pl-steps b,
+.pl-journey b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.pl-steps small,
+.pl-journey small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pl-steps a > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.pl-chip {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--soft);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pl-steps .pl-chip {
+  background: var(--card);
+}
+.pl-chip.hi {
+  background: var(--pale-p);
+  color: #111;
+}
+.pl-chip.ok {
+  background: var(--pale-g);
+  color: #111;
+}
+.pl-journey li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.pl-journey li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 34px;
+  left: 13px;
+  width: 2px;
+  height: calc(100% - 22px);
+  background: var(--track);
+}
+.pl-journey li.done:not(:last-child)::after {
+  background: #5bcc29;
+}
+.pl-journey i {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--track);
+  color: #111;
+}
+.pl-journey li.done i {
+  border-color: #5bcc29;
+  background: #5bcc29;
+}
+.pl-journey li.now i {
+  border-color: #f2d50f;
+}
+.pl-life li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.pl-life li:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 1280px) {
+  .pl-more {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .pl-more {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AI assistant: the question form sits at the bottom, level with the starters column. */
+.ld .ld-page .ai-chat .ai-chat-grid {
+  flex: 1;
+}
+.ld .ld-page .ai-convo {
+  align-self: stretch;
+}
+.ld .ld-page .ai-thread-log {
+  flex: 1;
+}
+.ld .ld-page .ai-convo > .ai-form,
+.ld .ld-page .ai-convo > .callout {
+  margin-top: auto;
+}
+.ld .ld-page .ai-side {
+  align-self: end;
+}
+.pl-grid {
+  align-items: stretch;
+}
+.ld .ld-page .pl-main .pl-thread {
+  flex: 1;
 }
