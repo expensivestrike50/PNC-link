@@ -244,7 +244,7 @@ async function refresh(page) {
 try {
   const advisor = await open("advisor");
   // Sign in lands on the dashboard; the portfolio is one click away.
-  await advisor.getByRole("link", { name: "Client portfolio", exact: true }).click();
+  await advisor.getByRole("link", { name: "Portfolio", exact: true }).click();
   await expect(
     advisor.getByRole("heading", {
       name: "A clearer view of every client.",
@@ -289,7 +289,7 @@ try {
   await advisor
     .locator("#portfolio-results tbody tr")
     .filter({ hasText: "Arden Family Tools" })
-    .getByRole("button", { name: "Open client", exact: true })
+    .getByRole("button", { name: /^Open /, exact: false })
     .click();
   await expect(
     advisor.getByRole("heading", { name: "Arden Family Tools", exact: true }),
@@ -382,7 +382,7 @@ try {
     owner.getByRole("heading", { name: "Arden Family Tools", exact: true }),
   ).toBeVisible();
   await expect(
-    owner.getByRole("link", { name: "Client portfolio", exact: true }),
+    owner.getByRole("link", { name: "Portfolio", exact: true }),
   ).toHaveCount(0);
   await expect(
     owner.getByLabel("Internal relationship note", { exact: true }),

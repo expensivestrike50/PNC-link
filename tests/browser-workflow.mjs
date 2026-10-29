@@ -145,7 +145,7 @@ for (const label of ["Financial statements", "Ownership and debt schedule"]) {
 }
 const advisor = await open("advisor");
 // Sign in lands on the dashboard; the portfolio is one click away.
-await advisor.getByRole("link", { name: "Client portfolio", exact: true }).click();
+await advisor.getByRole("link", { name: "Portfolio", exact: true }).click();
 await advisor
   .getByRole("heading", {
     name: "A clearer view of every client.",
@@ -154,7 +154,7 @@ await advisor
   .waitFor();
 await advisor
   .locator("#portfolio-results")
-  .getByRole("button", { name: "Open client", exact: true })
+  .getByRole("button", { name: /^Open /, exact: false })
   .click();
 await advisor
   .getByRole("heading", { name: "Malik <Tools> & Family", exact: true })

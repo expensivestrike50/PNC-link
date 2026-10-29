@@ -69,6 +69,8 @@ await page
 await page
   .getByRole("heading", { name: "Measure the journey, then test the impact." })
   .waitFor();
+// Advisor client pages sit under "Client pages" in the sidebar.
+await page.locator(".adv-pages summary").click();
 await page
   .getByRole("link", { name: "Readiness & review", exact: true })
   .click();
@@ -87,8 +89,14 @@ await page.setViewportSize({ width: 390, height: 844 });
 // On narrow screens the sidebar is off-canvas; open it before following a link.
 const navTo = async (name) => {
   const menu = page.getByRole("button", { name: "Show sidebar" });
-  if ((await menu.count()) && (await menu.first().isVisible())) await menu.first().click();
-  await page.getByRole("link", { name, exact: true }).click();
+  if ((await menu.count()) && (await menu.first().isVisible())) {
+    await menu.first().click();
+    await page.waitForTimeout(350); // let the sidebar finish sliding in
+  }
+  const pages = page.locator("details.adv-pages:not([open]) summary");
+  const link = page.getByRole("link", { name, exact: true });
+  if ((await pages.count()) && !(await link.isVisible())) await pages.click();
+  await link.click();
 };
 await navTo("Transition options");
 await page
@@ -106,7 +114,7 @@ await page.screenshot({
   animations: "disabled",
 });
 for (const [name, heading] of [
-  ["Client portfolio", "A clearer view of every client."],
+  ["Portfolio", "A clearer view of every client."],
   ["Family & legacy", "Plan for the people behind the business."],
   ["AI assistant", "A second set of eyes for your case."],
   ["Planning resources", "A stronger plan starts with better questions."],

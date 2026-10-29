@@ -2732,3 +2732,109 @@ body:has(.ld.light) {
   font-size: 13.5px;
   white-space: nowrap;
 }
+
+/* ---------- Advisor sidebar ---------- */
+.ws-side .adv-sub {
+  margin: -4px 14px 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8a8a8a;
+}
+.ws-side .nav-svg {
+  flex-shrink: 0;
+}
+.ws-side .adv-badge {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #f2711c;
+  color: #fff;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.adv-company {
+  display: grid;
+  gap: 6px;
+  margin: 18px 6px 0;
+  padding: 0 8px;
+}
+.adv-company label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.adv-company select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #f2711c;
+  border-radius: 12px;
+  background: #1d1d1d;
+  color: #fff;
+  font: 500 14px "Poppins", sans-serif;
+}
+.adv-company b {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+}
+.adv-company > small {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8a8a8a;
+}
+.adv-pages {
+  margin-top: 6px;
+}
+.adv-pages summary {
+  padding: 6px 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #bdbdbd;
+  cursor: pointer;
+}
+.adv-pages nav {
+  display: grid;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.ws-side .adv-page {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #9a9a9a;
+}
+.ws-side .adv-page:hover {
+  background: #1d1d1d;
+  color: #fff;
+}
+.ws-side .adv-page.active {
+  background: #fff5bd;
+  color: #111;
+  font-weight: 600;
+}
+.adv-foot {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #2a2a2a;
+}
+.adv-foot small {
+  display: block;
+  margin: 8px 14px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8a8a8a;
+}
+.adv-side .ws-theme {
+  margin-top: auto;
+}
+.adv-side {
+  overflow-y: auto;
+}
+/* The advisor sidebar scrolls instead of squashing its links when space runs out. */
+.adv-side > * {
+  flex-shrink: 0;
+}
