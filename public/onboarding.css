@@ -258,3 +258,25 @@ textarea.ob-field { height: 130px; padding: 14px 16px; resize: vertical; line-he
 }
 .ob .ob-btn:disabled { box-shadow: none; }
 .ob .ob-opt.sel::after { width: 22px; height: 22px; background-size: 12px; }
+/* Banking illustrations in place of emoji */
+.ob-art { display: block; }
+.ob .ob-opt .emo { height: 64px; display: flex; align-items: center; justify-content: center; }
+.ob .ob-roles .emo { height: 52px; }
+.ob .ob-opt .emo .ob-art { width: 58px; height: 58px; padding: 6px; border-radius: 16px; background: #F3F8FC; }
+.ob .ob-opt.sel .emo .ob-art { background: #fff; }
+.ob .ob-roles .emo .ob-art { width: 48px; height: 48px; padding: 5px; }
+.ob-resume .av { background: #E6F0F7; }
+.ob-info .ico { line-height: 0; }
+.ob-stat .v .ob-art { flex-shrink: 0; }
+
+/* Centre each step in the window, with the progress bar matching the content width */
+.ob.show { display: flex; flex-direction: column; }
+.ob-top { width: 100%; max-width: 900px; }
+.ob > .ob-body { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: center; padding-bottom: 96px; }
+.ob > .ob-body > .ob-center { min-height: 0; }
+.ob .ob-foot { width: 100%; }
+.ob .ob-foot:not(.ob-wide):not(.ob-full) { max-width: 520px; }
+.ob .ob-opt .emo .ob-art { width: 64px; height: 64px; padding: 4px; }
+.ob .ob-opt .emo { height: 68px; }
+.ob .ob-roles .emo .ob-art { width: 52px; height: 52px; padding: 3px; }
+.ob .ob-roles .emo { height: 56px; }

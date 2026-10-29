@@ -6,23 +6,44 @@
 const esc = (v) =>
   String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+// Flat banking illustrations in the brand palette (blue #0069AA, orange #F58025), replacing emoji.
+const B = "#0069AA", O = "#F58025", PB = "#D6E8F3", PO = "#FDE6D3", INK = "#0B2A3F";
+const ART = {
+  retirement: `<circle cx="46" cy="16" r="8" fill="${O}"/><path d="M6 52h52" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M16 50l10-22h10" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 38h18l6 12" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="18" y="34" width="22" height="6" rx="3" fill="${O}"/>`,
+  family: `<path d="M10 30L32 12l22 18" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="28" width="34" height="24" rx="3" fill="${PB}" stroke="${B}" stroke-width="3"/><rect x="27" y="38" width="10" height="14" rx="2" fill="${O}"/><circle cx="50" cy="20" r="5" fill="${O}"/>`,
+  offer: `<rect x="8" y="16" width="48" height="34" rx="5" fill="${PB}" stroke="${B}" stroke-width="3"/><path d="M10 19l22 16 22-16" fill="none" stroke="${B}" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="44" r="10" fill="${O}"/><path d="M48 39v10M45 41.5c0-1.5 1.3-2.5 3-2.5s3 1 3 2.3-1.3 2-3 2.2-3 .9-3 2.3 1.3 2.2 3 2.2 3-1 3-2.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
+  liquidity: `<path d="M24 12h16l-4 8H28z" fill="${O}"/><path d="M28 20c-12 6-18 16-18 24 0 6 6 10 22 10s22-4 22-10c0-8-6-18-18-24z" fill="${B}"/><path d="M32 29v18M27 33c0-2 2-3.5 5-3.5s5 1.5 5 3.4-2 3-5 3.3-5 1.4-5 3.4 2 3.4 5 3.4 5-1.4 5-3.6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`,
+  partner: `<path d="M6 30l10-10 10 4 6-4 10 2 16 8" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 34l10 10c2 2 5 2 7 0l11-10" fill="${PB}" stroke="${B}" stroke-width="3" stroke-linejoin="round"/><path d="M26 26l8 8" stroke="${O}" stroke-width="4" stroke-linecap="round"/>`,
+  growth: `<path d="M8 52h48" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><rect x="12" y="38" width="8" height="12" rx="2" fill="${PB}"/><rect x="26" y="30" width="8" height="20" rx="2" fill="${B}" opacity=".6"/><rect x="40" y="20" width="8" height="30" rx="2" fill="${B}"/><path d="M12 30l14-10 10 6 16-14" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M44 12h8v8" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  unsure: `<circle cx="32" cy="32" r="22" fill="${PB}" stroke="${B}" stroke-width="3"/><path d="M40 24l-5 13-11 5 5-13z" fill="${O}"/><circle cx="32" cy="32" r="2.5" fill="${INK}"/>`,
+  exit: `<rect x="12" y="10" width="26" height="44" rx="3" fill="${PB}" stroke="${B}" stroke-width="3"/><circle cx="31" cy="33" r="2" fill="${B}"/><path d="M40 32h16M50 26l6 6-6 6" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  stepBack: `<path d="M8 52h14V40h12V28h12V16h10" fill="none" stroke="${B}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="30" r="5" fill="${O}"/><path d="M16 35v8" stroke="${O}" stroke-width="4" stroke-linecap="round"/>`,
+  lead: `<circle cx="32" cy="20" r="9" fill="${O}"/><path d="M14 54c2-12 9-18 18-18s16 6 18 18z" fill="${B}"/><path d="M32 38l-4 6 4 10 4-10z" fill="${PO}"/>`,
+  think: `<path d="M12 18a10 10 0 0 1 10-10h20a10 10 0 0 1 10 10v12a10 10 0 0 1-10 10H28l-10 8v-8a10 10 0 0 1-6-9z" fill="${PB}" stroke="${B}" stroke-width="3" stroke-linejoin="round"/><path d="M27 19a5 5 0 1 1 7 4.6c-1.4.6-2 1.6-2 3v1" fill="none" stroke="${O}" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="33" r="2" fill="${O}"/>`,
+  bank: `<path d="M8 24L32 10l24 14z" fill="${B}"/><rect x="12" y="26" width="40" height="4" fill="${B}"/><path d="M17 32v14M27 32v14M37 32v14M47 32v14" stroke="${B}" stroke-width="4" stroke-linecap="round"/><rect x="8" y="48" width="48" height="6" rx="2" fill="${O}"/>`,
+  folder: `<path d="M8 18a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v24a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="${PB}" stroke="${B}" stroke-width="3" stroke-linejoin="round"/><rect x="22" y="30" width="20" height="14" rx="2" fill="${O}"/><path d="M27 30v-3a5 5 0 0 1 10 0v3" fill="none" stroke="${O}" stroke-width="3"/>`,
+  chart: `<path d="M10 50V14M10 50h44" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M16 42l10-12 10 6 14-16" fill="none" stroke="${O}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
+  advisor: `<circle cx="24" cy="22" r="8" fill="${B}"/><path d="M10 52c1-10 7-15 14-15s13 5 14 15z" fill="${B}"/><circle cx="44" cy="26" r="7" fill="${O}"/><path d="M34 52c1-8 5-12 10-12s9 4 10 12z" fill="${O}"/>`,
+};
+export const art = (id, size = 56) => `<svg class="ob-art" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">${ART[id] ?? ART.unsure}</svg>`;
+
 export const OB_ROUTES = ["welcome", "start/reason", "start/business", "start/notes", "start/building", "start/done"];
 
 // Each reason maps to a transition trigger the case already understands.
 export const REASONS = [
-  { id: "retirement", emo: "🏖️", t: "Retirement", d: "Stepping back on your own timeline." },
-  { id: "family", emo: "🌳", t: "Family succession", d: "Passing leadership or ownership to family." },
-  { id: "offer", emo: "✉️", t: "Unsolicited offer", d: "Someone asked to buy. Is it fair?" },
-  { id: "liquidity", emo: "💰", t: "Liquidity need", d: "Taking some value off the table." },
-  { id: "partner", emo: "🤝", t: "Partner change", d: "A co-owner is leaving or arriving." },
-  { id: "growth", emo: "🚀", t: "Growth capital", d: "Funding the next chapter." },
-  { id: "unsure", emo: "🧭", t: "Not sure yet", d: "Just want to understand the options." },
+  { id: "retirement", art: "retirement", t: "Retirement", d: "Stepping back on your own timeline." },
+  { id: "family", art: "family", t: "Family succession", d: "Passing leadership or ownership to family." },
+  { id: "offer", art: "offer", t: "Unsolicited offer", d: "Someone asked to buy. Is it fair?" },
+  { id: "liquidity", art: "liquidity", t: "Liquidity need", d: "Taking some value off the table." },
+  { id: "partner", art: "partner", t: "Partner change", d: "A co-owner is leaving or arriving." },
+  { id: "growth", art: "growth", t: "Growth capital", d: "Funding the next chapter." },
+  { id: "unsure", art: "unsure", t: "Not sure yet", d: "Just want to understand the options." },
 ];
 const ROLES = [
-  ["🌅", "Exit fully", "Hand over and step away."],
-  ["🪜", "Step back gradually", "Stay involved while others take over."],
-  ["🧑‍✈️", "Continue leading", "Keep running it for now."],
-  ["🤔", "Not sure yet", "Decide later with your advisor."],
+  ["exit", "Exit fully", "Hand over and step away."],
+  ["stepBack", "Step back gradually", "Stay involved while others take over."],
+  ["lead", "Continue leading", "Keep running it for now."],
+  ["think", "Not sure yet", "Decide later with your advisor."],
 ];
 
 const mascot = `<svg class="ob-mascot" viewBox="0 0 120 120" aria-hidden="true">
@@ -77,7 +98,7 @@ export function onboardingScreen(route, ob, ctx) {
       </div>
       <div class="ob-foot">
         <button type="button" class="ob-btn" data-action="obStart" data-mode="new">New profile</button>
-        ${ctx.business ? `<div class="ob-or">OR</div><button type="button" class="ob-resume" data-action="obStart" data-mode="assess"><span class="av" aria-hidden="true">🏭</span><span><span class="k">Assessment</span><br><span class="v">${esc(ctx.business)}</span></span>${chevron}</button>` : ""}
+        ${ctx.business ? `<div class="ob-or">OR</div><button type="button" class="ob-resume" data-action="obStart" data-mode="assess"><span class="av">${art("bank", 32)}</span><span><span class="k">Assessment</span><br><span class="v">${esc(ctx.business)}</span></span>${chevron}</button>` : ""}
       </div>
     </div>`;
   if (route === "start/reason")
@@ -85,7 +106,7 @@ export function onboardingScreen(route, ob, ctx) {
     <div class="ob-body ob-w860">
       <h1 class="ob-h1" tabindex="-1">What brought you here?</h1>
       <p class="ob-hint">Pick the closest. You can change it later.</p>
-      <div class="ob-options" role="group" aria-label="Reasons">${REASONS.map((r) => `<button type="button" class="ob-opt ${ob.reason === r.id ? "sel" : ""}" data-action="obReason" data-id="${r.id}" aria-pressed="${ob.reason === r.id}"><span class="emo" aria-hidden="true">${r.emo}</span><span class="t">${r.t}</span><span class="d">${r.d}</span></button>`).join("")}</div>
+      <div class="ob-options" role="group" aria-label="Reasons">${REASONS.map((r) => `<button type="button" class="ob-opt ${ob.reason === r.id ? "sel" : ""}" data-action="obReason" data-id="${r.id}" aria-pressed="${ob.reason === r.id}"><span class="emo">${art(r.art)}</span><span class="t">${r.t}</span><span class="d">${r.d}</span></button>`).join("")}</div>
       <div class="ob-foot ob-wide"><button type="button" class="ob-btn" data-action="obNext" data-to="${nextAfterReason(mode)}" ${ob.reason ? "" : "disabled"}>Continue</button></div>
     </div>`;
   if (route === "start/business")
@@ -98,7 +119,7 @@ export function onboardingScreen(route, ob, ctx) {
         <label class="ob-label" for="ob-industry">Industry</label><input class="ob-field" id="ob-industry" name="industry" required maxlength="200" value="${esc(ob.industry)}" placeholder="e.g. Food & beverage">
         <label class="ob-label" for="ob-years">When would you like to transition? <span>${esc(ob.timeline ?? 3)} years</span></label><input class="ob-range" id="ob-years" name="timeline" type="range" min="0" max="10" step="1" value="${esc(ob.timeline ?? 3)}">
         <div class="ob-label">Your role afterwards</div>
-        <div class="ob-options ob-roles" role="radiogroup" aria-label="Your role afterwards">${ROLES.map(([emo, t, d]) => `<label class="ob-opt ${ob.futureRole === t ? "sel" : ""}"><input type="radio" name="futureRole" value="${t}" ${ob.futureRole === t ? "checked" : ""} required><span class="emo" aria-hidden="true">${emo}</span><span class="t">${t}</span><span class="d">${d}</span></label>`).join("")}</div>
+        <div class="ob-options ob-roles" role="radiogroup" aria-label="Your role afterwards">${ROLES.map(([emo, t, d]) => `<label class="ob-opt ${ob.futureRole === t ? "sel" : ""}"><input type="radio" name="futureRole" value="${t}" ${ob.futureRole === t ? "checked" : ""} required><span class="emo">${art(emo, 48)}</span><span class="t">${t}</span><span class="d">${d}</span></label>`).join("")}</div>
         <div class="ob-foot ob-wide"><button type="submit" class="ob-btn">Continue</button></div>
       </form>
     </div>`;
@@ -108,7 +129,7 @@ export function onboardingScreen(route, ob, ctx) {
       <div class="ob-talk">${mascot}<div class="ob-bubble">Almost there! Anything else I should know?</div></div>
       <label class="ob-label" for="obNotes">Anything else on your mind? <span>(optional)</span></label>
       <textarea class="ob-field" id="obNotes" maxlength="2000" placeholder="e.g. My daughter runs operations, but I'm not sure she wants to own it.">${esc(ob.notes)}</textarea>
-      <div class="ob-info ob-mt16"><span class="ico" aria-hidden="true">📁</span><div><b>Have documents?</b> Secure file upload is not connected in this prototype. Track what you have on the readiness checklist instead.</div></div>
+      <div class="ob-info ob-mt16"><span class="ico">${art("folder", 34)}</span><div><b>Have documents?</b> Secure file upload is not connected in this prototype. Track what you have on the readiness checklist instead.</div></div>
       <div class="ob-foot ob-wide">
         <button type="button" class="ob-btn" data-action="obFinish">${mode === "new" ? "Create my profile" : "Start assessment"}</button>
         <div class="ob-note">${lock} ${ctx.localOnly ? "Saved in this browser only." : "Saved to your case."}</div>
@@ -134,9 +155,9 @@ export function onboardingScreen(route, ob, ctx) {
       <h1 class="ob-h1 ob-mt20" tabindex="-1">Your picture is ready${ctx.firstName ? `, ${esc(ctx.firstName)}` : ""}!</h1>
       <p class="ob-lead">${esc(ctx.business || "Your business")} is set up with a starting view. Your advisor will verify it with you.</p>
       <div class="ob-stats">
-        <div class="ob-stat s1"><div class="h">Reason</div><div class="v"><span aria-hidden="true">${reason.emo}</span> ${reason.t}</div></div>
-        <div class="ob-stat s2"><div class="h">Readiness</div><div class="v"><span aria-hidden="true">📈</span> ${esc(ctx.readiness ?? 0)}%</div></div>
-        <div class="ob-stat s3"><div class="h">Advisor</div><div class="v"><span aria-hidden="true">👥</span> ${esc(ctx.advisorName || "Not yet")}</div></div>
+        <div class="ob-stat s1"><div class="h">Reason</div><div class="v">${art(reason.art, 26)} ${reason.t}</div></div>
+        <div class="ob-stat s2"><div class="h">Readiness</div><div class="v">${art("chart", 26)} ${esc(ctx.readiness ?? 0)}%</div></div>
+        <div class="ob-stat s3"><div class="h">Advisor</div><div class="v">${art("advisor", 26)} ${esc(ctx.advisorName || "Not yet")}</div></div>
       </div>
       <div class="ob-foot ob-full"><a class="ob-btn" href="#/dashboard">Go to my dashboard</a></div>
     </div></div>`;
