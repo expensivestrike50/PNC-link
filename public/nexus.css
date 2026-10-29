@@ -2570,15 +2570,6 @@ body:has(.ld.light) {
   padding: 0 40px;
   font-size: 17px;
 }
-.lph-foot {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 14px;
-  font-size: 11px;
-  color: #9a9a9a;
-  text-align: center;
-}
 /* Sign in / sign up: owner or advisor */
 .role-switch {
   display: grid;

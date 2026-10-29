@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029110000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029111500";
 import {
   newData,
   profileInput,
@@ -583,7 +583,6 @@ function home() {
       <div><span class="lph-ic">${icon('<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>')}</span><div><b>89% · 55%</b><small>value integrated advice · use one advisor for both</small></div></div>
       ${button("Explore the sample", "demo", "lph-cta lg")}
     </section>
-    <p class="lph-foot">PNC 2026 owner research: 300 U.S. private business owners and co-owners; surveyed Nov–Dec 2025. Research supports the problem, not this product’s effectiveness. · PNC-link · Case competition concept · Not an official PNC service</p>
   </main></div>`;
 }
 // Owner or advisor workspace, chosen on the sign-in and sign-up forms.
