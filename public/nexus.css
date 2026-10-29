@@ -2728,3 +2728,7 @@ body:has(.ld.light) {
   color: #6b6b6b;
   cursor: pointer;
 }
+.lph-tag {
+  font-size: 13.5px;
+  white-space: nowrap;
+}
