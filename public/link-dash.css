@@ -2892,3 +2892,33 @@ button.ld-day.on {
 .hs-bar i.y {
   background: #f2d50f;
 }
+
+/* Family & legacy: "Add a relationship" as a black button like the dashboard's */
+.ld .ld-page .relationship-add summary {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #000;
+  color: #fff;
+  font: 500 14px "Poppins", sans-serif;
+  list-style: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ld .ld-page .relationship-add summary::-webkit-details-marker {
+  display: none;
+}
+.ld .ld-page .relationship-add summary:hover {
+  background: #222;
+}
+.ld .ld-page .relationship-add summary:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+.ld .ld-page .panel-head .ld-black {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
