@@ -1,6 +1,6 @@
 import { mutate } from "./workflow.mjs?v=20261029210000";
-import { OB_ROUTES, REASONS, onboardingScreen, mountOnboarding, prevRoute } from "./onboarding.js?v=20261029223000";
-import { ADVISOR_NAME, ADVISOR_PHOTO, linkAdvisorDashboard, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029210000";
+import { OB_ROUTES, REASONS, onboardingScreen, mountOnboarding, prevRoute } from "./onboarding.js?v=20261029233000";
+import { ADVISOR_NAME, ADVISOR_PHOTO, linkAdvisorDashboard, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029233000";
 import {
   newData,
   profileInput,
@@ -770,6 +770,13 @@ function sideNav(r, c) {
     .join("")}</nav><div class="ws-promo"><div class="ws-promo-img"><img src="./assets/family.png" alt=""></div><div class="ws-promo-body"><b>Prepare smarter with PNC\u2011link AI</b><p>Explanations, meeting agendas and questions grounded in your case.</p><a class="ws-yellow" href="#/assistant">Ask PNC\u2011link AI</a></div></div><div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
 const menuButton = `<button type="button" class="ws-menu" data-ws-menu aria-label="Show sidebar" title="Show sidebar"><svg width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="M1 1.5h18M1 8h18M1 14.5h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
+// Client / Advisor switch for the test logins (the demo has its own sample switch).
+const roleSwitchable = () => !state.demo && state.guest && String(state.user?.id ?? "").startsWith("local-test");
+function viewToggle(cls = "ld-switch") {
+  if (!roleSwitchable()) return "";
+  const adv = isAdvisor();
+  return `<div class="${cls}" role="group" aria-label="Workspace view"><button type="button" class="${adv ? "" : "on"}" ${adv ? 'data-action="roleSwitch" data-role="owner" aria-label="Switch to client view"' : 'aria-pressed="true" disabled'}>Client</button><button type="button" class="${adv ? "on" : ""}" ${adv ? 'aria-pressed="true" disabled' : 'data-action="roleSwitch" data-role="advisor" aria-label="Switch to advisor view"'}>Advisor</button></div>`;
+}
 // Case picker for anyone with more than one case; shown in both header styles.
 const casePicker = () =>
   state.cases.length > 1
@@ -791,9 +798,9 @@ function shell(body, r) {
       .map((x) => x[0].toUpperCase())
       .join(""),
     owner = state.demoRole === "owner";
-  const viewSwitch = state.demo
-    ? `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
-    : "";
+  const viewSwitch = !state.demo
+    ? viewToggle("view-switch")
+    : `<div class="view-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`;
   return `<div class="shell nx ${wsTheme()}">${sideNav(r, c)}<div class="content"><header class="topbar"><div class="topbar-title">${menuButton}<p class="page-title">${esc(title)}</p>${viewSwitch}</div><div class="row topbar-right">${casePicker()}${!state.demo ? button("Refresh", "refresh", "secondary small") : ""}<div class="acct"><button type="button" class="hdr-avatar" data-acct aria-haspopup="menu" aria-expanded="false" aria-label="Account menu">${avatarImage(c?.data.profile.name, mode) || `<span>${esc(initials || "?")}</span>`}</button><div class="acct-menu" role="menu" hidden><div class="acct-who"><b>${esc(who)}</b><span>${roleLabel}</span></div><a href="#/discovery" role="menuitem">Discovery profile</a><a href="#/resources" role="menuitem">Planning resources</a>${!state.demo ? button("Sign out", "logout", "quiet danger", 'role="menuitem"') : '<a href="#/home" role="menuitem">Leave sample</a>'}</div></div></div></header>${state.guest && !state.demo && state.user?.id === "local-guest" ? `<div class="demo-bar">Guest workspace · saved only in this browser · no advisor sharing or live AI. <a href="#/signin">Sign in</a></div>` : ""}${state.demo ? `<div class="demo-bar"><span>Read-only sample · fictional clients · no requests are sent</span><a class="btn small" href="#/signup">Create your case</a></div>` : ""}<main class="main" id="main">${body}</main></div></div>`;
 }
 function noCase() {
@@ -877,6 +884,7 @@ function advisorPlan() {
 }
 // Onboarding: save the answers as a new case or as an update to the current one.
 async function obSaveAnswers() {
+  if (state.demo) return; // The sample is read-only: the flow runs, nothing is saved.
   const ob = state.ob,
     trigger = (REASONS.find((r) => r.id === ob.reason) ?? REASONS[6]).t,
     c = current();
@@ -906,6 +914,7 @@ function obContext() {
     readiness: c ? readiness(c.data).score : 0,
     advisorName: p?.advisorEmail ? (p.advisorEmail === "test@gmail.com" ? ADVISOR_NAME : p.advisorEmail) : "",
     localOnly: state.guest,
+    sample: state.demo,
     error: state.obError,
   };
 }
@@ -1974,7 +1983,7 @@ function render() {
   let html;
   if (OB_ROUTES.includes(r)) {
     // Onboarding is for owners in their own workspace.
-    if (!state.user || state.demo || isAdvisor()) {
+    if ((!state.user && !state.demo) || (state.demo ? state.demoRole === "advisor" : isAdvisor())) {
       location.hash = state.user ? "#/dashboard" : "#/signin";
       return;
     }
@@ -2011,7 +2020,7 @@ function render() {
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
-      note: casePicker(),
+      note: viewToggle() + casePicker(),
       settings: isAdvisor() ? "#/settings" : "#/discovery",
       parts: transitionParts(c),
     });
@@ -2025,7 +2034,7 @@ function render() {
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
-      note: casePicker(),
+      note: viewToggle() + casePicker(),
       settings: isAdvisor() ? "#/settings" : "#/discovery",
       parts: readinessParts(c),
     });
@@ -2039,7 +2048,7 @@ function render() {
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
-      note: casePicker(),
+      note: viewToggle() + casePicker(),
       settings: isAdvisor() ? "#/settings" : "#/discovery",
       route: r,
       body: framedPage(r, c),
@@ -2053,6 +2062,7 @@ function render() {
       user: state.user,
       guest: state.user?.id === "local-guest",
       isAdvisor: isAdvisor(),
+      note: viewToggle(),
     });
   } else if (r === "dashboard" && isAdvisor() && c && c.mode !== "specialist") {
     html = linkAdvisorDashboard({
@@ -2063,6 +2073,7 @@ function render() {
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
+      note: viewToggle(),
       a: advisorSummary(),
     });
   } else if (r === "dashboard" && c.mode !== "specialist") {
@@ -2075,7 +2086,7 @@ function render() {
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
-      note: casePicker(),
+      note: viewToggle() + casePicker(),
       settings: isAdvisor() ? "#/settings" : "#/discovery",
       history: state.history,
       isAdvisor: isAdvisor(),
@@ -2374,6 +2385,10 @@ app.addEventListener("click", async (e) => {
       return;
     }
     if (action === "go") { location.hash = b.dataset.href; return; }
+    if (action === "roleSwitch") {
+      await openGuest(false, localAccountFor("test@gmail.com", b.dataset.role));
+      return;
+    }
     if (action === "obOpen") {
       const p = current()?.data.profile;
       state.ob = { mode: b.dataset.mode, reason: b.dataset.mode === "assess" ? REASONS.find((x) => x.t === p?.trigger)?.id : undefined };

@@ -296,7 +296,7 @@ ${side}
     <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
-          ${owner && !demo ? `<button type="button" class="ld-pill ld-pill-main" data-action="obOpen" data-mode="new">${svg(I.plus, 18)}New profile</button><button type="button" class="ld-pill" data-action="obOpen" data-mode="assess">${svg(I.target, 18)}Assessment</button>` : `<a class="ld-pill" href="#/family">${svg(I.plus, 18)}Add relationship</a>`}
+          ${owner ? `<button type="button" class="ld-pill ld-pill-main" data-action="obOpen" data-mode="new">${svg(I.plus, 18)}New profile</button><button type="button" class="ld-pill" data-action="obOpen" data-mode="assess">${svg(I.target, 18)}Assessment</button>` : `<a class="ld-pill" href="#/family">${svg(I.plus, 18)}Add relationship</a>`}
           <a class="ld-pill" href="#/history">${svg(I.calendar, 18)}Updated ${day(c.updatedAt)}${svg(I.chevron, 16)}</a>
           <span class="ld-grow"></span>
           ${roundLink("#/pathways", "Compare transition options", I.sliders)}
@@ -389,7 +389,7 @@ ${side}
 }
 
 // Signed in (or guest) without a case yet: same frame, with a way to start.
-export function linkDashboardEmpty({ side, menu, account, theme, user, guest }) {
+export function linkDashboardEmpty({ side, menu, account, theme, user, guest, note = "" }) {
   const staff = (user?.roles ?? []).some((r) => ["advisor", "specialist"].includes(r)),
     name = guest ? "Guest" : user?.name || user?.email || "there";
   const steps = [
@@ -401,7 +401,7 @@ export function linkDashboardEmpty({ side, menu, account, theme, user, guest }) 
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, greeting: guest ? "Welcome!" : "Welcome back!", note: guest ? '<span class="ld-sample">Saved only in this browser</span>' : "" })}
+    ${head({ menu, account, name, greeting: guest ? "Welcome!" : "Welcome back!", note: guest ? '<span class="ld-sample">Saved only in this browser</span>' : note })}
     <section class="ld-start">
       <div class="ld-start-copy">
         <span class="ld-cc-brand">${markLogo}PNC-link</span>
@@ -707,7 +707,7 @@ export function linkHistory(history, now = Date.now()) {
 /* ---------------- Advisor dashboard (same building blocks as the owner's) ---------------- */
 
 // `a` is the portfolio summary prepared by workspace.js; this only lays it out.
-export function linkAdvisorDashboard({ side, menu, account, theme, user, demo, demoRole, settings = "#/settings", a }) {
+export function linkAdvisorDashboard({ side, menu, account, theme, user, demo, demoRole, settings = "#/settings", note = "", a }) {
   const name = demo ? ADVISOR_NAME : user?.name || ADVISOR_NAME,
     when = (iso) => new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
     tiles = [
@@ -719,7 +719,7 @@ export function linkAdvisorDashboard({ side, menu, account, theme, user, demo, d
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, settings, ping: a.inbox > 0 })}
+    ${head({ menu, account, name, demo, demoRole, note, settings, ping: a.inbox > 0 })}
 
     <div class="ld-kpis">
       <div class="ld-card ld-kpi"><small>Book value (working)</small><b>${short(a.bookValue)}</b><span>${a.clients} clients · ${short(a.minEv)} – ${short(a.maxEv)}</span>${miniRange(a.minEv, a.maxEv, a.bookValue / Math.max(1, a.clients))}</div>

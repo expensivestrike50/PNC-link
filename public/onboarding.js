@@ -132,7 +132,7 @@ export function onboardingScreen(route, ob, ctx) {
       <div class="ob-info ob-mt16"><span class="ico">${art("folder", 34)}</span><div><b>Have documents?</b> Secure file upload is not connected in this prototype. Track what you have on the readiness checklist instead.</div></div>
       <div class="ob-foot ob-wide">
         <button type="button" class="ob-btn" data-action="obFinish">${mode === "new" ? "Create my profile" : "Start assessment"}</button>
-        <div class="ob-note">${lock} ${ctx.localOnly ? "Saved in this browser only." : "Saved to your case."}</div>
+        <div class="ob-note">${lock} ${ctx.sample ? "Sample only: nothing is saved." : ctx.localOnly ? "Saved in this browser only." : "Saved to your case."}</div>
       </div>
     </div>`;
   if (route === "start/building")
@@ -153,7 +153,7 @@ export function onboardingScreen(route, ob, ctx) {
     <div class="ob-body"><div class="ob-center">
       ${mascot}
       <h1 class="ob-h1 ob-mt20" tabindex="-1">Your picture is ready${ctx.firstName ? `, ${esc(ctx.firstName)}` : ""}!</h1>
-      <p class="ob-lead">${esc(ctx.business || "Your business")} is set up with a starting view. Your advisor will verify it with you.</p>
+      <p class="ob-lead">${ctx.sample ? "This is the sample case, so nothing was saved. Create your own profile to keep your answers." : `${esc(ctx.business || "Your business")} is set up with a starting view. Your advisor will verify it with you.`}</p>
       <div class="ob-stats">
         <div class="ob-stat s1"><div class="h">Reason</div><div class="v">${art(reason.art, 26)} ${reason.t}</div></div>
         <div class="ob-stat s2"><div class="h">Readiness</div><div class="v">${art("chart", 26)} ${esc(ctx.readiness ?? 0)}%</div></div>
