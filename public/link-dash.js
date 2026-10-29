@@ -177,68 +177,6 @@ function evidenceFunnel(rd) {
   return `<div class="rd-funnel" role="img" aria-label="${rd.total} categories, ${rd.reported} available, ${rd.verified} verified">${bar("n", "All categories", rd.total)}${bar("a", "Owner marked available", rd.reported)}${bar("v", "Advisor verified", rd.verified)}</div>`;
 }
 
-// Monotone cubic path through points (no overshoot), for smooth line charts.
-function smoothPath(pts) {
-  const n = pts.length;
-  if (n < 2) return "";
-  const dx = [],
-    m = [],
-    t = [];
-  for (let i = 0; i < n - 1; i++) {
-    dx[i] = pts[i + 1][0] - pts[i][0];
-    m[i] = (pts[i + 1][1] - pts[i][1]) / (dx[i] || 1);
-  }
-  t[0] = m[0];
-  t[n - 1] = m[n - 2];
-  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
-  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
-  for (let i = 0; i < n - 1; i++) {
-    const h = dx[i] / 3;
-    d += `C${(pts[i][0] + h).toFixed(1)},${(pts[i][1] + h * t[i]).toFixed(1)} ${(pts[i + 1][0] - h).toFixed(1)},${(pts[i + 1][1] - h * t[i + 1]).toFixed(1)} ${pts[i + 1][0].toFixed(1)},${pts[i + 1][1].toFixed(1)}`;
-  }
-  return d;
-}
-
-// Share of categories available and verified over time, from the evidence timestamps.
-// Older records without timestamps fall back to case creation (available) and review (verified).
-function evidenceTrend(evidence, createdAt, reviewedAt, now = Date.now()) {
-  const total = evidence.length || 1,
-    t0 = Date.parse(createdAt) || now - 7 * 864e5,
-    when = (v, fb) => Date.parse(v) || fb,
-    rep = evidence.filter((e) => e.reported).map((e) => when(e.reportedAt, t0)),
-    ver = evidence.filter((e) => e.verified).map((e) => when(e.verifiedAt, Date.parse(reviewedAt) || t0)),
-    W = 480,
-    H = 210,
-    L = 40,
-    R = 466,
-    T = 14,
-    B = 180,
-    x = (t) => L + ((t - t0) / Math.max(now - t0, 1)) * (R - L),
-    y = (v) => B - (v / 100) * (B - T),
-    N = 12,
-    series = (times) =>
-      Array.from({ length: N + 1 }, (_, i) => {
-        const t = t0 + ((now - t0) * i) / N;
-        return [x(t), y((times.filter((s) => s <= t).length / total) * 100)];
-      });
-  let g = "<defs>" + ["a", "v"].map((k) => `<linearGradient id="rt-${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="rt-${k}" stop-opacity="0.35"/><stop offset="1" class="rt-${k}" stop-opacity="0"/></linearGradient>`).join("") + "</defs>";
-  [0, 25, 50, 75, 100].forEach((v) => (g += `<line x1="${L}" x2="${R}" y1="${y(v)}" y2="${y(v)}" class="rt-grid"/><text x="${L - 10}" y="${y(v) + 4}" text-anchor="end" class="rt-tick">${v}%</text>`));
-  // One tick per day at midnight, thinned to at most five labels.
-  const first = new Date(t0);
-  first.setHours(24, 0, 0, 0);
-  const days = Math.max(1, Math.ceil((now - first) / 864e5)),
-    step = Math.ceil(days / 5);
-  for (let t = first.getTime(); t <= now; t += step * 864e5)
-    g += `<line x1="${x(t)}" x2="${x(t)}" y1="${T}" y2="${B}" class="rt-grid"/><text x="${x(t)}" y="${B + 22}" text-anchor="middle" class="rt-tick">${new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>`;
-  g += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" class="rt-axis"/><line x1="${L}" x2="${L}" y1="${T}" y2="${B}" class="rt-axis"/>`;
-  [["a", rep], ["v", ver]].forEach(([k, times]) => {
-    const pts = series(times),
-      line = smoothPath(pts);
-    g += `<path d="${line}L${R},${B}L${L},${B}Z" fill="url(#rt-${k})"/><path d="${line}" class="rt-line ${k}"/>`;
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evidence over time: ${rep.length} of ${total} available, ${ver.length} of ${total} verified today">${g}</svg>`;
-}
-
 function gauge(v) {
   const a = Math.PI * (1 - Math.max(0.001, v) / 100),
     x = 42 + 34 * Math.cos(a),
@@ -834,9 +772,6 @@ ${side}
           <p class="rd-cap">${none ? `${none} still to confirm, ${pending} waiting for advisor review.` : pending ? `All categories available; ${pending} waiting for advisor review.` : "Every category is advisor verified."}</p>
           <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
           <div class="ld-legend"><span><i class="v"></i>Verified</span><span><i class="a"></i>Available</span><span><i class="n"></i>Not confirmed</span></div>
-          <div class="ld-ch rt-head"><div><h2>Readiness over time</h2><small>Share of the seven categories since the case opened</small></div></div>
-          <div class="rt-chart">${evidenceTrend(d.evidence ?? [], c.createdAt, d.review?.at ?? c.updatedAt)}</div>
-          <div class="ld-legend rd-legend"><span><i class="a"></i>Owner marked available</span><span><i class="v"></i>Advisor verified</span></div>
         </section>
         <section class="ld-card ld-pad">
           <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>

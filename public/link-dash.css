@@ -2553,44 +2553,6 @@ button.ld-day.on {
   color: var(--muted);
 }
 
-/* Readiness over time */
-.ld .rt-head {
-  margin-top: 26px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-}
-.rt-chart svg {
-  display: block;
-}
-.rt-grid {
-  stroke: var(--line);
-  stroke-dasharray: 4 5;
-}
-.rt-axis {
-  stroke: var(--muted);
-  stroke-opacity: 0.5;
-}
-.rt-tick {
-  font: 400 12px "Poppins", sans-serif;
-  fill: var(--muted);
-}
-.rt-line {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-.rt-line.a {
-  stroke: var(--mark);
-}
-.rt-line.v {
-  stroke: var(--good);
-}
-.rt-a {
-  stop-color: var(--mark);
-}
-.rt-v {
-  stop-color: var(--good);
-}
 
 /* ---------- Shared pieces for workspace pages ---------- */
 .ld .ld-page .ld-kpi b.kp-txt {
