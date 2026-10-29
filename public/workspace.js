@@ -1,5 +1,5 @@
-import { mutate } from "./workflow.mjs?v=20261029171500";
-import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029171500";
+import { mutate } from "./workflow.mjs?v=20261029173000";
+import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029173000";
 import {
   newData,
   profileInput,
@@ -74,6 +74,7 @@ const state = {
   inboxTab: "All",
   inboxSearch: "",
   inboxOpen: null,
+  planClient: "All",
   calWeek: 0,
   calPick: null,
   schedule: null,
@@ -704,6 +705,7 @@ function advisorInbox() {
 const sideIcon = (d) =>
   `<svg class="nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ADV_ICON = {
+  plan: '<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8.5 9l1.5 1.5L13 7.5M8.5 15l1.5 1.5L13 13.5M15.5 9H17M15.5 15H17"/>',
   portfolio: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2M9 7v13M15 7v13"/>',
   inbox: '<path d="M3 13l2.5-7.5A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.9 1.5L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/>',
@@ -715,7 +717,7 @@ function advisorSideNav(r, c) {
     link = (id, label, icon, badge = "") =>
       `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}">${icon}${label}${badge}</a>`;
   return `<aside class="sidebar ws-side adv-side"><a class="brand-box" href="#/home"><img class="logo" src="${logoFor(theme)}" alt="PNC-link home"></a><button type="button" class="ws-collapse" data-ws-collapse aria-label="Hide sidebar" title="Hide sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15.5 10l-2 2 2 2"/></svg></button>
-    <nav aria-label="Workspace">${link("dashboard", "Dashboard", '<span class="nav-icon i-dashboard" aria-hidden="true"></span>')}${link("portfolio", "Portfolio", sideIcon(ADV_ICON.portfolio))}${link("inbox", "Inbox", sideIcon(ADV_ICON.inbox), inbox ? `<em class="adv-badge" aria-label="${inbox} items">${inbox}</em>` : "")}${link("calendar", "Calendar", sideIcon(ADV_ICON.calendar))}</nav>
+    <nav aria-label="Workspace">${link("dashboard", "Dashboard", '<span class="nav-icon i-dashboard" aria-hidden="true"></span>')}${link("portfolio", "Portfolio", sideIcon(ADV_ICON.portfolio))}${link("inbox", "Inbox", sideIcon(ADV_ICON.inbox), inbox ? `<em class="adv-badge" aria-label="${inbox} items">${inbox}</em>` : "")}${link("calendar", "Calendar", sideIcon(ADV_ICON.calendar))}${link("plan", "Shared action plan", sideIcon(ADV_ICON.plan))}</nav>
     <div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
 function sideNav(r, c) {
@@ -799,6 +801,27 @@ function workbenchSignals(c) {
     range: `${shortMoney(sens[0].ev)}–${shortMoney(sens[2].ev)} illus.`,
     next: nextSteps(d, "advisor")[0]?.title ?? "No open decision",
   };
+}
+// Advisor action plan: every shared action across the book, pinned by status.
+function advisorPlan() {
+  const rows = state.cases.filter((c) => c.mode === "advisor"),
+    all = rows.flatMap((c) => (c.data.actions ?? []).map((a) => ({ c, a }))),
+    shown = all.filter(({ c }) => state.planClient === "All" || c.id === state.planClient),
+    overdue = (a) => a.due && a.due < today() && a.status !== "Completed",
+    col = (st) => shown.filter(({ a }) => a.status === st),
+    note = ({ c, a }) =>
+      `<article class="pl-note st-${a.status.toLowerCase().replace(" ", "-")} ${overdue(a) ? "late" : ""}"><i class="pl-pin" aria-hidden="true"></i><small class="pl-kind">${esc(c.data.profile.business)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · ${overdue(a) ? "Overdue" : "Due"} ${esc(a.due)}` : ""}</small><select data-task="${a.id}" data-case="${esc(c.id)}" aria-label="Status for ${esc(a.title)}" ${state.demo ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></article>`;
+  return `<h2 class="sr-only">Every next step has an owner.</h2>
+  ${kpis([
+    ["Open", col("Open").length, "Not started"],
+    ["In progress", col("In progress").length, "Under way"],
+    ["Completed", col("Completed").length, `of ${shown.length} shared actions`],
+    ["Overdue", shown.filter(({ a }) => overdue(a)).length, "Past their due date"],
+  ])}
+  <section class="panel section-gap"><div class="pl-head"><h2>Assign a next step</h2></div>
+    <form data-form="advisorAction" class="ap-compose"><label class="sr-only" for="ap-client">Client</label><select id="ap-client" name="client" required ${state.demo ? "disabled" : ""}>${rows.map((c) => `<option value="${esc(c.id)}" ${c.id === (state.planClient === "All" ? current()?.id : state.planClient) ? "selected" : ""}>${esc(c.data.profile.business)}</option>`).join("")}</select><label class="sr-only" for="ap-title">Action</label><input id="ap-title" name="title" required maxlength="500" placeholder="What needs to happen" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-assignee">Responsible</label><input id="ap-assignee" name="assignee" required maxlength="200" placeholder="Who is responsible" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-due">Due date</label><input id="ap-due" name="due" type="date" ${state.demo ? "disabled" : ""}>${state.demo ? "" : '<button type="submit" class="ld-black">Add action</button>'}</form><p class="form-error" role="alert"></p></section>
+  <div class="ap-filter" role="group" aria-label="Filter by client">${[["All", "All clients"], ...rows.map((c) => [c.id, c.data.profile.business])].map(([id, label]) => `<button type="button" data-action="planClient" data-id="${esc(id)}" class="${state.planClient === id ? "on" : ""}" aria-pressed="${state.planClient === id}">${esc(label)}</button>`).join("")}</div>
+  <div class="ap-board">${["Open", "In progress", "Completed"].map((st) => `<section class="ap-col"><div class="ap-col-head"><h3>${st}</h3><span class="pl-count">${col(st).length}</span></div><div class="pl-board ap-notes">${col(st).map(note).join("") || '<p class="pl-none">Nothing here.</p>'}</div></section>`).join("")}</div>`;
 }
 // Advisor home: the whole book of clients at a glance, rather than one client's dashboard.
 function advisorDashboard() {
@@ -1865,7 +1888,7 @@ function framedPage(r, c) {
     family: () => familyPage(c),
     proceeds: () => proceedsPage(c),
     referrals: () => referrals(c),
-    plan: () => plan(c),
+    plan: () => (isAdvisor() ? advisorPlan() : plan(c)),
     assistant: () => assistant(c),
     history: historyPage,
     resources: () => resources(true),
@@ -2118,6 +2141,9 @@ app.addEventListener("submit", async (e) => {
       await loadCases();
       render();
       notice("Note saved to the client's internal record.");
+    } else if (kind === "advisorAction") {
+      state.selected = data.client;
+      await update("addAction", { title: data.title, assignee: data.assignee, due: data.due });
     } else if (kind === "schedule") {
       await api("/api/nexus/schedule", { days: new FormData(f).getAll("days"), start: data.start, end: data.end, length: data.length });
       await loadSchedule();
@@ -2256,6 +2282,7 @@ app.addEventListener("click", async (e) => {
       return;
     }
     if (action === "go") { location.hash = b.dataset.href; return; }
+    if (action === "planClient") { state.planClient = b.dataset.id; render(); return; }
     if (action === "calWeek") { state.calWeek = b.dataset.step === "0" ? 0 : state.calWeek + Number(b.dataset.step); state.calPick = null; render(); return; }
     if (action === "calPick") { state.calPick = b.dataset.at; render(); $(".sc-topic input")?.focus(); return; }
     if (action === "calConfirm") {
@@ -2432,6 +2459,7 @@ app.addEventListener("change", async (e) => {
       });
     } else if (el.dataset.task) {
       el.disabled = true;
+      if (el.dataset.case) state.selected = el.dataset.case;
       await update("action", { id: el.dataset.task, status: el.value });
     }
   } catch (error) {

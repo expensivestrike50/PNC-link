@@ -5847,3 +5847,84 @@ button.ld-day.on {
 .ad-grid .sc-up li {
   flex-wrap: nowrap;
 }
+
+/* ---------- Advisor shared action plan ---------- */
+.ap-compose {
+  display: grid;
+  grid-template-columns: 1.1fr 1.6fr 1fr 160px auto;
+  gap: 10px;
+}
+.ld .ld-page .ap-compose input,
+.ld .ld-page .ap-compose select {
+  height: 44px;
+  min-height: 0;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 14px;
+}
+.ap-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 16px;
+}
+.ld .ap-filter button {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--ink);
+  font: 500 13px "Poppins", sans-serif;
+  cursor: pointer;
+}
+.ld .ap-filter button.on {
+  border-color: #f2d50f;
+  background: #f2d50f;
+  color: #111;
+}
+.ap-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.ap-col {
+  padding: 20px;
+  border-radius: 28px;
+  background: var(--card);
+}
+.ap-col-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.ld .ap-col-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.pl-board.ap-notes {
+  grid-template-columns: 1fr;
+  min-height: 160px;
+  padding: 24px 18px;
+}
+.pl-note.late .pl-pin {
+  background: radial-gradient(circle at 35% 35%, #ff9a9a, #f24848 55%, #a10f0f);
+}
+.ld .pl-note.late > small:not(.pl-kind) {
+  color: #c62828;
+  font-weight: 600;
+}
+@media (max-width: 1200px) {
+  .ap-board {
+    grid-template-columns: 1fr;
+  }
+  .ap-compose {
+    grid-template-columns: 1fr 1fr;
+  }
+}
