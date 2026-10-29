@@ -1695,6 +1695,37 @@ function settingsPage() {
     <section class="panel"><div class="pl-head"><h2>Data</h2></div><small class="pl-sub">${localDemo ? "This test workspace is saved only in this browser." : "Case data is stored with your connected account."}</small><p class="st-note">Competition demo. Fictional data only. No information is sent to PNC systems.</p>${localDemo ? button("Reset demo data", "resetLocal", "ld-black") : ""}</section>
   </div>`;
 }
+// AI answers arrive as light Markdown. Escape first, then allow bold, headings and lists only.
+function aiFormat(text) {
+  const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const out = [];
+  let list = null;
+  const close = () => {
+    if (list) out.push(`</${list}>`);
+    list = null;
+  };
+  for (const raw of String(text ?? "").split("\n")) {
+    const line = raw.trim(),
+      bullet = line.match(/^[-*•]\s+(.*)/),
+      num = line.match(/^\d+[.)]\s+(.*)/),
+      head = line.match(/^#{1,4}\s+(.*)/);
+    if (bullet || num) {
+      const kind = bullet ? "ul" : "ol";
+      if (list !== kind) {
+        close();
+        out.push(`<${kind}>`);
+        list = kind;
+      }
+      out.push(`<li>${inline((bullet ?? num)[1])}</li>`);
+    } else {
+      close();
+      if (head) out.push(`<h4>${inline(head[1])}</h4>`);
+      else if (line && !/^[-_*]{3,}$/.test(line)) out.push(`<p>${inline(line)}</p>`);
+    }
+  }
+  close();
+  return out.join("");
+}
 // Monotone cubic path through points (no overshoot), for the smooth area chart.
 function smoothPath(pts) {
   const n = pts.length,
@@ -1823,7 +1854,7 @@ function assistant(c) {
         ["Proceeds review", "What a tax advisor should check", "Explain my proceeds assumptions and what a tax and wealth advisor should review."],
       ];
   const thread = state.chat.length
-    ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><p>${esc(m.answer)}</p></div>`).join("")
+    ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><div class="ai-md">${aiFormat(m.answer)}</div></div>`).join("")
     : `<div class="ai-empty"><b>${advisor ? "Prepare for the next client conversation." : "Start with your most important question."}</b><span>Pick a conversation starter or write your own question below.</span></div>`;
   return `<h2 class="sr-only">${advisor ? "A second set of eyes for your case." : "Support for your next conversation."}</h2>
   <div class="ai-bottom">
