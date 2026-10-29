@@ -147,13 +147,24 @@ export default async (req: Request) => {
           .where(and(eq(messages.caseId, id!), eq(messages.actorId, user.id)))
           .orderBy(desc(messages.createdAt))
           .limit(4);
+        // Ollama Cloud (OpenAI-compatible) when OLLAMA_API_KEY is set; otherwise OpenAI.
+        // Keys come from the deployment's environment variables, never the repository.
+        const ollamaKey = process.env.OLLAMA_API_KEY;
         const completion = await new OpenAI({
           timeout: 25000,
           maxRetries: 0,
+          ...(ollamaKey
+            ? {
+                apiKey: ollamaKey,
+                baseURL: process.env.OLLAMA_BASE_URL || "https://ollama.com/v1",
+              }
+            : {}),
         }).chat.completions.create({
-          model: "gpt-5.4-mini",
-          max_completion_tokens: 1800,
-          store: false,
+          model:
+            process.env.AI_MODEL || (ollamaKey ? "gpt-oss:120b" : "gpt-5.4-mini"),
+          ...(ollamaKey
+            ? { max_tokens: 1800 }
+            : { max_completion_tokens: 1800, store: false }),
           messages: assistantMessages(
             row.data,
             mode!,
