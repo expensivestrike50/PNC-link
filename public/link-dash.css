@@ -2287,9 +2287,9 @@ button.ld-day.on {
 
 /* ---------- Case history ---------- */
 .ld-page-history {
-  --c-owner: #f2d50f;
+  --c-owner: #5bcc29;
   --c-advisor: #11a6f0;
-  --c-specialist: #5bcc29;
+  --c-specialist: #19b5a5;
   --c-shared: var(--muted);
 }
 .ld .hs-kpi-sm {
@@ -3742,4 +3742,12 @@ button.ld-day.on {
 }
 .ai-bottom + .ai-top {
   margin-top: 0;
+}
+/* Readiness: the judgment card is white in both themes. */
+.ld .ld-cc.black.rd-judge {
+  background: #fff;
+  color: #111;
+}
+.ld .ld-cc.black.rd-judge p {
+  color: #4a4a4a;
 }
