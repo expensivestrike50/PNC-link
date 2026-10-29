@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029084500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029090000";
 import {
   newData,
   profileInput,
@@ -1093,40 +1093,57 @@ function proceedsPage(c) {
       )}<div class="money-row total ${r.cash < 0 ? "negative" : ""}"><span>${r.cash < 0 ? "Cash shortfall" : "Available cash"}</span><strong>${money(r.cash)}</strong></div></div>${r.shortfall || r.debtShortfall ? `<div class="callout amber"><p>${r.debtShortfall ? `Enterprise value does not cover debt and fees: ${money(r.debtShortfall)} shortfall. ` : ""}${r.shortfall ? `Family distributions exceed modeled cash by ${money(r.shortfall)}. Revisit assumptions before planning distributions.` : ""}</p></div>` : ""}<p class="footer-note">Your stated liquidity goal: ${money(p.liquidity)}. ${r.cash >= p.liquidity ? "The hypothetical cash meets this goal." : "The hypothetical cash falls below this goal."} Rollover equity is not available cash; its future value is uncertain.</p>`,
   )}${panel("Connect proceeds to life after closing", '<p>Record spending needs, estate reviews, family distributions, and investment-policy conversations as named actions. A Private Bank referral requires separate approval of personal information sharing.</p><a class="btn secondary small" href="#/plan">Open wealth-planning actions</a>')}</div></div>${valuationPanel(c)}`;
 }
+// What each information scope shares, shown as tag lists.
+const SCOPE_BUSINESS = ["Business name", "Industry", "Transition trigger", "Timeline", "Revenue", "EBITDA", "Debt", "Current ownership", "Desired role", "Confidentiality requirements"];
+const SCOPE_PERSONAL = ["Owner identity", "Family and employee priorities", "Liquidity goals", "Desired retained ownership", "Notes", "Engagement preference", "Assigned advisor email"];
+const SCOPE_NEVER = ["Scenario editor", "Shared action plan", "Case history", "AI conversations"];
+const PERMISSION_RULES = [
+  ['<path d="M9 14l-4-4 4-4"/><path d="M5 10h9a5 5 0 0 1 0 10h-1"/>', "Withdraw any time", "Withdrawing stops further access, even after completion. Information already viewed cannot be recalled."],
+  ['<path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', "Edits withdraw handoffs", "Updating discovery or scenario assumptions withdraws existing referrals automatically."],
+  ['<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="12" cy="12" r="3"/>', "Snapshot at approval", "Recipients see the profile as approved at handoff, not later edits."],
+  ['<circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5M12 16h.01"/>', "No guarantees", "A handoff does not guarantee engagement, financing, buyer interest or a professional recommendation."],
+];
+function referralCard(c, r) {
+  return `<article class="referral"><div class="row between"><span class="rc-who">${teamLogo(r.team)}<h3>${esc(r.team)}</h3></span>${badge(r.status, ["Draft", "Queued"].includes(r.status) ? "amber" : "")}</div><small>Recipient: ${esc(r.recipient)}<br>Information scope: ${esc(r.scope)}</small><p>${esc(r.purpose)}</p>${referralSteps(r)}<div class="row">${c.mode === "owner" && r.status === "Draft" ? button("Approve & queue referral", "referralStatus", "", `data-id="${r.id}" data-status="Queued" ${locked()}`) : ""}${c.mode === "owner" && ["Draft", "Queued", "Accepted", "Completed"].includes(r.status) ? button("Withdraw access", "referralStatus", "danger small", `data-id="${r.id}" data-status="Withdrawn" ${locked()}`) : ""}${c.mode === "specialist" && r.status === "Queued" ? button("Accept handoff", "referralStatus", "", `data-id="${r.id}" data-status="Accepted" ${locked()}`) + button("Decline", "referralStatus", "secondary", `data-id="${r.id}" data-status="Declined" ${locked()}`) : ""}${c.mode === "specialist" && r.status === "Accepted" ? button("Mark completed", "referralStatus", "", `data-id="${r.id}" data-status="Completed" ${locked()}`) : ""}</div></article>`;
+}
 function referrals(c) {
   const d = c.data;
-  const routes =
-    c.mode === "specialist"
-      ? ""
-      : `<section class="panel routing-panel section-gap"><h2>Teams to discuss with your advisor</h2><p>These prompts use your stated goals and working direction. They do not create referrals or confirm eligibility.</p><div class="routing-grid">${routingSuggestions(
-          d,
-        )
-          .map(
-            (r) =>
-              `<article>${teamLogo(r.team)}<h3>${esc(r.team)}</h3><p>${esc(r.reason)}</p><small>Suggested discussion scope: ${esc(r.scope)}</small></article>`,
-          )
-          .join("")}</div></section>`;
-  return `<h2 class="sr-only">The right team, with your permission.</h2><div class="two-col">${panel(c.mode === "specialist" ? "Referrals addressed to you" : "Specialist handoffs", d.referrals.length ? d.referrals.map((r) => `<article class="referral"><div class="row between"><span class="rc-who">${teamLogo(r.team)}<h3>${esc(r.team)}</h3></span>${badge(r.status, ["Draft", "Queued"].includes(r.status) ? "amber" : "")}</div><small>Recipient: ${esc(r.recipient)}<br>Information scope: ${esc(r.scope)}</small><p>${esc(r.purpose)}</p>${referralSteps(r)}<div class="row">${c.mode === "owner" && r.status === "Draft" ? button("Approve & queue referral", "referralStatus", "", `data-id="${r.id}" data-status="Queued" ${locked()}`) : ""}${c.mode === "owner" && ["Draft", "Queued", "Accepted", "Completed"].includes(r.status) ? button("Withdraw access", "referralStatus", "danger small", `data-id="${r.id}" data-status="Withdrawn" ${locked()}`) : ""}${c.mode === "specialist" && r.status === "Queued" ? button("Accept handoff", "referralStatus", "", `data-id="${r.id}" data-status="Accepted" ${locked()}`) + button("Decline", "referralStatus", "secondary", `data-id="${r.id}" data-status="Declined" ${locked()}`) : ""}${c.mode === "specialist" && r.status === "Accepted" ? button("Mark completed", "referralStatus", "", `data-id="${r.id}" data-status="Completed" ${locked()}`) : ""}</div></article>`).join("") : empty("No specialist referrals yet", "A reviewed case can be routed to the appropriate team. Approval creates an in-app handoff; no email is sent."))}<div class="stack">${
-    c.mode === "advisor"
-      ? panel(
-          "Propose a referral",
-          `<form data-form="referral" class="inline-form">${select("team", "Specialist team", teams, teams[0])}${input("recipient", "Recipient account email", "", "email", 'required maxlength="254"', "Use the invited specialist’s account email. They must have the specialist or advisor role.")}${select("scope", "Requested information scope", ["Business only", "Business + personal"], "Business only")}${textarea("purpose", "Purpose and engagement rationale", "", 'required maxlength="1500"')}${formEnd("Send for owner approval")}</form>`,
-        )
-      : c.mode === "specialist"
-        ? panel(
-            "Approved case context",
-            `<dl class="definition">${Object.entries(d.profile)
-              .filter(
-                ([k]) => !["advisorEmail", "shareWithAdvisor"].includes(k),
-              )
-              .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
-              .join("")}</dl>`,
-          )
-        : panel(
-            "What you approve",
-            "<p><strong>Business only</strong> shares business name, industry, transition trigger, timeline, revenue, EBITDA, debt, current ownership, desired role, and confidentiality requirements.</p><p><strong>Business + personal</strong> also shares the discovery profile’s owner identity, family and employee priorities, liquidity goals, desired retained ownership, notes, engagement preference, and assigned advisor email.</p><p>Specialists see the purpose and scope of their own approved referrals. They do not see your scenario editor, shared plan, case history, or AI conversation.</p>",
-          )
-  }${panel("Permission stays with the owner", "<p>Withdraw a referral to stop further access, including after completion. Updating discovery or scenario assumptions withdraws existing referrals automatically. Information previously viewed cannot be recalled. Recipients see a snapshot of the profile approved at handoff; they do not receive later profile edits.</p><p>Handoffs are tracked in the application. They do not guarantee engagement, financing, buyer interest, or a professional recommendation.</p>")}</div></div>${routes}`;
+  if (c.mode === "specialist")
+    return `<h2 class="sr-only">The right team, with your permission.</h2><div class="two-col">${panel("Referrals addressed to you", d.referrals.length ? d.referrals.map((r) => referralCard(c, r)).join("") : empty("No specialist referrals yet", "Referrals appear here once an owner approves a handoff to your account."))}<div class="stack">${panel(
+      "Approved case context",
+      `<dl class="definition">${Object.entries(d.profile)
+        .filter(([k]) => !["advisorEmail", "shareWithAdvisor"].includes(k))
+        .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
+        .join("")}</dl>`,
+    )}</div></div>`;
+  const routes = routingSuggestions(d),
+    tags = (list, cls = "") => `<ul class="rf-tags">${list.map((x) => `<li class="${cls}">${x}</li>`).join("")}</ul>`,
+    howSteps = [
+      ["Advisor proposes", "Purpose, named recipient and information scope."],
+      [c.mode === "owner" ? "You approve the scope" : "Owner approves the scope", "Nothing is shared until the owner approves."],
+      ["Specialist accepts", "An in-app handoff; no email is sent."],
+    ];
+  return `<h2 class="sr-only">The right team, with your permission.</h2>
+  <div class="rf-top">
+    <section class="panel"><div class="pl-head"><h2>Specialist handoffs</h2><span class="pl-count">${d.referrals.length}</span></div>
+      ${d.referrals.length
+        ? d.referrals.map((r) => referralCard(c, r)).join("")
+        : `<div class="rf-empty"><b>No specialist referrals yet</b><small>A reviewed case can be routed to the appropriate team. Here is how a handoff works:</small><ol class="rf-how">${howSteps.map(([t, sub], i) => `<li><span class="ld-ic ${["y", "b", "g"][i]}">${i + 1}</span><b>${t}</b><small>${sub}</small></li>`).join("")}</ol></div>`}
+    </section>
+    <div class="stack">
+      <section class="panel"><div class="pl-head"><h2>Teams to discuss</h2><span class="pl-count">${routes.length}</span></div><small class="pl-sub">Based on your stated goals and working direction. These prompts do not create referrals or confirm eligibility.</small>
+        <ul class="rf-teams">${routes.map((r, i) => `<li class="c${i % 4}">${teamLogo(r.team)}<div><b>${esc(r.team)}</b><small>${esc(r.reason)}</small></div><em>${esc(r.scope)}</em></li>`).join("") || '<li class="pl-none">No suggestions yet.</li>'}</ul></section>
+      ${c.mode === "advisor" ? panel("Propose a referral", `<form data-form="referral" class="inline-form">${select("team", "Specialist team", teams, teams[0])}${input("recipient", "Recipient account email", "", "email", 'required maxlength="254"', "Use the invited specialist’s account email. They must have the specialist or advisor role.")}${select("scope", "Requested information scope", ["Business only", "Business + personal"], "Business only")}${textarea("purpose", "Purpose and engagement rationale", "", 'required maxlength="1500"')}${formEnd("Send for owner approval")}</form>`) : ""}
+    </div>
+  </div>
+  <section class="panel section-gap"><div class="pl-head"><h2>What ${c.mode === "owner" ? "you approve" : "the owner approves"}</h2></div><small class="pl-sub">Specialists see the purpose and scope of their own approved referrals only.</small>
+    <div class="rf-scope">
+      <div><h3><span class="rf-dot b"></span>Business only</h3>${tags(SCOPE_BUSINESS)}</div>
+      <div><h3><span class="rf-dot g"></span>Business + personal adds</h3>${tags(SCOPE_PERSONAL)}</div>
+      <div class="never"><h3><span class="rf-dot p"></span>Never shared</h3>${tags(SCOPE_NEVER, "no")}</div>
+    </div></section>
+  <section class="panel section-gap"><div class="pl-head"><h2>Permission stays with the owner</h2></div>
+    <div class="rf-rules">${PERMISSION_RULES.map(([icon, t, sub], i) => `<div><span class="ld-ic ${["y", "b", "g", "p"][i]}">${planIcon(icon, 18)}</span><b>${t}</b><small>${sub}</small></div>`).join("")}</div></section>`;
 }
 // Small line icons for the action plan cards.
 const planIcon = (d, size = 18) =>
