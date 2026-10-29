@@ -2441,17 +2441,14 @@ app.addEventListener("click", async (e) => {
       state.selected = "sample";
       await loadCases();
       await loadHistory();
-      location.hash =
-        state.demoRole === "advisor" ? "#/portfolio" : "#/overview";
+      location.hash = "#/dashboard";
       render();
     } else if (action === "demoSwitch") {
       state.demoRole = state.demoRole === "owner" ? "advisor" : "owner";
       await loadCases();
       await loadHistory();
       render();
-      if (route() !== "dashboard")
-        location.hash =
-          state.demoRole === "advisor" ? "#/portfolio" : "#/overview";
+      if (route() !== "dashboard") location.hash = "#/dashboard";
     } else if (action === "openCase" || action === "caseBrief") {
       if (
         !state.cases.some((c) => c.id === b.dataset.id && c.mode === "advisor")
@@ -2609,7 +2606,7 @@ async function openSample(role) {
   history.replaceState(
     null,
     "",
-    location.pathname + (role === "advisor" ? "#/portfolio" : "#/overview"),
+    location.pathname + "#/dashboard",
   );
   render();
 }

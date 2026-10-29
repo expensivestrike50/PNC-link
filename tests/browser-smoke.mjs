@@ -13,6 +13,9 @@ await page
 await page
   .getByRole("button", { name: "Explore demo", exact: true })
   .click();
+// Explore demo opens the dashboard; the case overview is one click away.
+await page.getByRole("heading", { name: "James D. Bennett", exact: true }).waitFor();
+await page.getByRole("link", { name: "My transition", exact: true }).click();
 await page
   .getByRole("heading", {
     name: "Bennett Precision Manufacturing",
@@ -51,6 +54,7 @@ for (const [name, title] of [
 await page
   .getByRole("button", { name: "View as advisor", exact: true })
   .click();
+await page.getByRole("link", { name: "Portfolio", exact: true }).click();
 await page
   .getByRole("heading", {
     name: "A clearer view of every client.",

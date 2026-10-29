@@ -35,23 +35,14 @@ try {
     )
     .toBeGreaterThan(0);
   await page.goto(origin + "/public/#/sample-owner");
-  await expect(
-    page.getByRole("heading", {
-      name: "Bennett Precision Manufacturing",
-      exact: true,
-    }),
-  ).toBeVisible();
+  // Sample links open the dashboard.
+  await expect(page.getByRole("heading", { name: "James D. Bennett", exact: true })).toBeVisible();
   await page
     .getByRole("link", { name: "Family & legacy", exact: true })
     .click();
   await expect(page.locator(".relationship-card")).toHaveCount(2);
   await page.goto(origin + "/#/sample-advisor");
-  await expect(
-    page.getByRole("heading", {
-      name: "A clearer view of every client.",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Priya Shah", exact: true })).toBeVisible();
   await page.screenshot({
     path: "/tmp/pnc-link-root-preview.png",
     fullPage: true,
