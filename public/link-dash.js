@@ -296,7 +296,7 @@ ${side}
     <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
-          <a class="ld-pill" href="#/family">${svg(I.plus, 18)}Add relationship</a>
+          ${owner && !demo ? `<button type="button" class="ld-pill ld-pill-main" data-action="obOpen" data-mode="new">${svg(I.plus, 18)}New profile</button><button type="button" class="ld-pill" data-action="obOpen" data-mode="assess">${svg(I.target, 18)}Assessment</button>` : `<a class="ld-pill" href="#/family">${svg(I.plus, 18)}Add relationship</a>`}
           <a class="ld-pill" href="#/history">${svg(I.calendar, 18)}Updated ${day(c.updatedAt)}${svg(I.chevron, 16)}</a>
           <span class="ld-grow"></span>
           ${roundLink("#/pathways", "Compare transition options", I.sliders)}
@@ -702,6 +702,108 @@ export function linkHistory(history, now = Date.now()) {
         })
         .join("")}</tbody></table></div>
     </section>`;
+}
+
+/* ---------------- Advisor dashboard (same building blocks as the owner's) ---------------- */
+
+// `a` is the portfolio summary prepared by workspace.js; this only lays it out.
+export function linkAdvisorDashboard({ side, menu, account, theme, user, demo, demoRole, settings = "#/settings", a }) {
+  const name = demo ? ADVISOR_NAME : user?.name || ADVISOR_NAME,
+    when = (iso) => new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+    tiles = [
+      [I.target, "y", "Review discovery", a.pendingReviews, "#/portfolio", "awaiting review"],
+      [I.chart, "b", "Verify evidence", a.toVerify, "#/portfolio", "categories to verify"],
+      [I.calendar, "g", "Confirm meetings", a.requested, "#/calendar", "requests waiting"],
+      [I.team, "p", "Coordinate handoffs", a.drafts, "#/inbox", "awaiting owner approval"],
+    ];
+  return `<div class="ld nx ${theme}" data-ld>
+${side}
+  <div class="ld-body">
+    ${head({ menu, account, name, demo, demoRole, settings, ping: a.inbox > 0 })}
+
+    <div class="ld-kpis">
+      <div class="ld-card ld-kpi"><small>Book value (working)</small><b>${short(a.bookValue)}</b><span>${a.clients} clients · ${short(a.minEv)} – ${short(a.maxEv)}</span>${miniRange(a.minEv, a.maxEv, a.bookValue / Math.max(1, a.clients))}</div>
+      <div class="ld-card ld-kpi gauge"><div><small>Evidence verified</small><b>${a.verifiedPct}<em>%</em></b><span>Across all clients</span></div>${gauge(a.verifiedPct)}</div>
+      <div class="ld-card ld-kpi"><small>Clients</small><b>${a.clients}</b><span>${a.attention} need attention</span></div>
+      <div class="ld-card ld-kpi"><small>Meetings this week</small><b class="good">${a.thisWeek}</b><span>${a.requested} awaiting confirmation</span></div>
+      <div class="ld-card ld-kpi"><small>Inbox</small><b>${a.inbox}</b><span>${a.urgent} need a response now</span></div>
+    </div>
+
+    <div class="ld-grid ld-fill">
+      <div class="ld-col">
+        <div class="ld-tools">
+          <a class="ld-pill" href="#/plan">${svg(I.plus, 18)}Assign an action</a>
+          <a class="ld-pill" href="#/inbox">${svg(I.calendar, 18)}${a.inbox} inbox items${svg(I.chevron, 16)}</a>
+          <span class="ld-grow"></span>
+          ${roundLink("#/calendar", "Open calendar", I.calendar)}
+          ${roundLink("#/portfolio", "Search the portfolio", I.search)}
+        </div>
+
+        <div class="ld-tiles">${tiles
+          .map(([ic, col, label, n, href, sub]) => `<a class="ld-card ld-tile" href="${href}"><span class="ld-ic ${col}">${svg(ic, 20)}</span><b>${label}</b><small>${n ? `${n} ${sub}` : "All clear"}</small></a>`)
+          .join("")}</div>
+
+        <div class="ld-two">
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><div><h2>Pipeline</h2><small>Clients by stage</small></div>${roundLink("#/portfolio", "Open portfolio")}</div>
+            <div class="ad-pipe">${a.stages.map(([st, n]) => `<div><span>${esc(st)}</span><div class="ld-slider sm" role="img" aria-label="${n} of ${a.clients} clients"><i data-w="${((n / Math.max(1, a.clients)) * 100).toFixed(1)}"></i></div><b>${n}</b></div>`).join("")}</div>
+          </section>
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><div><h2>Evidence by client</h2><small>${a.verifiedPct}% verified overall</small></div>${roundLink("#/portfolio", "Open portfolio")}</div>
+            <div class="ld-slider" role="img" aria-label="${a.verifiedPct}% of evidence verified"><i data-w="${a.verifiedPct}"></i><b data-left="${a.verifiedPct}"></b></div>
+            <div class="ld-letters">${a.byClient.map((x, i) => `<span class="${x.verified >= 5 ? "v" : x.verified ? "a" : "n"} c${i % 5}" title="${esc(x.business)}: ${x.verified} of 7 verified">${esc(x.initials)}</span>`).join("")}</div>
+          </section>
+        </div>
+
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><div><small class="ld-eyebrow">Working value by client</small><h2>Book of business</h2></div><div class="ld-row"><span class="ld-tag">Prediction</span>${roundLink("#/portfolio", "Open portfolio")}</div></div>
+          <ul class="ad-book">${a.byClient.map((x) => `<li><span><b>${esc(x.business)}</b><small>${esc(x.name)} · ${esc(x.stage)}</small></span>${miniRange(x.lo, x.hi, x.ev)}<b class="v">${short(x.ev)}</b></li>`).join("")}</ul>
+          <p class="ld-foot"><b>${short(a.bookValue)}</b><span>Sum of working enterprise values at each client's own multiple. Not a valuation.</span></p>
+        </section>
+        <section class="ld-card ld-pad">
+          <div class="ld-ch"><h2>Upcoming meetings</h2>${roundLink("#/calendar", "Open calendar")}</div>
+          ${a.meetings.length ? `<ul class="ld-hist">${a.meetings.slice(0, 4).map((m) => `<li><span class="ld-dotic">${svg(I.calendar, 16)}</span><span class="t">${esc(m.business)} · ${m.status}</span><small>${m.at ? when(m.at) : "Time to be agreed"}</small></li>`).join("")}</ul>` : '<p class="ld-empty">No meetings booked.</p>'}
+        </section>
+      </div>
+
+      <div class="ld-col">
+        <div class="ld-two">
+          <a class="ld-cc yellow" href="#/settings">
+            <span class="ld-cc-brand">${markLogo}PNC-link</span>
+            <small>Relationship advisor</small><b>${esc(name)}</b>
+            <span class="ld-cc-row"><span><small>Clients</small>${a.clients}</span><span><small>Hours</small>${esc(a.hours)}</span></span>
+          </a>
+          <a class="ld-cc black" href="#/calendar">
+            <span class="ld-cc-brand">${markLogo}PNC-link</span>
+            <small>Next meeting</small><b>${esc(a.next ? a.next.business : "Nothing booked")}</b>
+            <span class="ld-cc-row"><span><small>When</small>${esc(a.next?.at ? when(a.next.at) : "—")}</span><span><small>Status</small>${esc(a.next?.status ?? "—")}</span></span>
+          </a>
+        </div>
+
+        <div class="ld-two">
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><h2>Clients</h2>${roundLink("#/portfolio", "Open portfolio")}</div>
+            <div class="ld-invest">${a.byClient
+              .slice(0, 4)
+              .map((x, i) => `<button type="button" class="ld-inv c${i}" data-action="openCase" data-id="${esc(x.id)}" aria-label="Open ${esc(x.business)}"><span class="ld-letter">${esc(x.initials)}</span><span class="nm"><b>${esc(x.business)}</b><small>${esc(x.attention)}</small></span><span class="val"><b>${esc(x.stage)}</b><small>Stage</small></span></button>`)
+              .join("")}</div>
+          </section>
+          <section class="ld-card ld-pad">
+            <div class="ld-ch"><small>Open shared actions</small>${roundLink("#/plan", "Open shared action plan", I.arrow, "solid")}</div>
+            <p class="ld-big">${a.openActions}</p>
+            <div class="ld-acts">
+              <a class="ld-act y" href="#/plan" aria-label="Shared action plan">${svg(I.plus, 18)}</a>
+              <a class="ld-act b" href="#/calendar" aria-label="Calendar">${svg(I.calendar, 18)}</a>
+              <a class="ld-act g" href="#/inbox" aria-label="Inbox">${svg(I.swap, 18)}</a>
+              <a class="ld-act p" href="#/assistant" aria-label="Ask PNC-link AI">${svg(I.spark, 18)}</a>
+            </div>
+            <p class="ld-foot"><span>${a.overdue ? `${a.overdue} overdue across the book.` : "Nothing overdue."}</span></p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
 }
 
 export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body, note = "", settings = "#/discovery" }) {

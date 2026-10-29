@@ -1,5 +1,6 @@
-import { mutate } from "./workflow.mjs?v=20261029180000";
-import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029180000";
+import { mutate } from "./workflow.mjs?v=20261029210000";
+import { OB_ROUTES, REASONS, onboardingScreen, mountOnboarding, prevRoute } from "./onboarding.js?v=20261029210000";
+import { ADVISOR_NAME, ADVISOR_PHOTO, linkAdvisorDashboard, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029210000";
 import {
   newData,
   profileInput,
@@ -74,6 +75,9 @@ const state = {
   inboxTab: "All",
   inboxSearch: "",
   inboxOpen: null,
+  ob: { mode: "assess" },
+  obSave: null,
+  obError: "",
   planClient: "All",
   calWeek: 0,
   calPick: null,
@@ -211,7 +215,8 @@ function sharedApi(path, body) {
     now = new Date().toISOString();
   if (path.includes("/cases")) {
     if (isAdvisor()) throw Error("Owners create cases; advisors are assigned to them.");
-    const row = { id: `local-${crypto.randomUUID()}`, ownerId: local.user.id, ownerEmail: local.user.email, advisorEmail: "", revision: 1, createdAt: now, updatedAt: now, data: newData(profileInput({ ...body, advisorEmail: "", shareWithAdvisor: false })) };
+    const profile = profileInput(body),
+      row = { id: `local-${crypto.randomUUID()}`, ownerId: local.user.id, ownerEmail: local.user.id === localAccounts["test@gmail.com"].user.id ? TEST_OWNER_CONTACT : local.user.email, advisorEmail: profile.advisorEmail, revision: 1, createdAt: now, updatedAt: now, data: newData(profile) };
     next.rows.push(row);
     next.histories[row.id] = [{ label: "Created a local transition profile", createdAt: now }];
     try { localStorage.setItem(local.key, JSON.stringify(next)); } catch { throw Error("Browser storage is unavailable."); }
@@ -231,6 +236,8 @@ function sharedApi(path, body) {
   guestStore = next;
   return { case: project(row, local.user) };
 }
+// The test owner and advisor share one login email, but the case needs a distinct owner contact.
+const TEST_OWNER_CONTACT = "james.bennett@example.test";
 function seedSharedStore() {
   const now = new Date().toISOString(),
     advisorEmail = "test@gmail.com",
@@ -240,7 +247,7 @@ function seedSharedStore() {
     ...r,
     id: `local-${r.id}`,
     // The Bennett case belongs to the test owner; the others are fictional clients.
-    ...(r.id === "sample" ? { ownerId: localAccounts["test@gmail.com"].user.id, ownerEmail: advisorEmail } : {}),
+    ...(r.id === "sample" ? { ownerId: localAccounts["test@gmail.com"].user.id, ownerEmail: TEST_OWNER_CONTACT } : {}),
     advisorEmail,
     data: { ...r.data, profile: { ...r.data.profile, advisorEmail, shareWithAdvisor: true } },
   }));
@@ -263,6 +270,10 @@ async function openGuest(resume = false, account = null) {
       ? Array.isArray(saved?.rows) ? saved : { rows: null, histories: {} }
       : saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
   } catch { guestStore = account ? { rows: null, histories: {} } : { row: null, history: [] }; }
+  if (account && guestStore.rows)
+    guestStore.rows.forEach((r) => {
+      if (r.ownerId === localAccounts["test@gmail.com"].user.id && r.ownerEmail === r.advisorEmail) r.ownerEmail = TEST_OWNER_CONTACT;
+    });
   if (account && !guestStore.rows) {
     guestStore = seedSharedStore();
     try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
@@ -864,47 +875,98 @@ function actionBoard(rows, advisor) {
 function advisorPlan() {
   return actionBoard(state.cases.filter((c) => c.mode === "advisor"), true);
 }
-// Advisor home: the whole book of clients at a glance, rather than one client's dashboard.
-function advisorDashboard() {
+// Onboarding: save the answers as a new case or as an update to the current one.
+async function obSaveAnswers() {
+  const ob = state.ob,
+    trigger = (REASONS.find((r) => r.id === ob.reason) ?? REASONS[6]).t,
+    c = current();
+  if (ob.mode === "new") {
+    const sharing = state.guest && guestStore.rows ? { advisorEmail: "test@gmail.com", shareWithAdvisor: true } : {};
+    const result = await api("/api/nexus/cases", {
+      name: ob.name, business: ob.business, industry: ob.industry, trigger, timeline: Number(ob.timeline ?? 3), futureRole: ob.futureRole || "Not sure yet",
+      notes: ob.notes ?? "", revenue: 0, ebitda: 0, debt: 0, ownership: 100, liquidity: 0, retained: 0, ...sharing,
+    });
+    state.selected = result.case.id;
+  } else {
+    if (!c) throw Error("Create your transition profile first.");
+    const p = c.data.profile,
+      stamp = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      notes = ob.notes ? `${p.notes ? `${p.notes}\n` : ""}Assessment ${stamp}: ${ob.notes}`.slice(-3000) : p.notes;
+    await api(`/api/nexus/update?id=${encodeURIComponent(c.id)}`, { revision: c.revision, op: "profile", payload: { ...p, trigger, notes } });
+  }
+  await loadCases();
+  await loadHistory();
+}
+function obContext() {
+  const c = current(),
+    p = c?.data.profile;
+  return {
+    firstName: String(state.ob.mode === "new" && state.ob.name ? state.ob.name : p?.name ?? "").split(" ")[0],
+    business: p?.business ?? "",
+    readiness: c ? readiness(c.data).score : 0,
+    advisorName: p?.advisorEmail ? (p.advisorEmail === "test@gmail.com" ? ADVISOR_NAME : p.advisorEmail) : "",
+    localOnly: state.guest,
+    error: state.obError,
+  };
+}
+// Portfolio summary for the advisor dashboard (laid out by linkAdvisorDashboard).
+function advisorSummary() {
   const rows = state.cases.filter((c) => c.mode === "advisor"),
-    sig = rows.map((c) => ({ c, g: workbenchSignals(c) })),
-    inbox = advisorInbox(),
     sch = state.schedule ?? DEFAULT_SCHEDULE,
     now = new Date(),
-    weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7),
+    weekEnd = new Date(now.getTime() + 7 * 864e5),
     meetings = calendarMeetings()
       .filter((x) => x.current && ["Requested", "Acknowledged"].includes(x.m.status))
-      .sort((a, b) => (a.start ?? Infinity) - (b.start ?? Infinity)),
-    thisWeek = meetings.filter((x) => x.start && x.start >= now && x.start < weekEnd),
-    attention = sig.filter(({ g }) => g.a.level === "High").sort((a, b) => b.g.risks - a.g.risks),
-    stages = caseStages.map((st) => [st, rows.filter((c) => portfolioPriority(c, today()).stage === st).length]).filter(([, n]) => n),
-    handoffs = rows.flatMap((c) => (c.data.referrals ?? []).filter((r) => ["Draft", "Queued", "Accepted"].includes(r.status)).map((r) => ({ c, r }))),
+      .sort((x, y) => (x.start ?? Infinity) - (y.start ?? Infinity)),
+    inbox = advisorInbox(),
+    byClient = rows.map((c) => {
+      const p = c.data.profile,
+        g = workbenchSignals(c),
+        sens = valuationSensitivity(p, c.data.scenario ?? defaultScenario),
+        r = readiness(c.data);
+      return {
+        id: c.id,
+        name: p.name,
+        business: p.business,
+        initials: p.business.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase(),
+        stage: g.a.stage,
+        attention: g.a.level === "High" ? "Needs attention" : g.reviewed ? "In progress" : "Awaiting review",
+        ev: sens[1].ev,
+        lo: sens[0].ev,
+        hi: sens[2].ev,
+        verified: r.verified,
+        reported: r.reported,
+        reviewed: g.reviewed,
+        high: g.a.level === "High",
+      };
+    }),
+    acts = rows.flatMap((c) => c.data.actions ?? []),
     dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    name = state.demo ? ADVISOR_NAME : state.user?.name || ADVISOR_NAME,
-    fmt = (d) => `${d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
-  return `<h2 class="sr-only">Advisor dashboard</h2>
-  ${kpis([
-    ["Clients", rows.length, "Assigned to you"],
-    ["Meetings this week", thisWeek.length, `${meetings.filter((x) => x.m.status === "Requested").length} awaiting confirmation`],
-    ["Inbox", inbox.length, `${inbox.filter((x) => x.high).length} need a response now`],
-    ["Pending reviews", sig.filter(({ g }) => !g.reviewed).length, "Discovery not yet reviewed"],
-  ])}
-  <div class="ad-grid">
-    <section class="panel ad-profile"><img src="${ADVISOR_PHOTO}" alt="Portrait of ${esc(name)}"><div><h2>${esc(name)}</h2><small>Relationship advisor · Business Owner Solutions</small></div>
-      <dl><div><dt>Clients</dt><dd>${rows.length}</dd></div><div><dt>Working days</dt><dd>${sch.days.map((d) => dayNames[d - 1]).join(", ")}</dd></div><div><dt>Hours</dt><dd>${sch.start}:00–${sch.end}:00 · ${sch.length} min slots</dd></div></dl>
-      <div class="ad-links"><a class="ld-black" href="#/calendar">Open calendar</a><a class="ad-ghost" href="#/settings">Settings</a></div></section>
-    <section class="panel"><div class="pl-head"><h2>This week</h2><span class="pl-count">${thisWeek.length}</span></div>
-      <ul class="sc-up">${meetings.slice(0, 5).map((x) => `<li><span class="sc-thumb ${x.m.status === "Acknowledged" ? "b" : "t"}">${x.start ? x.start.getDate() : "?"}</span><div><b>${esc(x.c.data.profile.business)}</b><small>${x.start ? fmt(x.start) : "Time to be agreed"} · ${MEETING_LABEL[x.m.status]}</small></div>${x.m.status === "Requested" && !state.demo ? button("Confirm", "calConfirm", "sc-btn", `data-id="${esc(x.c.id)}" data-status="Acknowledged"`) : ""}</li>`).join("") || '<li class="pl-none">No meetings booked.</li>'}</ul></section>
-    <section class="panel"><div class="pl-head"><h2>Needs attention</h2><span class="pl-count">${attention.length}</span></div>
-      <ul class="ad-list">${attention.slice(0, 4).map(({ c, g }) => `<li>${personAvatar(c.data.profile.name)}<div><b>${esc(c.data.profile.business)}</b><small>${esc(g.a.reasons[0] ?? "")}</small></div>${button("Open", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(c.data.profile.business)}"`)}</li>`).join("") || '<li class="pl-none">Nothing urgent.</li>'}</ul>
-      <a class="wb-more-link" href="#/portfolio">View portfolio</a></section>
-  </div>
-  <div class="ad-grid three">
-    <section class="panel"><div class="pl-head"><h2>Pipeline by stage</h2></div>${barRows(stages.map(([st, n]) => ["t", esc(st), n]), Math.max(1, ...stages.map(([, n]) => n)))}</section>
-    <section class="panel"><div class="pl-head"><h2>Evidence verified</h2></div>${barRows(rows.map((c) => { const r = readiness(c.data); return [r.verified >= 5 ? "v" : "y", esc(c.data.profile.business), r.verified, `${r.verified}/${r.total}`]; }), 7)}</section>
-    <section class="panel"><div class="pl-head"><h2>Open handoffs</h2><span class="pl-count">${handoffs.length}</span></div>
-      <ul class="ad-list">${handoffs.slice(0, 4).map(({ c, r }) => `<li>${teamLogo(r.team)}<div><b>${esc(r.team)}</b><small>${esc(c.data.profile.business)} · ${esc(r.status === "Draft" ? "Awaiting owner approval" : r.status)}</small></div></li>`).join("") || '<li class="pl-none">No open handoffs.</li>'}</ul></section>
-  </div>`;
+    verified = byClient.reduce((n, x) => n + x.verified, 0),
+    next = meetings.find((x) => x.start && x.start >= now) ?? meetings[0];
+  byClient.sort((x, y) => Number(y.high) - Number(x.high));
+  return {
+    clients: rows.length,
+    bookValue: byClient.reduce((n, x) => n + x.ev, 0),
+    minEv: byClient.length ? Math.min(...byClient.map((x) => x.lo)) : 0,
+    maxEv: Math.max(...byClient.map((x) => x.hi), 1),
+    verifiedPct: rows.length ? Math.round((verified / (rows.length * 7)) * 100) : 0,
+    attention: byClient.filter((x) => x.high).length,
+    thisWeek: meetings.filter((x) => x.start && x.start >= now && x.start < weekEnd).length,
+    requested: meetings.filter((x) => x.m.status === "Requested").length,
+    inbox: inbox.length,
+    urgent: inbox.filter((x) => x.high).length,
+    pendingReviews: byClient.filter((x) => !x.reviewed).length,
+    toVerify: byClient.reduce((n, x) => n + Math.max(0, x.reported - x.verified), 0),
+    drafts: rows.flatMap((c) => c.data.referrals ?? []).filter((r) => r.status === "Draft").length,
+    stages: caseStages.map((st) => [st, byClient.filter((x) => x.stage === st).length]).filter(([, n]) => n),
+    byClient,
+    meetings: meetings.map((x) => ({ business: x.c.data.profile.business, at: x.start?.toISOString(), status: MEETING_LABEL[x.m.status] })),
+    next: next ? { business: next.c.data.profile.business, at: next.start?.toISOString(), status: MEETING_LABEL[next.m.status] } : null,
+    hours: `${sch.days.length === 5 && sch.days.join() === "1,2,3,4,5" ? "Mon–Fri" : sch.days.map((d) => dayNames[d - 1]).join(", ")} ${sch.start}–${sch.end}`,
+    openActions: acts.filter((x) => x.status !== "Completed").length,
+    overdue: acts.filter((x) => x.due && x.due < today() && x.status !== "Completed").length,
+  };
 }
 function portfolio() {
   const rows = state.cases.filter((c) => c.mode === "advisor"),
@@ -1879,6 +1941,27 @@ function render() {
   const r = route(),
     c = current();
   let html;
+  if (OB_ROUTES.includes(r)) {
+    // Onboarding is for owners in their own workspace.
+    if (!state.user || state.demo || isAdvisor()) {
+      location.hash = state.user ? "#/dashboard" : "#/signin";
+      return;
+    }
+    app.innerHTML = `<div class="ob show">${onboardingScreen(r, state.ob, obContext())}</div>`;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.title = "Get started · PNC-link";
+    app.querySelector(".ob h1")?.focus({ preventScroll: true });
+    mountOnboarding(app.querySelector(".ob"), r, async () => {
+      try {
+        await state.obSave;
+        if (route() === "start/building") location.hash = "#/start/done";
+      } catch (error) {
+        state.obError = error.message;
+        if (route() === "start/building") render();
+      }
+    });
+    return;
+  }
   if (r === "home") html = home();
   else if (["signin", "signup", "recover", "reset", "invite"].includes(r))
     html = authPage(r);
@@ -1941,18 +2024,15 @@ function render() {
       isAdvisor: isAdvisor(),
     });
   } else if (r === "dashboard" && isAdvisor() && c && c.mode !== "specialist") {
-    html = linkPage({
+    html = linkAdvisorDashboard({
       side: sideNav(r, c),
       menu: menuButton,
       account: accountMenu(state.user?.name || ADVISOR_NAME, "advisor"),
       theme: wsTheme(),
-      c: { ...c, mode: "advisor" },
       user: state.user,
       demo: state.demo,
       demoRole: state.demoRole,
-      settings: "#/settings",
-      route: "dashboard",
-      body: advisorDashboard(),
+      a: advisorSummary(),
     });
   } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
@@ -2122,6 +2202,9 @@ app.addEventListener("submit", async (e) => {
     } else if (kind === "advisorAction") {
       state.selected = data.client;
       await update("addAction", { title: data.title, assignee: data.assignee, due: data.due });
+    } else if (kind === "obBusiness") {
+      state.ob = { ...state.ob, name: data.name.trim(), business: data.business.trim(), industry: data.industry.trim(), timeline: Number(data.timeline), futureRole: data.futureRole };
+      location.hash = "#/start/notes";
     } else if (kind === "schedule") {
       await api("/api/nexus/schedule", { days: new FormData(f).getAll("days"), start: data.start, end: data.end, length: data.length });
       await loadSchedule();
@@ -2260,6 +2343,31 @@ app.addEventListener("click", async (e) => {
       return;
     }
     if (action === "go") { location.hash = b.dataset.href; return; }
+    if (action === "obOpen") {
+      const p = current()?.data.profile;
+      state.ob = { mode: b.dataset.mode, reason: b.dataset.mode === "assess" ? REASONS.find((x) => x.t === p?.trigger)?.id : undefined };
+      state.obError = "";
+      location.hash = b.dataset.mode === "assess" ? "#/start/reason" : "#/welcome";
+      return;
+    }
+    if (action === "obStart") {
+      const p = current()?.data.profile;
+      state.ob = { mode: b.dataset.mode, reason: b.dataset.mode === "assess" ? REASONS.find((x) => x.t === p?.trigger)?.id : undefined };
+      state.obError = "";
+      location.hash = "#/start/reason";
+      return;
+    }
+    if (action === "obReason") { state.ob = { ...state.ob, reason: b.dataset.id }; render(); return; }
+    if (action === "obNext") { state.obError = ""; location.hash = `#/${b.dataset.to}`; return; }
+    if (action === "obBack") { location.hash = `#/${prevRoute(route(), state.ob.mode)}`; return; }
+    if (action === "obSkip" || action === "obFinish") {
+      state.ob = { ...state.ob, notes: action === "obSkip" ? "" : ($("#obNotes")?.value ?? "").trim() };
+      state.obError = "";
+      state.obSave = obSaveAnswers();
+      state.obSave.catch(() => {});
+      location.hash = "#/start/building";
+      return;
+    }
     if (action === "planClient") { state.planClient = b.dataset.id; render(); return; }
     if (action === "calWeek") { state.calWeek = b.dataset.step === "0" ? 0 : state.calWeek + Number(b.dataset.step); state.calPick = null; render(); return; }
     if (action === "calPick") { state.calPick = b.dataset.at; render(); $(".sc-topic input")?.focus(); return; }
