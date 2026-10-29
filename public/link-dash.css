@@ -2922,3 +2922,57 @@ button.ld-day.on {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* Proceeds: compact scenario and comparison cards in the left column */
+.ld .ld-page .pv-cols {
+  align-items: start;
+}
+.ld .ld-page .pv-compact {
+  padding: 20px;
+}
+.ld .ld-page .pv-compact h2 {
+  font-size: 17px;
+}
+.ld .ld-page .pv-compact > p,
+.ld .ld-page .pv-compact .panel-head small {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.ld .ld-page .pv-compact .form-grid {
+  gap: 10px 14px;
+}
+.ld .ld-page .pv-compact .field label {
+  font-size: 12.5px;
+}
+.ld .ld-page .pv-compact {
+  margin-top: 0;
+}
+.ld .ld-page .pv-compact .field input {
+  min-height: 38px;
+  height: 38px;
+  padding: 6px 14px;
+  border-radius: 12px;
+}
+.ld .ld-page .pv-compact .field {
+  gap: 4px;
+}
+.ld .ld-page .pv-compact .footer-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.ld .ld-page .pv-compact .hs-bars {
+  gap: 7px;
+}
+.ld .ld-page .pv-compact .hs-bar {
+  font-size: 12px;
+}
+.ld .ld-page .pv-compact .hs-bar b {
+  font-size: 13px;
+}
+.ld .ld-page .pv-compact .rd-fn-track {
+  height: 10px;
+}
+.ld .ld-page .pv-compact .chart-cap {
+  margin-bottom: 0;
+  font-size: 12px;
+}
