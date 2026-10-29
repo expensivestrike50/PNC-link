@@ -1896,26 +1896,7 @@ button.ld-day.on {
   color: var(--muted);
 }
 
-/* Funnel: all categories → available → verified */
-.rd-funnel {
-  display: grid;
-  gap: 10px;
-  margin: 8px 0 10px;
-}
-.rd-fn-row {
-  display: grid;
-  grid-template-columns: 160px 1fr 28px;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.rd-fn-row b {
-  text-align: right;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-}
+/* Bar track shared by the horizontal bar charts */
 .rd-fn-track {
   height: 14px;
   border-radius: 7px;
@@ -1935,11 +1916,6 @@ button.ld-day.on {
 }
 .rd-fn-track i.v {
   background: var(--good);
-}
-.ld .rd-cap {
-  margin: 0 0 18px;
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .ld .rd-judge {
@@ -1970,10 +1946,6 @@ button.ld-day.on {
   }
   .rd-help {
     margin-left: 0;
-  }
-  .rd-fn-row {
-    grid-template-columns: 112px 1fr 24px;
-    font-size: 12px;
   }
 }
 
@@ -3750,4 +3722,14 @@ button.ld-day.on {
 }
 .ld .ld-cc.black.rd-judge p {
   color: #4a4a4a;
+}
+.ld .rd-radar svg {
+  max-width: 620px;
+  margin-top: 8px;
+}
+.ld .rd-radar .rd-label {
+  font-size: 16px;
+}
+.ld .rd-radar .rd-dot {
+  r: 7.5px;
 }

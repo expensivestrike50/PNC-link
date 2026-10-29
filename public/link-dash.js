@@ -128,11 +128,13 @@ const EV_SHORT = {
 const EV_LEVEL = ["Not confirmed", "Available", "Verified"];
 
 // Evidence status per category on three levels (not a score).
-function evidenceRadar(evidence) {
+function evidenceRadar(evidence, large = false) {
   const n = evidence.length || 1,
-    cx = 250,
-    cy = 160,
-    R = 112,
+    W = large ? 640 : 500,
+    H = large ? 400 : 320,
+    cx = W / 2,
+    cy = H / 2,
+    R = large ? 150 : 112,
     lvl = (e) => (e.verified ? 3 : e.reported ? 2 : 1),
     pt = (i, f) => {
       const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
@@ -151,7 +153,7 @@ function evidenceRadar(evidence) {
       anchor = Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end";
     g += `<circle cx="${x}" cy="${y}" r="6" class="rd-dot ${["n", "a", "v"][lvl(e) - 1]}"><title>${esc(e.label)}: ${EV_LEVEL[lvl(e) - 1]}</title></circle><text x="${lx}" y="${ly + 4}" text-anchor="${anchor}" class="rd-label">${esc(EV_SHORT[e.label] ?? e.label)}</text>`;
   });
-  return `<svg viewBox="0 0 500 320" width="100%" role="img" aria-label="Evidence status across ${n} categories">${g}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evidence status across ${n} categories">${g}</svg>`;
 }
 
 // Plain-language description of each evidence category, shown behind the row's info button.
@@ -169,13 +171,6 @@ function evidenceHelp(label, owner, id) {
   return `<div class="rd-help" id="${id}" hidden><p>${esc(EV_INFO[label] ?? "")}</p><dl><div><dt>Available</dt><dd>${owner ? "You confirm you have this and can bring it to a meeting. You switch this on; nothing is uploaded." : "The owner confirms they have this and can bring it to a meeting. Only the owner switches this on."}</dd></div><div><dt>Verified</dt><dd>${owner ? "Your advisor has reviewed it with you. Only your advisor can switch this on, after you mark it available." : "You have reviewed it with the owner. You can switch this on once the owner marks it available."}</dd></div></dl></div>`;
 }
 
-// Funnel: every category, those the owner marked available, those the advisor verified.
-function evidenceFunnel(rd) {
-  const pct = (n) => ((n / (rd.total || 1)) * 100).toFixed(1),
-    bar = (cls, label, n) =>
-      `<div class="rd-fn-row"><span>${label}</span><div class="rd-fn-track"><i class="${cls}" data-w="${pct(n)}"></i></div><b>${n}</b></div>`;
-  return `<div class="rd-funnel" role="img" aria-label="${rd.total} categories, ${rd.reported} available, ${rd.verified} verified">${bar("n", "All categories", rd.total)}${bar("a", "Owner marked available", rd.reported)}${bar("v", "Advisor verified", rd.verified)}</div>`;
-}
 
 function gauge(v) {
   const a = Math.PI * (1 - Math.max(0.001, v) / 100),
@@ -734,8 +729,6 @@ export function linkReadiness({ side, menu, account, theme, c, user, demo, demoR
     rd = readiness(d),
     owner = c.mode === "owner",
     name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
-    none = rd.total - rd.reported,
-    pending = rd.reported - rd.verified,
     tones = ["y", "b", "g", "p", "l"];
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
@@ -768,9 +761,7 @@ ${side}
       <div class="ld-col">
         <section class="ld-card ld-pad">
           <div class="ld-ch"><div><small class="ld-eyebrow">Seven evidence categories</small><h2>Evidence status</h2></div><div class="ld-score">${rd.verified}<small>/${rd.total} verified</small></div></div>
-          ${evidenceFunnel(rd)}
-          <p class="rd-cap">${none ? `${none} still to confirm, ${pending} waiting for advisor review.` : pending ? `All categories available; ${pending} waiting for advisor review.` : "Every category is advisor verified."}</p>
-          <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
+          <div class="ld-radar rd-radar">${evidenceRadar(d.evidence ?? [], true)}</div>
           <div class="ld-legend"><span><i class="v"></i>Verified</span><span><i class="a"></i>Available</span><span><i class="n"></i>Not confirmed</span></div>
         </section>
         <section class="ld-card ld-pad">
