@@ -11,6 +11,9 @@ import {
   nextSteps,
 } from "./domain.mjs";
 
+// The advisor shown in the sample and the test login, matching the booking calendar.
+export const ADVISOR_NAME = "Priya Shah";
+export const ADVISOR_PHOTO = "./assets/people/priya.jpg";
 const esc = (v) =>
   String(v ?? "").replace(
     /[&<>"']/g,
@@ -258,7 +261,7 @@ export function linkDashboard({ side, menu, account, theme, c, user, demo, demoR
     chosen = d.pathDecision?.path,
     sens = valuationSensitivity(p, s),
     owner = c.mode === "owner",
-    name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
+    name = owner ? p.name : demo ? ADVISOR_NAME : user?.name || user?.email || "Advisor",
     coverage = p.liquidity ? Math.min(100, (Math.max(0, r.cash) / p.liquidity) * 100) : 100,
     diff = r.cash - p.liquidity;
 
@@ -427,7 +430,7 @@ export function linkTransition({ side, menu, account, theme, c, user, demo, demo
     current = journey.find((j) => j.status === "Current"),
     steps = nextSteps(d, c.mode).slice(0, 4),
     owner = c.mode === "owner",
-    name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
+    name = owner ? p.name : demo ? ADVISOR_NAME : user?.name || user?.email || "Advisor",
     icons = [I.target, I.chart, I.split, I.team, I.wallet],
     tones = ["y", "b", "g", "p", "l"];
   return `<div class="ld nx ${theme}" data-ld>
@@ -703,7 +706,7 @@ export function linkHistory(history, now = Date.now()) {
 
 export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body, note = "", settings = "#/discovery" }) {
   const owner = c.mode === "owner",
-    name = owner ? c.data.profile.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor";
+    name = owner ? c.data.profile.name : demo ? ADVISOR_NAME : user?.name || user?.email || "Advisor";
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
@@ -728,7 +731,7 @@ export function linkReadiness({ side, menu, account, theme, c, user, demo, demoR
     p = d.profile,
     rd = readiness(d),
     owner = c.mode === "owner",
-    name = owner ? p.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor",
+    name = owner ? p.name : demo ? ADVISOR_NAME : user?.name || user?.email || "Advisor",
     tones = ["y", "b", "g", "p", "l"];
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
@@ -818,10 +821,10 @@ const chevron = svg('<path d="M6 9l6 6 6-6"/>', 18);
 // (illustrative availability, not a live calendar).
 const ADVISORS = [
   {
-    name: "Priya Shah",
+    name: ADVISOR_NAME,
     role: "Relationship advisor",
     about: "Coordinates your transition plan and brings in the right specialists.",
-    photo: "./assets/people/priya.jpg",
+    photo: ADVISOR_PHOTO,
     days: [1, 2, 3, 4, 5],
     times: ["9:00 AM", "10:30 AM", "1:00 PM", "2:30 PM", "4:00 PM"],
     hours: "Mon–Fri · 9:00 AM–4:30 PM",

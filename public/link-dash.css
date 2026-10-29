@@ -5721,3 +5721,129 @@ button.ld-day.on {
 .ld .sc-slot {
   border-color: rgba(91, 204, 41, 0.35);
 }
+
+/* ---------- Advisor dashboard ---------- */
+.ad-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+}
+.ld .ld-page .ad-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.ad-profile img {
+  width: 110px;
+  height: 110px;
+  border: 4px solid #f2d50f;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ld .ad-profile h2 {
+  margin: 4px 0 2px;
+  font-size: 22px;
+}
+.ad-profile small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.ad-profile dl {
+  align-self: stretch;
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 4px;
+  text-align: left;
+}
+.ad-profile dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--soft);
+  font-size: 13px;
+}
+.ad-profile dt {
+  color: var(--muted);
+}
+.ad-profile dd {
+  margin: 0;
+  font-weight: 500;
+}
+.ad-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+.ld .ad-ghost {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+}
+.ad-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ad-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.ad-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.ad-list b {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ad-list small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ld .wb-more-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+@media (max-width: 1200px) {
+  .ad-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .ad-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.ld {
+  --sc-blue: #1a73ff;
+  --sc-teal: #8ee3ea;
+}
+.ad-grid .hs-bar.wide {
+  grid-template-columns: minmax(80px, 120px) 1fr 40px;
+}
+.ad-grid .sc-up li {
+  flex-wrap: nowrap;
+}

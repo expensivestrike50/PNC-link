@@ -1,5 +1,5 @@
-import { mutate } from "./workflow.mjs?v=20261029164500";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029164500";
+import { mutate } from "./workflow.mjs?v=20261029171500";
+import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029171500";
 import {
   newData,
   profileInput,
@@ -106,7 +106,7 @@ const localAccounts = {
 const localAdvisorAccounts = {
   "test@gmail.com": {
     hash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-    user: { id: "local-test-advisor", email: "test@gmail.com", name: "Test Advisor", roles: ["advisor"] },
+    user: { id: "local-test-advisor", email: "test@gmail.com", name: ADVISOR_NAME, roles: ["advisor"] },
     key: "pnc-link-shared-v1",
     advisor: true,
   },
@@ -800,6 +800,48 @@ function workbenchSignals(c) {
     next: nextSteps(d, "advisor")[0]?.title ?? "No open decision",
   };
 }
+// Advisor home: the whole book of clients at a glance, rather than one client's dashboard.
+function advisorDashboard() {
+  const rows = state.cases.filter((c) => c.mode === "advisor"),
+    sig = rows.map((c) => ({ c, g: workbenchSignals(c) })),
+    inbox = advisorInbox(),
+    sch = state.schedule ?? DEFAULT_SCHEDULE,
+    now = new Date(),
+    weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7),
+    meetings = calendarMeetings()
+      .filter((x) => x.current && ["Requested", "Acknowledged"].includes(x.m.status))
+      .sort((a, b) => (a.start ?? Infinity) - (b.start ?? Infinity)),
+    thisWeek = meetings.filter((x) => x.start && x.start >= now && x.start < weekEnd),
+    attention = sig.filter(({ g }) => g.a.level === "High").sort((a, b) => b.g.risks - a.g.risks),
+    stages = caseStages.map((st) => [st, rows.filter((c) => portfolioPriority(c, today()).stage === st).length]).filter(([, n]) => n),
+    handoffs = rows.flatMap((c) => (c.data.referrals ?? []).filter((r) => ["Draft", "Queued", "Accepted"].includes(r.status)).map((r) => ({ c, r }))),
+    dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    name = state.demo ? ADVISOR_NAME : state.user?.name || ADVISOR_NAME,
+    fmt = (d) => `${d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+  return `<h2 class="sr-only">Advisor dashboard</h2>
+  ${kpis([
+    ["Clients", rows.length, "Assigned to you"],
+    ["Meetings this week", thisWeek.length, `${meetings.filter((x) => x.m.status === "Requested").length} awaiting confirmation`],
+    ["Inbox", inbox.length, `${inbox.filter((x) => x.high).length} need a response now`],
+    ["Pending reviews", sig.filter(({ g }) => !g.reviewed).length, "Discovery not yet reviewed"],
+  ])}
+  <div class="ad-grid">
+    <section class="panel ad-profile"><img src="${ADVISOR_PHOTO}" alt="Portrait of ${esc(name)}"><div><h2>${esc(name)}</h2><small>Relationship advisor · Business Owner Solutions</small></div>
+      <dl><div><dt>Clients</dt><dd>${rows.length}</dd></div><div><dt>Working days</dt><dd>${sch.days.map((d) => dayNames[d - 1]).join(", ")}</dd></div><div><dt>Hours</dt><dd>${sch.start}:00–${sch.end}:00 · ${sch.length} min slots</dd></div></dl>
+      <div class="ad-links"><a class="ld-black" href="#/calendar">Open calendar</a><a class="ad-ghost" href="#/settings">Settings</a></div></section>
+    <section class="panel"><div class="pl-head"><h2>This week</h2><span class="pl-count">${thisWeek.length}</span></div>
+      <ul class="sc-up">${meetings.slice(0, 5).map((x) => `<li><span class="sc-thumb ${x.m.status === "Acknowledged" ? "b" : "t"}">${x.start ? x.start.getDate() : "?"}</span><div><b>${esc(x.c.data.profile.business)}</b><small>${x.start ? fmt(x.start) : "Time to be agreed"} · ${MEETING_LABEL[x.m.status]}</small></div>${x.m.status === "Requested" && !state.demo ? button("Confirm", "calConfirm", "sc-btn", `data-id="${esc(x.c.id)}" data-status="Acknowledged"`) : ""}</li>`).join("") || '<li class="pl-none">No meetings booked.</li>'}</ul></section>
+    <section class="panel"><div class="pl-head"><h2>Needs attention</h2><span class="pl-count">${attention.length}</span></div>
+      <ul class="ad-list">${attention.slice(0, 4).map(({ c, g }) => `<li>${personAvatar(c.data.profile.name)}<div><b>${esc(c.data.profile.business)}</b><small>${esc(g.a.reasons[0] ?? "")}</small></div>${button("Open", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(c.data.profile.business)}"`)}</li>`).join("") || '<li class="pl-none">Nothing urgent.</li>'}</ul>
+      <a class="wb-more-link" href="#/portfolio">View portfolio</a></section>
+  </div>
+  <div class="ad-grid three">
+    <section class="panel"><div class="pl-head"><h2>Pipeline by stage</h2></div>${barRows(stages.map(([st, n]) => ["t", esc(st), n]), Math.max(1, ...stages.map(([, n]) => n)))}</section>
+    <section class="panel"><div class="pl-head"><h2>Evidence verified</h2></div>${barRows(rows.map((c) => { const r = readiness(c.data); return [r.verified >= 5 ? "v" : "y", esc(c.data.profile.business), r.verified, `${r.verified}/${r.total}`]; }), 7)}</section>
+    <section class="panel"><div class="pl-head"><h2>Open handoffs</h2><span class="pl-count">${handoffs.length}</span></div>
+      <ul class="ad-list">${handoffs.slice(0, 4).map(({ c, r }) => `<li>${teamLogo(r.team)}<div><b>${esc(r.team)}</b><small>${esc(c.data.profile.business)} · ${esc(r.status === "Draft" ? "Awaiting owner approval" : r.status)}</small></div></li>`).join("") || '<li class="pl-none">No open handoffs.</li>'}</ul></section>
+  </div>`;
+}
 function portfolio() {
   const rows = state.cases.filter((c) => c.mode === "advisor"),
     sig = rows.map((c) => workbenchSignals(c));
@@ -849,7 +891,7 @@ function portfolioResults() {
     .map(({ c, a }) => {
       const p = c.data.profile,
         g = workbenchSignals(c);
-      return `<tr class="${a.level === "High" ? "hi" : ""}"><td><b>${esc(p.business)}</b><small>${esc(p.name)} · ${esc(a.stage)} · ${g.horizon} · ${g.range}</small></td><td><div class="wb-chips">${chip(g.risks, "priority risk", "priority risks", g.risks ? "warn" : "")}${chip(g.gaps, "goal gap", "goal gaps", g.gaps ? "warn" : "")}${chip(g.evidenceOpen, "evidence open", "evidence open")}${chip(g.tensions, "tension", "tensions")}<em class="wb-chip ${g.reviewed ? "ok" : ""}">${g.reviewed ? "Evidence reviewed" : "Self-reported"}</em></div></td><td><small class="wb-label">Next decision</small><span class="wb-next" title="${esc(g.next)}">${esc(g.next)}</span><small>${esc(String(c.updatedAt).slice(0, 10))}: ${esc(a.reasons[0] ?? "No open signals")}</small></td><td class="wb-open">${button("Client view", "openCase", "wb-link", `data-id="${esc(c.id)}" data-route="dashboard"`)}${button("Open", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(p.business)}"`)}</td></tr>`;
+      return `<tr class="${a.level === "High" ? "hi" : ""}"><td><b>${esc(p.business)}</b><small>${esc(p.name)} · ${esc(a.stage)} · ${g.horizon} · ${g.range}</small></td><td><div class="wb-chips">${chip(g.risks, "priority risk", "priority risks", g.risks ? "warn" : "")}${chip(g.gaps, "goal gap", "goal gaps", g.gaps ? "warn" : "")}${chip(g.evidenceOpen, "evidence open", "evidence open")}${chip(g.tensions, "tension", "tensions")}<em class="wb-chip ${g.reviewed ? "ok" : ""}">${g.reviewed ? "Evidence reviewed" : "Self-reported"}</em></div></td><td><small class="wb-label">Next decision</small><span class="wb-next" title="${esc(g.next)}">${esc(g.next)}</span><small>${esc(String(c.updatedAt).slice(0, 10))}: ${esc(a.reasons[0] ?? "No open signals")}</small></td><td class="wb-open">${button("Client view", "openCase", "wb-link", `data-id="${esc(c.id)}" data-route="overview"`)}${button("Open", "openCase", "wb-btn", `data-id="${esc(c.id)}" aria-label="Open ${esc(p.business)}"`)}</td></tr>`;
     })
     .join("")}</tbody></table>` : empty("No clients match", "Clear search or choose another filter. New client cases appear when an owner explicitly shares them with your advisor account.")}`;
 }
@@ -999,6 +1041,7 @@ function transitionParts(c) {
 const JD_NAME = "James D. Bennett";
 function avatarImage(name, mode) {
   if (mode === "owner" && name === JD_NAME) return '<img src="./assets/jd-avatar.jpg" alt="">';
+  if (mode === "advisor" && (state.demo || name === ADVISOR_NAME)) return `<img src="${ADVISOR_PHOTO}" alt="">`;
   if (state.demo) return '<img src="./assets/icons/hdr-avatar.png" alt="">';
   return "";
 }
@@ -1897,6 +1940,20 @@ function render() {
       user: state.user,
       guest: state.user?.id === "local-guest",
       isAdvisor: isAdvisor(),
+    });
+  } else if (r === "dashboard" && isAdvisor() && c && c.mode !== "specialist") {
+    html = linkPage({
+      side: sideNav(r, c),
+      menu: menuButton,
+      account: accountMenu(state.user?.name || ADVISOR_NAME, "advisor"),
+      theme: wsTheme(),
+      c: { ...c, mode: "advisor" },
+      user: state.user,
+      demo: state.demo,
+      demoRole: state.demoRole,
+      settings: "#/settings",
+      route: "dashboard",
+      body: advisorDashboard(),
     });
   } else if (r === "dashboard" && c.mode !== "specialist") {
     html = linkDashboard({
