@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029050000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029053000";
 import {
   newData,
   profileInput,
@@ -1072,12 +1072,64 @@ function referrals(c) {
           )
   }${panel("Permission stays with the owner", "<p>Withdraw a referral to stop further access, including after completion. Updating discovery or scenario assumptions withdraws existing referrals automatically. Information previously viewed cannot be recalled. Recipients see a snapshot of the profile approved at handoff; they do not receive later profile edits.</p><p>Handoffs are tracked in the application. They do not guarantee engagement, financing, buyer interest, or a professional recommendation.</p>")}</div></div>${routes}`;
 }
+// Small line icons for the action plan cards.
+const planIcon = (d, size = 18) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const PI = {
+  meet: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/>',
+  ai: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+  send: '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+};
 function plan(c) {
-  const d = c.data;
-  const by = (st) => d.actions.filter((a) => a.status === st).length,
-    total = d.actions.length,
-    owners = [...new Set(d.actions.map((a) => a.assignee))].map((o) => [o, d.actions.filter((a) => a.assignee === o).length]);
-  return `<h2 class="sr-only">Every next step has an owner.</h2><div class="two-col pl-top"><section class="panel"><div class="panel-head"><div><h2>Progress</h2><small>Share of actions by status</small></div></div><div class="pl-stack" role="img" aria-label="${by("Completed")} completed, ${by("In progress")} in progress, ${by("Open")} open">${[["v", "Completed"], ["a", "In progress"], ["n", "Open"]].map(([k, st]) => (by(st) ? `<i class="${k}" data-w="${((by(st) / (total || 1)) * 100).toFixed(1)}"></i>` : "")).join("")}</div><div class="ld-legend rd-legend pl-legend"><span><i class="v"></i>${by("Completed")} completed</span><span><i class="a"></i>${by("In progress")} in progress</span><span><i class="n"></i>${by("Open")} open</span></div></section><section class="panel"><div class="panel-head"><div><h2>Who owns the work</h2><small>Actions per responsible person or team</small></div></div>${barRows(owners.map(([o, k]) => ["t", esc(o), k]), Math.max(1, ...owners.map(([, k]) => k)))}</section></div><div class="two-col section-gap">${panel("Shared action plan", d.actions.map((a) => `<article class="action st-${a.status.toLowerCase().replace(" ", "-")}"><div><div class="eyebrow">${esc(a.kind)}</div><h3>${esc(a.title)}</h3><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small></div><label class="field"><span class="muted">Status</span><select data-task="${a.id}" ${state.demo || (c.mode !== "advisor" && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></label></article>`).join(""))}<div class="stack">${c.mode === "advisor" ? panel("Assign a next step", `<form data-form="addAction" class="inline-form">${input("title", "Action", "", "text", 'required maxlength="500"')}${input("assignee", "Responsible person / team", "", "text", 'required maxlength="200"')}${input("due", "Due date (optional)", "", "date")}${formEnd("Add shared action")}</form>`) : panel("Life beyond the transaction", "<p>Ask your advisor to assign specific actions for income needs, investment policy, estate documents, taxes, and family distributions. Mark your own family-continuity action as work progresses.</p>")}${c.mode === "advisor" ? panel("Observed outcomes", `<p>Record actual results only. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", d.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${d.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", d.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], d.outcomes.retained === null ? "Not recorded" : d.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`) : ""}</div></div>`;
+  const d = c.data,
+    p = d.profile,
+    advisor = c.mode === "advisor",
+    acts = d.actions ?? [],
+    done = acts.filter((a) => a.status === "Completed").length,
+    mine = (a) => /owner/i.test(a.assignee),
+    parties = [...new Set(acts.map((a) => a.assignee))].map((name) => {
+      const list = acts.filter((a) => a.assignee === name);
+      return { name, open: list.filter((a) => a.status !== "Completed").length, total: list.length };
+    }),
+    m = d.meeting,
+    [what, who, when] = m ? String(m.topic).split(" · ") : [],
+    people = [p.name, ...(d.stakeholders ?? []).map((x) => x.name)],
+    shown = people.slice(0, 5);
+  const bubble = (a) =>
+    `<div class="pl-msg ${mine(a) ? "me" : ""} st-${a.status.toLowerCase().replace(" ", "-")}"><div><small class="pl-kind">${esc(a.kind)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small></div><select data-task="${a.id}" aria-label="Status for ${esc(a.title)}" ${state.demo || (!advisor && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></div>`;
+  return `<h2 class="sr-only">Every next step has an owner.</h2>
+  <div class="pl-grid">
+    <section class="panel pl-main">
+      <div class="pl-hero">
+        ${personAvatar(p.name, "lg pl-face")}
+        <h2>${esc(p.name)}</h2>
+        <small>${esc(p.business)}</small>
+        <div class="pl-quick"><a href="#/overview" aria-label="Open meetings">${planIcon(PI.meet)}</a><a href="#/assistant" aria-label="Ask the AI about this plan">${planIcon(PI.ai)}</a><a href="#/history" aria-label="Open case history">${planIcon(PI.history)}</a></div>
+      </div>
+      <div class="pl-day"><span>Shared actions · ${done} of ${acts.length} done</span></div>
+      <div class="pl-thread">${acts.map(bubble).join("") || `<p class="pl-none">No shared actions yet.</p>`}</div>
+      ${advisor
+        ? `<form data-form="addAction" class="pl-compose"><label class="sr-only" for="field-title">Action</label><input name="title" id="field-title" required maxlength="500" placeholder="Write a new shared action"><label class="sr-only" for="field-assignee">Responsible person / team</label><input name="assignee" id="field-assignee" required maxlength="200" placeholder="Who is responsible"><label class="sr-only" for="field-due">Due date (optional)</label><input name="due" id="field-due" type="date"><button type="submit" class="pl-send" aria-label="Add shared action" ${locked()}>${planIcon(PI.send)}</button></form>`
+        : `<div class="pl-compose readonly">${planIcon(PI.list)}<span>Your advisor assigns shared actions. Update your own as work progresses.</span></div>`}
+    </section>
+    <div class="stack">
+      <section class="panel pl-team"><div class="pl-head"><h2>Team</h2><span class="pl-count" aria-label="${parties.length} responsible parties">${planIcon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>', 16)}${parties.length}</span></div>
+        <ul>${parties
+          .map((x) => `<li>${personAvatar(/^owner$/i.test(x.name) ? p.name : x.name)}<div><b>${esc(/^owner$/i.test(x.name) ? p.name : x.name)}</b><small>${x.open} open · ${x.total} total</small></div><a class="pl-round" href="#/assistant" aria-label="Prepare a note for ${esc(x.name)}">${planIcon('<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>')}</a></li>`)
+          .join("")}</ul>
+        <a class="pl-invite" href="${advisor ? "#field-title" : "#/overview"}"><span>${planIcon(PI.plus)}</span>${advisor ? "Assign a new shared action" : "Ask your advisor for a next step"}</a></section>
+      <section class="panel pl-meet"><small class="pl-eyebrow">Meeting</small><h2>${esc(m ? who || what : "No meeting booked")}</h2><small>${m ? esc(who ? what : "Advisor meeting") : "Request time with your advisor to review this plan."}</small>
+        ${m ? `<div class="pl-row">${planIcon(PI.clock)}<span>${esc(when || `Requested ${date(m.requestedAt)}`)}</span></div><div class="pl-row">${planIcon(PI.cal)}<span>${esc(m.status)}</span></div>` : ""}
+        <h3>Attendees</h3>
+        <div class="pl-att"><div class="pl-faces">${shown.map((n) => personAvatar(n)).join("")}${people.length > shown.length ? `<span class="ld-person pl-more">+${people.length - shown.length}</span>` : ""}</div><a href="#/overview">${m ? "Manage meeting" : "Request a meeting"}<span class="pl-round sm">${planIcon(PI.send, 15)}</span></a></div></section>
+    </div>
+  </div>
+  ${advisor ? `<div class="section-gap">${panel("Observed outcomes", `<p>Record actual results only. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", d.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${d.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", d.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], d.outcomes.retained === null ? "Not recorded" : d.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`)}</div>` : ""}`;
 }
 // Monotone cubic path through points (no overshoot), for the smooth area chart.
 function smoothPath(pts) {
@@ -1412,7 +1464,7 @@ app.addEventListener("submit", async (e) => {
     kind = f.dataset.form,
     btn = f.querySelector('button[type="submit"],button:not([type])'),
     err = f.querySelector(".form-error"),
-    original = btn?.textContent;
+    original = btn?.innerHTML;
   if (err) err.textContent = "";
   if (btn) {
     btn.disabled = true;
@@ -1507,7 +1559,7 @@ app.addEventListener("submit", async (e) => {
   } finally {
     if (btn?.isConnected) {
       btn.disabled = state.demo;
-      btn.textContent = original;
+      btn.innerHTML = original;
     }
   }
 });

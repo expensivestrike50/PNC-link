@@ -748,7 +748,7 @@ ${side}
       <div class="ld-card ld-kpi"><small>Review</small><b>${d.review ? "Recorded" : "Pending"}</b><span>Human findings and next steps</span></div>
       <div class="ld-card ld-kpi"><small>Opportunity</small><b>${d.qualified ? "Qualified" : "Discovery"}</b><span>Advisor determination</span></div>
     </div>
-    <div class="ld-grid rd-grid">
+    <div class="ld-grid ld-fill rd-grid">
       <div class="ld-col">
         <section class="ld-card ld-pad">
           <div class="ld-ch"><div><h2>Readiness evidence</h2><small>${owner ? "Mark what is available; your advisor verifies it." : "Verify categories the owner marked available."} Select <span class="rd-i-inline" aria-hidden="true">i</span> to see what each item covers.</small></div>${roundLink("#/discovery", "Open discovery profile")}</div>

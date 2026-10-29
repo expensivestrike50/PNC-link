@@ -1708,9 +1708,6 @@ button.ld-day.on {
 .rd-kpis {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.rd-grid {
-  align-items: start;
-}
 .rd-list {
   display: flex;
   flex-direction: column;
@@ -3360,4 +3357,377 @@ button.ld-day.on {
 .ld .ld-page .chat-message.ai-msg.bot b {
   text-transform: none;
   letter-spacing: 0;
+}
+
+/* ---------- Shared action plan ---------- */
+.pl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.ld .ld-page .pl-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pl-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 16px 22px;
+  border-radius: 22px;
+  background: var(--soft);
+  text-align: center;
+}
+.ld .pl-hero .pl-face {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 10px;
+  border: 3px solid #f2d50f;
+  font-size: 28px;
+}
+.ld .pl-hero h2 {
+  font-size: 22px;
+}
+.pl-hero small {
+  font-size: 13px;
+  color: var(--muted);
+}
+.pl-quick {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.ld .pl-quick a,
+.ld .pl-round {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink);
+  transition: background 0.15s;
+}
+.ld .pl-quick a:hover,
+.ld .pl-round:hover {
+  background: #f2d50f;
+  color: #111;
+}
+.pl-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-day::before,
+.pl-day::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.pl-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pl-msg {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 18px 18px 18px 4px;
+  background: var(--soft);
+}
+.pl-msg.me {
+  align-self: flex-end;
+  border-radius: 18px 18px 4px 18px;
+  background: var(--pale-b);
+  color: #111;
+}
+.pl-msg > div {
+  flex: 1;
+  min-width: 0;
+}
+.pl-msg p {
+  margin: 2px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pl-msg small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pl-msg.me small {
+  color: #4a4a4a;
+}
+.ld .pl-msg .pl-kind {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pl-msg.st-completed p {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.ld .ld-page .pl-msg select {
+  flex-shrink: 0;
+  height: 34px;
+  min-height: 0;
+  padding: 0 10px;
+  border-radius: 17px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.pl-msg.me select {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+.pl-none {
+  color: var(--muted);
+  text-align: center;
+}
+.pl-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 26px;
+  background: var(--soft);
+}
+.pl-compose.readonly {
+  gap: 10px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ld .ld-page .pl-compose input {
+  min-width: 0;
+  height: 38px;
+  min-height: 0;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+.ld .ld-page .pl-compose input[name="title"] {
+  flex: 2;
+}
+.ld .ld-page .pl-compose input[name="assignee"] {
+  flex: 1;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.ld .ld-page .pl-compose input[type="date"] {
+  width: 140px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.ld .pl-send {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f2d50f;
+  color: #111;
+  cursor: pointer;
+}
+.pl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ld .pl-head h2 {
+  font-size: 22px;
+}
+.pl-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 18px;
+  background: var(--soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pl-team ul {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+.pl-team li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ld .pl-team li .ld-person,
+.ld .pl-faces .ld-person {
+  width: 46px;
+  height: 46px;
+}
+.pl-team li div {
+  flex: 1;
+  min-width: 0;
+}
+.pl-team li b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.pl-team li small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ld .pl-team .pl-round {
+  width: 44px;
+  height: 44px;
+  background: var(--soft);
+}
+.ld .pl-invite {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.pl-invite span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--pale-b);
+  color: #111;
+}
+.ld .pl-eyebrow {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ld .pl-meet h2 {
+  margin-top: 6px;
+  font-size: 22px;
+}
+.pl-meet > small:not(.pl-eyebrow) {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+.ld .pl-meet h3 {
+  margin: 18px 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.pl-att {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pl-faces {
+  display: flex;
+}
+.ld .pl-faces .ld-person {
+  margin-left: -10px;
+  border: 2px solid var(--card);
+}
+.ld .pl-faces .ld-person:first-child {
+  margin-left: 0;
+}
+.ld .pl-faces .pl-more {
+  background: var(--pale-b);
+  color: #111;
+  font-size: 13px;
+}
+.ld .pl-att a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.ld .pl-round.sm {
+  width: 34px;
+  height: 34px;
+  background: var(--pale-b);
+  color: #111;
+}
+@media (max-width: 1100px) {
+  .pl-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .pl-msg {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .pl-compose {
+    flex-wrap: wrap;
+    border-radius: 18px;
+    padding: 10px;
+  }
+  .ld .ld-page .pl-compose input[name="title"] {
+    flex-basis: 100%;
+  }
+  .ld .ld-page .pl-compose input[name="assignee"] {
+    padding-left: 4px;
+    border-left: 0;
+  }
+}
+.ld .ld-page .pl-msg > div {
+  flex: 1 1 auto;
+}
+.ld .ld-page .pl-msg select {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 140px;
+}
+.ld .ld-page .pl-msg p {
+  color: inherit;
+}
+.ld .ld-page .pl-msg.me select {
+  background: #fff;
+  color: #111;
+}
+.ld .ld-page .pl-compose input {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.ld .ld-page .pl-compose input[name="title"] {
+  border-left: 0;
 }
