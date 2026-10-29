@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029111500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029113000";
 import {
   newData,
   profileInput,
@@ -587,7 +587,7 @@ function home() {
 }
 // Owner or advisor workspace, chosen on the sign-in and sign-up forms.
 const roleSwitch = (signup) =>
-  `<fieldset class="role-switch"><legend>${signup ? "I am" : "Sign in as"}</legend><label><input type="radio" name="role" value="owner" checked><span>Business owner</span></label><label><input type="radio" name="role" value="advisor"><span>Advisor</span></label></fieldset>`;
+  `<fieldset class="role-switch"><legend>${signup ? "I am" : "Sign in as"}</legend><div class="role-opts"><label><input type="radio" name="role" value="owner" checked><span>Business owner</span></label><label><input type="radio" name="role" value="advisor"><span>Advisor</span></label></div></fieldset>`;
 function authPage(kind) {
   const signup = kind === "signup",
     recover = kind === "recover",
