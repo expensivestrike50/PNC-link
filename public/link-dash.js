@@ -408,7 +408,7 @@ ${side}
             ? "Cases appear here when an owner names your account email and shares their case, or approves a referral addressed to you."
             : "Add your business facts, goals and family priorities. Valuation range, proceeds, evidence and transition paths appear here as soon as you save."
         }</p>
-        <div class="ld-start-btns"><a class="ld-yellow" href="#/discovery">${staff ? "Create my own owner case" : "Start your transition profile"}</a><button type="button" class="ld-ghost" data-action="demo">Explore the sample</button></div>
+        <div class="ld-start-btns"><a class="ld-yellow" href="#/discovery">${staff ? "Create my own owner case" : "Start your transition profile"}</a><button type="button" class="ld-ghost" data-action="demo">Explore demo</button></div>
       </div>
     </section>
     <div class="ld-tiles">${steps

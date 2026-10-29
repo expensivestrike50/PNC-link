@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029113000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029114500";
 import {
   newData,
   profileInput,
@@ -573,7 +573,7 @@ function home() {
     <div class="lph-copy">
       <h1 tabindex="-1">A thoughtful transition starts with a <span class="lph-mark">connected plan.<svg viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 10C60 3 140 2 197 7" /></svg></span></h1>
       <p>Bring your business goals, family priorities, and advisory team together, from first questions to life beyond a sale.</p>
-      <div class="lph-btns"><a class="lph-dark" href="#/guest"><small>Get started</small>Start your transition profile</a>${button("<small>No sign in needed</small>Explore the sample", "demo", "lph-dark ghost")}</div>
+      <div class="lph-btns"><a class="lph-dark" href="#/guest"><small>Get started</small>Start your transition profile</a>${button("<small>No sign in needed</small>Explore demo", "demo", "lph-dark ghost")}</div>
       <p class="lph-tag">Owner-guided discovery. Advisor-reviewed decisions. AI support along the way.</p>
     </div>
     <figure class="lph-visual"><img src="./assets/family.png" alt="Business owners considering their family's next chapter"><figcaption class="lph-one"><b>One relationship.</b><span>Business</span><i>+</i><span>Family</span><i>+</i><span>Personal wealth</span></figcaption></figure>
@@ -581,7 +581,7 @@ function home() {
       <div><span class="lph-ic">${icon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>')}</span><div><b>For business owners</b><small>Know your options. Keep your voice.</small></div></div>
       <div><span class="lph-ic">${icon('<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>')}</span><div><b>For relationship advisors</b><small>See the whole relationship.</small></div></div>
       <div><span class="lph-ic">${icon('<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>')}</span><div><b>89% · 55%</b><small>value integrated advice · use one advisor for both</small></div></div>
-      ${button("Explore the sample", "demo", "lph-cta lg")}
+      ${button("Explore demo", "demo", "lph-cta lg")}
     </section>
   </main></div>`;
 }

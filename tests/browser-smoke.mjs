@@ -11,7 +11,7 @@ await page
   })
   .waitFor();
 await page
-  .getByRole("button", { name: "Explore the sample", exact: true })
+  .getByRole("button", { name: "Explore demo", exact: true })
   .click();
 await page
   .getByRole("heading", {
