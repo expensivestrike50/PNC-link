@@ -227,7 +227,7 @@ function relationshipMap(d) {
 /* ---------------- Frame ---------------- */
 
 // Header card shared by the Dashboard and My transition.
-function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole, ping = false, note = "" }) {
+function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole, ping = false, note = "", settings = "#/discovery" }) {
   const owner = demoRole === "owner";
   const viewSwitch = demo
     ? `<div class="ld-switch" role="group" aria-label="Sample view"><button type="button" class="${owner ? "on" : ""}" ${owner ? 'aria-pressed="true" disabled' : 'data-action="demoSwitch" aria-label="View as owner"'}>Client</button><button type="button" class="${owner ? "" : "on"}" ${owner ? 'data-action="demoSwitch" aria-label="View as advisor"' : 'aria-pressed="true" disabled'}>Advisor</button></div>`
@@ -237,7 +237,7 @@ function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole,
       <div><small>${greeting}</small><h1 tabindex="-1">${esc(name)}</h1></div>
       <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span><a class="ld-pill ld-pill-sm" href="#/signup">Create your case</a>' : `${note}<button type="button" class="ld-pill ld-pill-sm" data-action="refresh">Refresh</button>`}
         <a class="ld-round" href="#/plan" aria-label="Open shared action plan">${svg(I.bell, 20)}${ping ? '<i class="ld-ping"></i>' : ""}</a>
-        <a class="ld-round" href="#/discovery" aria-label="Discovery profile settings">${svg(I.settings, 20)}</a>
+        <a class="ld-round" href="${settings}" aria-label="${settings === "#/settings" ? "Settings and data" : "Discovery profile settings"}">${svg(I.settings, 20)}</a>
       </div>
     </header>`;
 }
@@ -246,7 +246,7 @@ function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole,
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ side, menu, account, theme, c, user, demo, demoRole, history, note = "" }) {
+export function linkDashboard({ side, menu, account, theme, c, user, demo, demoRole, history, note = "", settings = "#/discovery" }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -280,7 +280,7 @@ export function linkDashboard({ side, menu, account, theme, c, user, demo, demoR
 ${side}
 
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, settings, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
 
     <div class="ld-kpis">
       <div class="ld-card ld-kpi"><small>Working enterprise value</small><b>${short(r.ev)}</b><span>${short(sens[0].ev)} – ${short(sens[2].ev)}</span>${miniRange(sens[0].ev, sens[2].ev, r.ev)}</div>
@@ -420,7 +420,7 @@ ${side}
 
 // My transition in the dashboard frame. Content pieces (forms, badges, AI and brief
 // buttons) come from workspace.js so their behaviour is unchanged.
-export function linkTransition({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "" }) {
+export function linkTransition({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "", settings = "#/discovery" }) {
   const d = c.data,
     p = d.profile,
     journey = transitionJourney(d),
@@ -433,7 +433,7 @@ export function linkTransition({ side, menu, account, theme, c, user, demo, demo
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, settings, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
     <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
@@ -701,13 +701,13 @@ export function linkHistory(history, now = Date.now()) {
     </section>`;
 }
 
-export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body, note = "" }) {
+export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body, note = "", settings = "#/discovery" }) {
   const owner = c.mode === "owner",
     name = owner ? c.data.profile.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor";
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, note, ping: (c.data.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, settings, ping: (c.data.actions ?? []).some((a) => a.status !== "Completed") })}
     <main class="ld-page ld-page-${route}" id="main">${body}</main>
   </div>
 </div>`;
@@ -723,7 +723,7 @@ const EV_ICON = {
   "Operating procedures": '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
   "Transition timeline": '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 };
-export function linkReadiness({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "" }) {
+export function linkReadiness({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "", settings = "#/discovery" }) {
   const d = c.data,
     p = d.profile,
     rd = readiness(d),
@@ -733,7 +733,7 @@ export function linkReadiness({ side, menu, account, theme, c, user, demo, demoR
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, settings, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
     <h2 class="sr-only">Evidence before conclusions.</h2>
     <div class="ld-kpis rd-kpis">
       <div class="ld-card ld-kpi gauge"><div><small>Owner-reported availability</small><b>${rd.score}<em>%</em></b><span>${rd.reported}/${rd.total} categories</span></div>${gauge(rd.score)}</div>

@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029140000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029143000";
 import {
   newData,
   profileInput,
@@ -684,7 +684,6 @@ function advisorSideNav(r, c) {
     <nav aria-label="Workspace">${link("dashboard", "Dashboard", '<span class="nav-icon i-dashboard" aria-hidden="true"></span>')}${link("portfolio", "Portfolio", sideIcon(ADV_ICON.portfolio))}${link("inbox", "Inbox", sideIcon(ADV_ICON.inbox), inbox ? `<em class="adv-badge" aria-label="${inbox} items">${inbox}</em>` : "")}${link("calendar", "Calendar", sideIcon(ADV_ICON.calendar))}</nav>
     ${clients.length ? `<div class="adv-company"><label for="sideCaseSelect">Portfolio company</label><select id="sideCaseSelect">${clients.map((x) => `<option value="${esc(x.id)}" ${x.id === c?.id ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select>${c ? `<b>${esc(c.data.profile.business)}</b>` : ""}<small>Switch advisor workspace. Client-provided inputs remain unchanged.</small>
       <details class="adv-pages" ${inClient ? "open" : ""}><summary>Client pages</summary><nav aria-label="Client pages">${CLIENT_PAGES.map(([id, label]) => `<a class="adv-page ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}">${label}</a>`).join("")}</nav></details></div>` : ""}
-    <div class="adv-foot">${link("settings", "Settings &amp; data", sideIcon(ADV_ICON.settings))}<small>Competition demo. Fictional data only.</small></div>
     <div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
 function sideNav(r, c) {
@@ -1719,6 +1718,7 @@ function render() {
       demo: state.demo,
       demoRole: state.demoRole,
       note: casePicker(),
+      settings: isAdvisor() ? "#/settings" : "#/discovery",
       parts: transitionParts(c),
     });
   } else if (r === "readiness" && c && c.mode !== "specialist") {
@@ -1732,6 +1732,7 @@ function render() {
       demo: state.demo,
       demoRole: state.demoRole,
       note: casePicker(),
+      settings: isAdvisor() ? "#/settings" : "#/discovery",
       parts: readinessParts(c),
     });
   } else if (FRAMED.includes(r) && c && c.mode !== "specialist" && (isAdvisor() || !ADVISOR_ROUTES.includes(r))) {
@@ -1745,6 +1746,7 @@ function render() {
       demo: state.demo,
       demoRole: state.demoRole,
       note: casePicker(),
+      settings: isAdvisor() ? "#/settings" : "#/discovery",
       route: r,
       body: framedPage(r, c),
     });
@@ -1769,6 +1771,7 @@ function render() {
       demo: state.demo,
       demoRole: state.demoRole,
       note: casePicker(),
+      settings: isAdvisor() ? "#/settings" : "#/discovery",
       history: state.history,
       isAdvisor: isAdvisor(),
     });
