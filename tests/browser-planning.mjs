@@ -199,8 +199,24 @@ async function open(role) {
   return page;
 }
 
+// The advisor sidebar has no per-client links, so client pages fall back to their route.
+const ROUTES = {
+  "Case overview": "overview",
+  "My transition": "overview",
+  "Discovery profile": "discovery",
+  "Readiness & review": "readiness",
+  "Transition options": "pathways",
+  "Family & legacy": "family",
+  "Proceeds & wealth": "proceeds",
+  "Specialist referrals": "referrals",
+  "Shared action plan": "plan",
+  "AI assistant": "assistant",
+  "Case history": "history",
+};
 async function nav(page, name) {
-  await page.getByRole("link", { name, exact: true }).click();
+  const link = page.getByRole("link", { name, exact: true });
+  if (await link.count()) await link.first().click();
+  else await page.evaluate((r) => (location.hash = `#/${r}`), ROUTES[name]);
 }
 async function save(page, formName, buttonName) {
   const form = page.locator(`form[data-form="${formName}"]`);

@@ -159,9 +159,8 @@ await advisor
 await advisor
   .getByRole("heading", { name: "Malik <Tools> & Family", exact: true })
   .waitFor();
-await advisor
-  .getByRole("link", { name: "Readiness & review", exact: true })
-  .click();
+// The advisor sidebar has no per-client links; client pages open by route.
+await advisor.evaluate(() => (location.hash = "#/readiness"));
 for (const label of ["Financial statements", "Ownership and debt schedule"]) {
   await advisor
     .locator(".check-row")
@@ -190,9 +189,8 @@ await advisor
   .getByRole("button", { name: "Record advisor review", exact: true })
   .waitFor();
 await advisor.getByText("Qualified", { exact: true }).waitFor();
-await advisor
-  .getByRole("link", { name: "Specialist referrals", exact: true })
-  .click();
+// The advisor sidebar has no per-client links; client pages open by route.
+await advisor.evaluate(() => (location.hash = "#/referrals"));
 await advisor
   .getByLabel("Specialist team", { exact: true })
   .selectOption("PNC Private Bank");

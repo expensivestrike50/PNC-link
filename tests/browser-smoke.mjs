@@ -69,11 +69,8 @@ await page
 await page
   .getByRole("heading", { name: "Measure the journey, then test the impact." })
   .waitFor();
-// Advisor client pages sit under "Client pages" in the sidebar.
-await page.locator(".adv-pages summary").click();
-await page
-  .getByRole("link", { name: "Readiness & review", exact: true })
-  .click();
+// The advisor sidebar has no per-client links; client pages open by route.
+await page.evaluate(() => (location.hash = "#/readiness"));
 assert.equal(
   await page
     .getByRole("button", { name: "Record advisor review" })
@@ -88,15 +85,18 @@ await page.screenshot({
 await page.setViewportSize({ width: 390, height: 844 });
 // On narrow screens the sidebar is off-canvas; open it before following a link.
 const navTo = async (name) => {
+  const link = page.getByRole("link", { name, exact: true });
+  if (!(await link.count())) {
+    // Advisor client pages have no sidebar link; open them by route.
+    const routes = { "Transition options": "pathways", "Family & legacy": "family", "AI assistant": "assistant", "Planning resources": "resources" };
+    return page.evaluate((r) => (location.hash = `#/${r}`), routes[name]);
+  }
   const menu = page.getByRole("button", { name: "Show sidebar" });
   if ((await menu.count()) && (await menu.first().isVisible())) {
     await menu.first().click();
     await page.waitForTimeout(350); // let the sidebar finish sliding in
   }
-  const pages = page.locator("details.adv-pages:not([open]) summary");
-  const link = page.getByRole("link", { name, exact: true });
-  if ((await pages.count()) && !(await link.isVisible())) await pages.click();
-  await link.click();
+  await link.first().click();
 };
 await navTo("Transition options");
 await page
@@ -139,7 +139,7 @@ for (const [name, heading] of [
     });
 }
 await page.setViewportSize({ width: 1440, height: 1000 });
-await page.getByRole("link", { name: "Family & legacy", exact: true }).click();
+await navTo("Family & legacy");
 await page
   .getByRole("heading", {
     name: "Plan for the people behind the business.",

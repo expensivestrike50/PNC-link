@@ -1,5 +1,5 @@
-import { mutate } from "./workflow.mjs?v=20261029161500";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029161500";
+import { mutate } from "./workflow.mjs?v=20261029164500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029164500";
 import {
   newData,
   profileInput,
@@ -709,31 +709,13 @@ const ADV_ICON = {
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
 };
-const CLIENT_PAGES = [
-  ["overview", "Case overview"],
-  ["discovery", "Discovery profile"],
-  ["readiness", "Readiness & review"],
-  ["pathways", "Transition options"],
-  ["family", "Family & legacy"],
-  ["proceeds", "Proceeds & wealth"],
-  ["referrals", "Specialist referrals"],
-  ["plan", "Shared action plan"],
-  ["assistant", "AI assistant"],
-  ["history", "Case history"],
-  ["resources", "Planning resources"],
-];
 function advisorSideNav(r, c) {
   const theme = wsTheme(),
-    clients = state.cases.filter((x) => x.mode === "advisor"),
     inbox = advisorInbox().length,
     link = (id, label, icon, badge = "") =>
-      `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}">${icon}${label}${badge}</a>`,
-    inClient = CLIENT_PAGES.some(([id]) => id === r);
+      `<a class="nav-link ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}">${icon}${label}${badge}</a>`;
   return `<aside class="sidebar ws-side adv-side"><a class="brand-box" href="#/home"><img class="logo" src="${logoFor(theme)}" alt="PNC-link home"></a><button type="button" class="ws-collapse" data-ws-collapse aria-label="Hide sidebar" title="Hide sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15.5 10l-2 2 2 2"/></svg></button>
-    <p class="side-label">Advisor view</p><p class="adv-sub">AI-enabled digital operating layer for PNC Business Owner Solutions</p>
     <nav aria-label="Workspace">${link("dashboard", "Dashboard", '<span class="nav-icon i-dashboard" aria-hidden="true"></span>')}${link("portfolio", "Portfolio", sideIcon(ADV_ICON.portfolio))}${link("inbox", "Inbox", sideIcon(ADV_ICON.inbox), inbox ? `<em class="adv-badge" aria-label="${inbox} items">${inbox}</em>` : "")}${link("calendar", "Calendar", sideIcon(ADV_ICON.calendar))}</nav>
-    ${clients.length ? `<div class="adv-company"><label for="sideCaseSelect">Portfolio company</label><select id="sideCaseSelect">${clients.map((x) => `<option value="${esc(x.id)}" ${x.id === c?.id ? "selected" : ""}>${esc(x.data.profile.business)}</option>`).join("")}</select>${c ? `<b>${esc(c.data.profile.business)}</b>` : ""}<small>Switch advisor workspace. Client-provided inputs remain unchanged.</small>
-      <details class="adv-pages" ${inClient ? "open" : ""}><summary>Client pages</summary><nav aria-label="Client pages">${CLIENT_PAGES.map(([id, label]) => `<a class="adv-page ${r === id ? "active" : ""}" ${r === id ? 'aria-current="page"' : ""} href="#/${id}">${label}</a>`).join("")}</nav></details></div>` : ""}
     <div class="ws-theme" role="group" aria-label="Theme"><button type="button" data-ws-theme="light" class="${theme === "light" ? "on" : ""}" aria-pressed="${theme === "light"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Light</button><button type="button" data-ws-theme="dark" class="${theme === "dark" ? "on" : ""}" aria-pressed="${theme === "dark"}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>Dark</button></div></aside><div class="ws-scrim" data-ws-close></div>`;
 }
 function sideNav(r, c) {
@@ -820,14 +802,8 @@ function workbenchSignals(c) {
 }
 function portfolio() {
   const rows = state.cases.filter((c) => c.mode === "advisor"),
-    sig = rows.map((c) => workbenchSignals(c)),
-    inbox = advisorInbox().length,
-    soon = today(),
-    horizon = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10),
-    upcoming = rows.flatMap((c) => [c.data.management?.nextContact, ...(c.data.actions ?? []).map((x) => x.due)]).filter((x) => x && x >= soon && x <= horizon).length;
+    sig = rows.map((c) => workbenchSignals(c));
   return `<h2 class="sr-only">A clearer view of every client.</h2>
-  <section class="wb-head"><div><h2>Who needs attention this week</h2><p>Ranked by signals: priority continuity risks, goals without action, trigger urgency, missing evidence, open tensions and pending advisor review.</p></div>
-    <div class="wb-actions"><a class="wb-pill" href="#/inbox">Inbox · ${inbox} unread</a><a class="wb-pill" href="#/calendar">Calendar · ${upcoming} in 14 days</a>${button("+ Add company", "addCompany", "wb-add")}</div></section>
   ${kpis([
     ["Shown", rows.length, "Clients assigned to you"],
     ["Immediate triggers", sig.filter((x) => x.horizon === "Immediate").length, "Transition within a year"],
@@ -2154,7 +2130,7 @@ document.addEventListener("click", (e) => {
   } else if (e.target.closest("[data-ws-collapse]")) {
     if (wide) setSideHidden(true);
     else document.body.classList.remove("ws-open");
-  } else if (e.target.closest("[data-ws-close], .ws-side .nav-link, .ws-side .adv-page, .ws-side .ws-yellow"))
+  } else if (e.target.closest("[data-ws-close], .ws-side .nav-link, .ws-side .ws-yellow"))
     document.body.classList.remove("ws-open");
 });
 document.addEventListener("click", (e) => {
@@ -2383,7 +2359,7 @@ app.addEventListener("change", async (e) => {
         }[el.id]
       ] = el.value;
       $("#portfolio-results").innerHTML = portfolioResults();
-    } else if (el.id === "caseSelect" || el.id === "sideCaseSelect") {
+    } else if (el.id === "caseSelect") {
       state.selected = el.value;
       state.chat = [];
       state.history = [];
