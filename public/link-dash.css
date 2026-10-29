@@ -2290,9 +2290,9 @@ button.ld-day.on {
 
 /* ---------- Case history ---------- */
 .ld-page-history {
-  --c-owner: var(--mark);
-  --c-advisor: #3b82f6;
-  --c-specialist: var(--good);
+  --c-owner: #f2d50f;
+  --c-advisor: #11a6f0;
+  --c-specialist: #5bcc29;
   --c-shared: var(--muted);
 }
 .ld .hs-kpi-sm {
@@ -2328,8 +2328,7 @@ button.ld-day.on {
   fill: var(--c-shared);
 }
 .hs-bar i.t {
-  background: var(--ink);
-  opacity: 0.75;
+  background: #11a6f0;
 }
 .hs-lanes svg {
   display: block;
@@ -2610,10 +2609,10 @@ button.ld-day.on {
   background: var(--track);
 }
 .hs-bar i.a {
-  background: var(--mark);
+  background: #11a6f0;
 }
 .hs-bar i.v {
-  background: var(--good);
+  background: #5bcc29;
 }
 
 /* Transition options: paths at a glance */
@@ -2633,7 +2632,22 @@ button.ld-day.on {
   background: var(--soft);
 }
 .ld .pm-row.chosen {
-  background: var(--row);
+  background: var(--pale-y);
+  color: #111;
+}
+.ld .pm-row.chosen .pm-cell small {
+  color: #4a4a4a;
+}
+.ld .pm-row.chosen .pm-pips i {
+  background: rgba(0, 0, 0, 0.12);
+}
+.ld .pm-row.chosen .pm-pips.l1 i:nth-child(-n + 1),
+.ld .pm-row.chosen .pm-pips.l2 i:nth-child(-n + 2),
+.ld .pm-row.chosen .pm-pips.l3 i:nth-child(-n + 3) {
+  background: var(--pip);
+}
+.ld .pm-row.chosen .pm-ic {
+  background: #f2d50f;
 }
 .pm-head {
   font-size: 12px;
@@ -2705,7 +2719,31 @@ button.ld-day.on {
 .pm-pips.l1 i:nth-child(-n + 1),
 .pm-pips.l2 i:nth-child(-n + 2),
 .pm-pips.l3 i:nth-child(-n + 3) {
-  background: var(--mark);
+  background: var(--pip);
+}
+.pm-cell:nth-child(2) {
+  --pip: #f2d50f;
+}
+.pm-cell:nth-child(3) {
+  --pip: #11a6f0;
+}
+.pm-cell:nth-child(4) {
+  --pip: #5bcc29;
+}
+.pm-cell:nth-child(5) {
+  --pip: #f24848;
+}
+.pm-row:nth-child(4n + 2) .pm-ic {
+  background: var(--pale-y);
+}
+.pm-row:nth-child(4n + 3) .pm-ic {
+  background: var(--pale-b);
+}
+.pm-row:nth-child(4n + 4) .pm-ic {
+  background: var(--pale-g);
+}
+.pm-row:nth-child(4n + 5) .pm-ic {
+  background: var(--pale-p);
 }
 
 /* Proceeds: waterfall */
@@ -2721,23 +2759,22 @@ button.ld-day.on {
   stroke-dasharray: 3 3;
 }
 .wf-total {
-  fill: var(--ink);
-  opacity: 0.85;
+  fill: #11a6f0;
 }
 .wf-neg {
-  fill: #e5674a;
+  fill: #f24848;
 }
 .wf-roll {
-  fill: #8b6cf0;
+  fill: #f0d8fb;
 }
 .wf-fam {
-  fill: var(--mark);
+  fill: #f2d50f;
 }
 .wf-cash {
-  fill: var(--good);
+  fill: #5bcc29;
 }
 .wf-short {
-  fill: #e5674a;
+  fill: #f24848;
 }
 .wf-val {
   font: 600 12px "Poppins", sans-serif;
@@ -2748,12 +2785,12 @@ button.ld-day.on {
   fill: var(--muted);
 }
 .wf-goal {
-  stroke: var(--good);
+  stroke: #5bcc29;
   stroke-dasharray: 6 5;
 }
 .wf-goal-l {
   font: 500 11.5px "Poppins", sans-serif;
-  fill: var(--good);
+  fill: #5bcc29;
 }
 
 /* Referrals: handoff steps */
@@ -2786,7 +2823,7 @@ button.ld-day.on {
   display: none;
 }
 .rf-steps li.done::before {
-  background: var(--good);
+  background: #5bcc29;
 }
 .rf-steps li > i {
   position: relative;
@@ -2798,16 +2835,16 @@ button.ld-day.on {
   background: var(--card);
 }
 .rf-steps li.done > i {
-  border-color: var(--good);
-  background: var(--good);
+  border-color: #5bcc29;
+  background: #5bcc29;
 }
 .rf-steps li.next > i {
-  border-color: var(--mark);
+  border-color: #f2d50f;
   box-shadow: 0 0 0 4px var(--soft);
 }
 .rf-steps li.halt > i {
-  border-color: #e5674a;
-  background: #e5674a;
+  border-color: #f24848;
+  background: #f24848;
 }
 .rf-steps b {
   font-size: 12px;
@@ -2834,10 +2871,10 @@ button.ld-day.on {
   border-radius: 6px;
 }
 .pl-stack i.v {
-  background: var(--good);
+  background: #5bcc29;
 }
 .pl-stack i.a {
-  background: var(--mark);
+  background: #f2d50f;
 }
 .pl-stack i.n {
   background: var(--track);
@@ -2889,4 +2926,7 @@ button.ld-day.on {
   background: var(--card);
   color: var(--ink);
   font: 500 13px "Poppins", sans-serif;
+}
+.hs-bar i.y {
+  background: #f2d50f;
 }

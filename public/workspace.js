@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029030000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029033000";
 import {
   newData,
   profileInput,
@@ -1031,7 +1031,7 @@ function proceedsPage(c) {
         "",
       )}<div class="money-row total ${r.cash < 0 ? "negative" : ""}"><span>${r.cash < 0 ? "Cash shortfall" : "Available cash"}</span><strong>${money(r.cash)}</strong></div></div>${r.shortfall || r.debtShortfall ? `<div class="callout amber"><p>${r.debtShortfall ? `Enterprise value does not cover debt and fees: ${money(r.debtShortfall)} shortfall. ` : ""}${r.shortfall ? `Family distributions exceed modeled cash by ${money(r.shortfall)}. Revisit assumptions before planning distributions.` : ""}</p></div>` : ""}<p class="footer-note">Your stated liquidity goal: ${money(p.liquidity)}. ${r.cash >= p.liquidity ? "The hypothetical cash meets this goal." : "The hypothetical cash falls below this goal."} Rollover equity is not available cash; its future value is uncertain.</p>`,
   )}${panel("Connect proceeds to life after closing", '<p>Record spending needs, estate reviews, family distributions, and investment-policy conversations as named actions. A Private Bank referral requires separate approval of personal information sharing.</p><a class="btn secondary small" href="#/plan">Open wealth-planning actions</a>')}</div></div><section class="panel compare-panel section-gap"><div class="panel-head"><div><h2>Compare your own assumptions</h2><small>Available cash at a lower, working and higher multiple, against your liquidity goal. Sensitivity cases, not estimates for different buyer types; everything else stays constant.</small></div></div>${barRows(
-    [...sens.map((v) => [v.cash >= p.liquidity ? "v" : "a", `${v.multiple.toFixed(1)}× · ${esc(v.label)}`, Math.max(0, v.cash), shortMoney(v.cash)]), ["n", "Liquidity goal", p.liquidity, shortMoney(p.liquidity)]],
+    [...sens.map((v) => [v.cash >= p.liquidity ? "v" : "y", `${v.multiple.toFixed(1)}× · ${esc(v.label)}`, Math.max(0, v.cash), shortMoney(v.cash)]), ["n", "Liquidity goal", p.liquidity, shortMoney(p.liquidity)]],
     sensMax,
   )}<p class="chart-cap">${sens.filter((v) => v.cash >= p.liquidity).length} of ${sens.length} cases meet the goal. Enterprise value: ${sens.map((v) => `${v.multiple.toFixed(1)}× ${shortMoney(v.ev)}`).join(" · ")}.</p></section>${valuationPanel(c)}`;
 }
