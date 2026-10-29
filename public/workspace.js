@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029053000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029061500";
 import {
   newData,
   profileInput,
@@ -1231,7 +1231,7 @@ function assistant(c) {
         ["Proceeds review", "What a tax advisor should check", "Explain my proceeds assumptions and what a tax and wealth advisor should review."],
       ];
   const pill = (cls, label, pct, value) =>
-    `<div class="ai-pill"><span class="ai-pill-bar"><i class="${cls}" data-w="${Math.max(6, Math.min(100, pct)).toFixed(1)}"></i><b>${label}</b></span><em>${value}</em></div>`;
+    `<div class="ai-pill"><div class="ai-pill-top"><b>${label}</b><em>${value}</em></div><span class="ai-pill-bar">${pct > 0 ? `<i data-w="${Math.min(100, pct).toFixed(1)}"></i>` : ""}</span></div>`;
   const thread = state.chat.length
     ? state.chat.map((m) => `<div class="chat-message question ai-msg me"><p>${esc(m.question)}</p>${m.createdAt ? `<small>${date(m.createdAt)}</small>` : ""}</div><div class="chat-message ai-msg bot"><b>PNC-link AI · suggestion</b><p>${esc(m.answer)}</p></div>`).join("")
     : `<div class="ai-empty"><b>${advisor ? "Prepare for the next client conversation." : "Start with your most important question."}</b><span>Pick a conversation starter or write your own question below.</span></div>`;
@@ -1249,14 +1249,15 @@ function assistant(c) {
         <ul class="ai-threads" aria-label="${advisor ? "Advisor preparation" : "Conversation starters"}">${prompts
           .map(([t, sub, q], i) => `<li><button type="button" class="ai-thread ${state.assistantDraft === q ? "on" : ""}" data-ask="${esc(q)}"><span class="ld-ic ${["y", "b", "g", "p"][i]}">${["✎", "⇄", "♥", "$"][i]}</span><span><b>${t}</b><small>${sub}</small></span></button></li>`)
           .join("")}</ul>
+        ${state.demo ? "" : `<div class="ai-side"><label class="check ai-consent"><input type="checkbox" name="consent" form="ai-assist" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label></div>`}
         <div class="ai-convo">
           <div class="chat-thread ai-thread-log" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${thread}</div>
           ${state.demo
             ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>`
-            : `<form data-form="assist" class="inline-form ai-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div><label class="check"><input type="checkbox" name="consent" required><span>I agree to share this case’s discovery answers, evidence summary, proceeds scenario, family plan, stakeholder roles and notes, preferred path, recorded value perspective, advisor findings, actions and referral purposes${advisor ? ", including my internal relationship notes" : ""} with the AI service for this request. Direct name and email fields are omitted; free text may identify people. My question, response and up to four prior private turns are used for context. Conversations are saved privately to my account.</span></label>${formEnd("Ask PNC-link AI")}</form>`}
+            : `<form data-form="assist" id="ai-assist" class="inline-form ai-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div>${formEnd("Ask PNC-link AI")}</form>`}
         </div>
       </div></section>
-    <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2><span class="ai-spark" aria-hidden="true">✧</span>AI insight</h2><small>Where the case stands today</small></div></div>
+    <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2>AI insight</h2><small>Where the case stands today</small></div></div>
       <div class="ai-pills">
         ${pill("g", "Evidence verified", r.verifiedScore, `${r.verified}/${r.total}`)}
         ${pill("y", "Liquidity goal", p.liquidity ? (Math.max(0, cash) / p.liquidity) * 100 : 0, `${p.liquidity ? Math.round((Math.max(0, cash) / p.liquidity) * 100) : 0}%`)}
