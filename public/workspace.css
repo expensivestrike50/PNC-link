@@ -2,8 +2,8 @@
   --ink: #173542;
   --muted: #607580;
   --navy: #153946;
-  --teal: #176d68;
-  --orange: #b9541b;
+  --teal: #0069AA;
+  --orange: #C9620F;
   --line: #dce4e6;
   --paper: #f4f6f5;
   --white: #fff;
@@ -139,7 +139,7 @@ small {
   letter-spacing: 0.02em;
 }
 .badge.amber {
-  background: #fff0db;
+  background: #FDE6D3;
   color: #86521b;
 }
 .badge.gray {
@@ -326,7 +326,7 @@ small {
   font-weight: 700;
 }
 .demo-bar {
-  background: #fff0db;
+  background: #FDE6D3;
   padding: 10px 36px;
   font-size: 12px;
   color: #754a1b;
@@ -445,7 +445,7 @@ small {
   margin-bottom: 20px;
 }
 .callout.amber {
-  background: #fff6e8;
+  background: #FDE6D3;
   border-color: #ba7f38;
   color: #79531e;
 }
@@ -1124,7 +1124,7 @@ fieldset {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #b9541b;
+  outline: 3px solid #C9620F;
 }
 .nav-link:focus-visible {
   outline-color: #f1c5a0;

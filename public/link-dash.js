@@ -70,7 +70,7 @@ const PATH_ICONS = {
   "Partial recapitalization": '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 2.5A7.5 7.5 0 0 1 21.5 9H15z"/>',
   "Prepare / delayed exit": '<path d="M6.5 3h11M6.5 21h11"/><path d="M7.5 3c0 4.5 4.5 5.5 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 5.5-4.5 9s4.5 4.5 4.5 9"/><path d="M9.5 18.5h5"/>',
 };
-const markLogo = `<svg width="30" height="30" viewBox="0 0 96 96" aria-hidden="true"><g stroke-width="9" stroke-linecap="round"><path d="M48 43V23" stroke="currentColor"/><path d="M43 54 25 65M53 54 71 65" stroke="#00A3B1"/></g><circle cx="48" cy="18" r="11" fill="currentColor"/><circle cx="48" cy="50" r="9" fill="currentColor"/><circle cx="20" cy="70" r="11" fill="#00A3B1"/><circle cx="76" cy="70" r="11" fill="#00A3B1"/></svg>`;
+const markLogo = `<svg width="30" height="30" viewBox="0 0 96 96" aria-hidden="true"><g stroke-width="9" stroke-linecap="round"><path d="M48 43V23" stroke="currentColor"/><path d="M43 54 25 65M53 54 71 65" stroke="#F58025"/></g><circle cx="48" cy="18" r="11" fill="currentColor"/><circle cx="48" cy="50" r="9" fill="currentColor"/><circle cx="20" cy="70" r="11" fill="#F58025"/><circle cx="76" cy="70" r="11" fill="#F58025"/></svg>`;
 const roundLink = (href, label, icon = I.arrow, cls = "") =>
   `<a class="ld-round ${cls}" href="${href}" aria-label="${esc(label)}">${svg(icon, 18)}</a>`;
 

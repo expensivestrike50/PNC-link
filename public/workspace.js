@@ -1,5 +1,5 @@
-import { mutate } from "./workflow.mjs?v=20261029173000";
-import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029173000";
+import { mutate } from "./workflow.mjs?v=20261029180000";
+import { ADVISOR_NAME, ADVISOR_PHOTO, linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029180000";
 import {
   newData,
   profileInput,
@@ -122,7 +122,7 @@ async function sha256(text) {
 }
 let guestStore = { row: null, history: [] };
 function guestApi(path, body) {
-  if (path.includes("/assist")) throw Error("Sign in to use live AI. Your guest case stays in this browser.");
+  if (path.includes("/assist")) throw Error("Live AI needs the connected server, which this browser-only demo does not have. Your case and questions stay in this browser.");
   if (guestStore.rows) return sharedApi(path, body);
   if (path.includes("/history")) return { history: guestStore.history, chat: [] };
   if (!body) return { cases: guestStore.row ? [project(guestStore.row, local.user)] : [], metrics: {} };
@@ -607,7 +607,7 @@ async function update(op, payload) {
   notice(state.guest ? "Saved in this browser." : "Saved to the shared case record.");
 }
 function publicHeader() {
-  return `<header class="public-head"><a href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="row"><a class="btn secondary" href="#/signin">Sign in</a><a class="btn" href="#/guest">Get started</a></div></header>${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}`;
+  return `<header class="public-head"><a href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg?v=2" alt="PNC-link home"></a><div class="row"><a class="btn secondary" href="#/signin">Sign in</a><a class="btn" href="#/guest">Get started</a></div></header>${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}`;
 }
 function home() {
   const research =
@@ -616,7 +616,7 @@ function home() {
   // One header-style hero: nav, headline and actions on the left, the family on soft brand
   // shapes on the right, and a floating bar for both audiences and the research.
   return `<div class="lp lph">
-  <header class="lph-nav"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a>
+  <header class="lph-nav"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg?v=2" alt="PNC-link home"></a>
     <nav aria-label="Explore">${button("For owners", "demo", "lph-navlink")}${button("For advisors", "demoAdvisor", "lph-navlink")}<a class="lph-navlink" href="${research}" target="_blank" rel="noopener noreferrer">Research</a><a class="lph-navlink" href="#/resources">Planning resources</a></nav>
     <div class="lph-auth"><a class="lph-signin" href="#/signin">Sign in</a><button type="button" class="lph-cta" data-action="getStarted" aria-haspopup="dialog">Get started</button></div></header>
   <main id="main" class="lph-main">
@@ -646,7 +646,7 @@ function authPage(kind) {
   const signup = kind === "signup",
     recover = kind === "recover",
     callback = ["reset", "invite"].includes(kind);
-  const side = `<aside class="au-side"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="copy"><h2>${signup ? "Start your next chapter with a connected plan." : "Plan your next chapter with us."}</h2><p>Business goals, family priorities and your advisory team in one shared plan.</p><ul><li>Owner-guided discovery</li><li>Advisor-reviewed decisions</li><li>You approve every specialist handoff</li></ul></div><div class="fam"><img src="./assets/family.png" alt=""></div></aside>`;
+  const side = `<aside class="au-side"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg?v=2" alt="PNC-link home"></a><div class="copy"><h2>${signup ? "Start your next chapter with a connected plan." : "Plan your next chapter with us."}</h2><p>Business goals, family priorities and your advisory team in one shared plan.</p><ul><li>Owner-guided discovery</li><li>Advisor-reviewed decisions</li><li>You approve every specialist handoff</li></ul></div><div class="fam"><img src="./assets/family.png" alt=""></div></aside>`;
   if (kind === "signin")
     return `<div class="au">${side}<div class="au-main"><main class="auth au-card au-min" id="main"><h1 class="sr-only" tabindex="-1">Sign in</h1><form data-form="auth" data-kind="signin">${roleSwitch(false)}${input("email", "Email address", "", "email", 'required autocomplete="email"')}${input("password", "Password", "", "password", 'required maxlength="256" autocomplete="current-password"')}<button class="btn">Sign in</button><p class="form-error" role="alert"></p></form>${button("Skip signup and enter portal", "testLogin", "au-skip")}</main></div></div>`;
   return `<div class="au">${side}<div class="au-main">${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}<main class="auth au-card" id="main"><a class="au-back" href="#/home">Back to home</a>${intro(callback ? "Set your password" : recover ? "Recover your account" : signup ? "Start your next chapter." : "Welcome back.", callback ? "Use at least 12 characters." : recover ? "Request a link to set a new password." : signup ? "Create an owner account. Your advisor and specialists use separately assigned roles." : "Open your owner or advisor workspace.")}${!callback && !recover ? `<div class="callout">${button("Skip signup and enter portal", "testLogin", "")}<p>No account needed. Save a personal case in this browser. Shared workflows and live AI require sign in.</p></div>` : ""}<form data-form="auth" data-kind="${kind}">${!callback && !recover ? roleSwitch(signup) : ""}${signup ? input("name", "Your name", "", "text", 'required maxlength="200" autocomplete="name"') : ""}${!callback ? input("email", "Email address", "", "email", 'required autocomplete="email"') : ""}${!recover ? input("password", callback ? "New password" : "Password", "", "password", `required ${signup || callback ? 'minlength="12"' : ""} maxlength="256" autocomplete="${signup || callback ? "new-password" : "current-password"}"`) : ""}<button class="btn">${callback ? "Save password" : recover ? "Send recovery email" : signup ? "Create account" : "Sign in"}</button><p class="form-error" role="alert"></p></form><p class="footer-note">${recover || callback ? '<a href="#/signin">Back to sign in</a>' : signup ? 'Already have an account? <a href="#/signin">Sign in</a>' : '<a href="#/recover">Forgot password?</a> · <a href="#/signup">Create an owner account</a>'}</p>${!signup && !callback && !recover ? `<div class="callout"><p>Advisors and specialists: use your invited account. Access is assigned by a site administrator and by the owner’s case permissions.</p></div>` : ""}</main></div></div>`;
@@ -688,7 +688,7 @@ const wsTheme = () => {
   }
 };
 const logoFor = (theme) =>
-  theme === "light" ? "./assets/pnc-link-logo.svg" : "./assets/pnc-link-logo-light.svg";
+  theme === "light" ? "./assets/pnc-link-logo.svg?v=2" : "./assets/pnc-link-logo-light.svg?v=2";
 // Inbox items for the advisor: every attention reason across assigned clients, plus owner approvals pending.
 function advisorInbox() {
   return state.cases
@@ -802,15 +802,27 @@ function workbenchSignals(c) {
     next: nextSteps(d, "advisor")[0]?.title ?? "No open decision",
   };
 }
-// Advisor action plan: every shared action across the book, pinned by status.
-function advisorPlan() {
-  const rows = state.cases.filter((c) => c.mode === "advisor"),
+// Shared action plan board, used by both roles: every action pinned by status.
+// Advisors see all their clients and can assign actions; owners see their own case
+// and can move only the actions assigned to them.
+function actionBoard(rows, advisor) {
+  const one = rows.length === 1,
+    focus = advisor ? (state.planClient === "All" ? null : rows.find((c) => c.id === state.planClient)) : rows[0],
     all = rows.flatMap((c) => (c.data.actions ?? []).map((a) => ({ c, a }))),
-    shown = all.filter(({ c }) => state.planClient === "All" || c.id === state.planClient),
+    shown = all.filter(({ c }) => !focus || c.id === focus.id),
     overdue = (a) => a.due && a.due < today() && a.status !== "Completed",
     col = (st) => shown.filter(({ a }) => a.status === st),
+    canEdit = (a) => !state.demo && (advisor || a.assignee === "Owner"),
     note = ({ c, a }) =>
-      `<article class="pl-note st-${a.status.toLowerCase().replace(" ", "-")} ${overdue(a) ? "late" : ""}"><i class="pl-pin" aria-hidden="true"></i><small class="pl-kind">${esc(c.data.profile.business)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · ${overdue(a) ? "Overdue" : "Due"} ${esc(a.due)}` : ""}</small><select data-task="${a.id}" data-case="${esc(c.id)}" aria-label="Status for ${esc(a.title)}" ${state.demo ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></article>`;
+      `<article class="pl-note st-${a.status.toLowerCase().replace(" ", "-")} ${overdue(a) ? "late" : ""}"><i class="pl-pin" aria-hidden="true"></i><small class="pl-kind">${esc(advisor && !one ? c.data.profile.business : a.kind)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · ${overdue(a) ? "Overdue" : "Due"} ${esc(a.due)}` : ""}</small><select data-task="${a.id}" data-case="${esc(c.id)}" aria-label="Status for ${esc(a.title)}" ${canEdit(a) ? "" : "disabled"}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></article>`;
+  const compose = advisor
+    ? `<section class="panel section-gap"><div class="pl-head"><h2>Assign a next step</h2></div>
+    <form data-form="advisorAction" class="ap-compose"><label class="sr-only" for="ap-client">Client</label><select id="ap-client" name="client" required ${state.demo ? "disabled" : ""}>${rows.map((c) => `<option value="${esc(c.id)}" ${c.id === (focus ?? current())?.id ? "selected" : ""}>${esc(c.data.profile.business)}</option>`).join("")}</select><label class="sr-only" for="ap-title">Action</label><input id="ap-title" name="title" required maxlength="500" placeholder="What needs to happen" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-assignee">Responsible</label><input id="ap-assignee" name="assignee" required maxlength="200" placeholder="Who is responsible" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-due">Due date</label><input id="ap-due" name="due" type="date" ${state.demo ? "disabled" : ""}>${state.demo ? "" : '<button type="submit" class="ld-black">Add action</button>'}</form><p class="form-error" role="alert"></p></section>`
+    : `<section class="panel section-gap ap-owner-note"><div class="pl-head"><h2>Need another next step?</h2></div><p>Your advisor assigns shared actions for the team. You can move the actions assigned to you as work progresses.</p><a class="ld-black" href="#/calendar">Book time with your advisor</a></section>`;
+  const outcomes =
+    advisor && focus
+      ? panel("Observed outcomes", `<p>Record actual results only for ${esc(focus.data.profile.business)}. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" data-case="${esc(focus.id)}" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", focus.data.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${focus.data.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", focus.data.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], focus.data.outcomes.retained === null ? "Not recorded" : focus.data.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`)
+      : "";
   return `<h2 class="sr-only">Every next step has an owner.</h2>
   ${kpis([
     ["Open", col("Open").length, "Not started"],
@@ -818,10 +830,13 @@ function advisorPlan() {
     ["Completed", col("Completed").length, `of ${shown.length} shared actions`],
     ["Overdue", shown.filter(({ a }) => overdue(a)).length, "Past their due date"],
   ])}
-  <section class="panel section-gap"><div class="pl-head"><h2>Assign a next step</h2></div>
-    <form data-form="advisorAction" class="ap-compose"><label class="sr-only" for="ap-client">Client</label><select id="ap-client" name="client" required ${state.demo ? "disabled" : ""}>${rows.map((c) => `<option value="${esc(c.id)}" ${c.id === (state.planClient === "All" ? current()?.id : state.planClient) ? "selected" : ""}>${esc(c.data.profile.business)}</option>`).join("")}</select><label class="sr-only" for="ap-title">Action</label><input id="ap-title" name="title" required maxlength="500" placeholder="What needs to happen" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-assignee">Responsible</label><input id="ap-assignee" name="assignee" required maxlength="200" placeholder="Who is responsible" ${state.demo ? "disabled" : ""}><label class="sr-only" for="ap-due">Due date</label><input id="ap-due" name="due" type="date" ${state.demo ? "disabled" : ""}>${state.demo ? "" : '<button type="submit" class="ld-black">Add action</button>'}</form><p class="form-error" role="alert"></p></section>
-  <div class="ap-filter" role="group" aria-label="Filter by client">${[["All", "All clients"], ...rows.map((c) => [c.id, c.data.profile.business])].map(([id, label]) => `<button type="button" data-action="planClient" data-id="${esc(id)}" class="${state.planClient === id ? "on" : ""}" aria-pressed="${state.planClient === id}">${esc(label)}</button>`).join("")}</div>
-  <div class="ap-board">${["Open", "In progress", "Completed"].map((st) => `<section class="ap-col"><div class="ap-col-head"><h3>${st}</h3><span class="pl-count">${col(st).length}</span></div><div class="pl-board ap-notes">${col(st).map(note).join("") || '<p class="pl-none">Nothing here.</p>'}</div></section>`).join("")}</div>`;
+  ${compose}
+  ${advisor && rows.length > 1 ? `<div class="ap-filter" role="group" aria-label="Filter by client">${[["All", "All clients"], ...rows.map((c) => [c.id, c.data.profile.business])].map(([id, label]) => `<button type="button" data-action="planClient" data-id="${esc(id)}" class="${state.planClient === id ? "on" : ""}" aria-pressed="${state.planClient === id}">${esc(label)}</button>`).join("")}</div>` : '<div class="ap-gap"></div>'}
+  <div class="ap-board">${["Open", "In progress", "Completed"].map((st) => `<section class="ap-col"><div class="ap-col-head"><h3>${st}</h3><span class="pl-count">${col(st).length}</span></div><div class="pl-board ap-notes">${col(st).map(note).join("") || '<p class="pl-none">Nothing here.</p>'}</div></section>`).join("")}</div>
+  ${outcomes ? `<div class="section-gap">${outcomes}</div>` : ""}`;
+}
+function advisorPlan() {
+  return actionBoard(state.cases.filter((c) => c.mode === "advisor"), true);
 }
 // Advisor home: the whole book of clients at a glance, rather than one client's dashboard.
 function advisorDashboard() {
@@ -1592,71 +1607,6 @@ function settingsPage() {
     <section class="panel"><div class="pl-head"><h2>Data</h2></div><small class="pl-sub">${localDemo ? "This test workspace is saved only in this browser." : "Case data is stored with your connected account."}</small><p class="st-note">Competition demo. Fictional data only. No information is sent to PNC systems.</p>${localDemo ? button("Reset demo data", "resetLocal", "ld-black") : ""}</section>
   </div>`;
 }
-function plan(c) {
-  const d = c.data,
-    p = d.profile,
-    advisor = c.mode === "advisor",
-    acts = d.actions ?? [],
-    done = acts.filter((a) => a.status === "Completed").length,
-    parties = [...new Set(acts.map((a) => a.assignee))].map((name) => {
-      const list = acts.filter((a) => a.assignee === name);
-      return { name, open: list.filter((a) => a.status !== "Completed").length, total: list.length };
-    }),
-    m = d.meeting,
-    [what, who, when] = m ? String(m.topic).split(" · ") : [],
-    steps = nextSteps(d, c.mode),
-    journey = transitionJourney(d),
-    people = [p.name, ...(d.stakeholders ?? []).map((x) => x.name)],
-    shown = people.slice(0, 5);
-  const note = (a) =>
-    `<article class="pl-note st-${a.status.toLowerCase().replace(" ", "-")}"><i class="pl-pin" aria-hidden="true"></i><small class="pl-kind">${esc(a.kind)}</small><p>${esc(a.title)}</p><small>${esc(a.assignee)}${a.due ? ` · Due ${esc(a.due)}` : ""}</small><select data-task="${a.id}" aria-label="Status for ${esc(a.title)}" ${state.demo || (!advisor && a.assignee !== "Owner") ? "disabled" : ""}>${["Open", "In progress", "Completed"].map((x) => `<option ${x === a.status ? "selected" : ""}>${x}</option>`).join("")}</select></article>`;
-  return `<h2 class="sr-only">Every next step has an owner.</h2>
-  <div class="pl-grid">
-    <section class="panel pl-main">
-      <div class="pl-hero">
-        ${personAvatar(p.name, "lg pl-face")}
-        <h2>${esc(p.name)}</h2>
-        <small>${esc(p.business)}</small>
-        <div class="pl-quick"><a href="#/overview" aria-label="Open meetings">${planIcon(PI.meet)}</a><a href="#/assistant" aria-label="Ask the AI about this plan">${planIcon(PI.ai)}</a><a href="#/history" aria-label="Open case history">${planIcon(PI.history)}</a></div>
-      </div>
-      <div class="pl-day"><span>Shared actions · ${done} of ${acts.length} done</span></div>
-      <div class="pl-board" aria-label="Shared actions board">${acts.map(note).join("") || `<p class="pl-none">No shared actions yet.</p>`}</div>
-      ${advisor
-        ? `<form data-form="addAction" class="pl-compose"><label class="sr-only" for="field-title">Action</label><input name="title" id="field-title" required maxlength="500" placeholder="Write a new shared action"><label class="sr-only" for="field-assignee">Responsible person / team</label><input name="assignee" id="field-assignee" required maxlength="200" placeholder="Who is responsible"><label class="sr-only" for="field-due">Due date (optional)</label><input name="due" id="field-due" type="date"><button type="submit" class="pl-send" aria-label="Add shared action" ${locked()}>${planIcon(PI.send)}</button></form>`
-        : `<div class="pl-compose readonly">${planIcon(PI.list)}<span>Your advisor assigns shared actions. Update your own as work progresses.</span></div>`}
-    </section>
-    <div class="stack">
-      <section class="panel pl-team"><div class="pl-head"><h2>Team</h2><span class="pl-count" aria-label="${parties.length} responsible parties">${planIcon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>', 16)}${parties.length}</span></div>
-        <ul>${parties
-          .map((x) => `<li>${personAvatar(/^owner$/i.test(x.name) ? p.name : x.name)}<div><b>${esc(/^owner$/i.test(x.name) ? p.name : x.name)}</b><small>${x.open} open · ${x.total} total</small></div><a class="pl-round" href="#/assistant" aria-label="Prepare a note for ${esc(x.name)}">${planIcon('<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>')}</a></li>`)
-          .join("")}</ul>
-        <a class="pl-invite" href="${advisor ? "#field-title" : "#/overview"}"><span>${planIcon(PI.plus)}</span>${advisor ? "Assign a new shared action" : "Ask your advisor for a next step"}</a></section>
-      <section class="panel pl-meet"><small class="pl-eyebrow">Meeting</small><h2>${esc(m ? who || what : "No meeting booked")}</h2><small>${m ? esc(who ? what : "Advisor meeting") : "Request time with your advisor to review this plan."}</small>
-        ${m ? `<div class="pl-row">${planIcon(PI.clock)}<span>${esc(when || `Requested ${date(m.requestedAt)}`)}</span></div><div class="pl-row">${planIcon(PI.cal)}<span>${esc(m.status)}</span></div>` : ""}
-        <h3>Attendees</h3>
-        <div class="pl-att"><div class="pl-faces">${shown.map((n) => personAvatar(n)).join("")}${people.length > shown.length ? `<span class="ld-person pl-more">+${people.length - shown.length}</span>` : ""}</div><a href="#/overview">${m ? "Manage meeting" : "Request a meeting"}<span class="pl-round sm">${planIcon(PI.send, 15)}</span></a></div></section>
-      <section class="panel pl-progress"><div class="pl-head"><h2>Progress</h2><span class="pl-count">${acts.length ? Math.round((done / acts.length) * 100) : 0}%</span></div>
-        <div class="pl-ring">${progressRing(done, acts.length, `${done}/${acts.length}`, "done")}<ul>${[["v", "Completed"], ["a", "In progress"], ["n", "Open"]].map(([k, st]) => `<li><i class="${k}"></i>${st}<b>${acts.filter((x) => x.status === st).length}</b></li>`).join("")}</ul></div></section>
-    </div>
-  </div>
-  <div class="pl-more">
-    <section class="panel"><div class="pl-head"><h2>Suggested next steps</h2><span class="pl-count">${steps.length}</span></div>
-      <ul class="pl-steps">${steps
-        .slice(0, 4)
-        .map((x) => `<li><a href="#/${x.route}"><span class="pl-dot ${x.priority === "High" ? "hi" : ""}"></span><span><b>${esc(x.title)}</b><small>${esc(x.detail)}</small></span>${x.priority === "High" ? '<em class="pl-chip hi">Priority</em>' : ""}</a></li>`)
-        .join("") || '<li class="pl-none">Nothing outstanding right now.</li>'}</ul></section>
-    <section class="panel"><div class="pl-head"><h2>Transition journey</h2><span class="pl-count">${journey.filter((j) => j.status === "Complete").length}/${journey.length}</span></div>
-      <ol class="pl-journey">${journey
-        .map((j) => `<li class="${j.status === "Complete" ? "done" : j.status === "Current" ? "now" : ""}"><i>${j.status === "Complete" ? planIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 14) : ""}</i><a href="#/${j.route}"><b>${esc(j.label)}</b><small>${esc(j.status)}</small></a></li>`)
-        .join("")}</ol></section>
-    <section class="panel"><div class="pl-head"><h2>Life beyond the transaction</h2></div><small class="pl-sub">Topics to cover in the shared plan after a sale or handover</small>
-      <ul class="pl-life">${LIFE_TOPICS.map(([t, re]) => {
-        const has = acts.some((x) => re.test(`${x.title} ${x.kind}`));
-        return `<li><span>${t}</span><em class="pl-chip ${has ? "ok" : ""}">${has ? "Has an action" : "Not yet planned"}</em></li>`;
-      }).join("")}</ul></section>
-  </div>
-  ${advisor ? `<div class="section-gap">${panel("Observed outcomes", `<p>Record actual results only. Blank values remain unknown. These records support measurement; they do not establish that PNC-link caused the outcome.</p><form data-form="outcomes" class="inline-form">${input("workMinutes", "Advisor minutes recorded (cumulative)", d.workMinutes, "number", 'required min="0" max="100000" step="1"')}<label class="check"><input type="checkbox" name="closed" ${d.outcomes.closed ? "checked" : ""}><span>Transaction has closed</span></label>${input("assetsCaptured", "Post-sale assets captured ($; optional)", d.outcomes.assetsCaptured ?? "", "number", 'min="0" max="1000000000000" step="1"')}${select("retained", "Client relationship retained?", ["Not recorded", "Yes", "No"], d.outcomes.retained === null ? "Not recorded" : d.outcomes.retained ? "Yes" : "No")}${formEnd("Save observed outcomes")}</form>`)}</div>` : ""}`;
-}
 // Monotone cubic path through points (no overshoot), for the smooth area chart.
 function smoothPath(pts) {
   const n = pts.length,
@@ -1888,7 +1838,7 @@ function framedPage(r, c) {
     family: () => familyPage(c),
     proceeds: () => proceedsPage(c),
     referrals: () => referrals(c),
-    plan: () => (isAdvisor() ? advisorPlan() : plan(c)),
+    plan: () => (isAdvisor() ? advisorPlan() : actionBoard([c], false)),
     assistant: () => assistant(c),
     history: historyPage,
     resources: () => resources(true),
@@ -2106,13 +2056,15 @@ app.addEventListener("submit", async (e) => {
         ...data,
         qualified: f.elements.qualified.checked,
       });
-    else if (kind === "outcomes")
+    else if (kind === "outcomes") {
+      if (f.dataset.case) state.selected = f.dataset.case;
       await update("outcomes", {
         ...data,
         closed: f.elements.closed.checked,
         retained:
           data.retained === "Not recorded" ? null : data.retained === "Yes",
       });
+    }
     else if (kind === "assist") {
       const c = current(),
         id = c.id,
