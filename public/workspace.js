@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029074500";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029080000";
 import {
   newData,
   profileInput,
@@ -1233,26 +1233,31 @@ function coverageLollipop(rows) {
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Share of each case area recorded: ${rows.map(([l, v]) => `${l} ${v}%`).join(", ")}">${g}</svg><div class="ai-lbls">${rows.map(([l]) => `<span>${l}</span>`).join("")}</div>`;
 }
-// Four equal wedges pulled apart; each wedge reaches further out the more complete that area is.
-function insightRose(items) {
+// Exploded pie: each slice is sized by its percentage (capped at 100) and labelled with the actual value.
+function insightPie(items) {
   const C = 160,
-    gap = 7,
-    rad = (a) => (a * Math.PI) / 180,
-    pt = (a, r, dx, dy) => [C + dx + r * Math.cos(rad(a)), C + dy + r * Math.sin(rad(a))];
-  let g = "";
-  items.forEach(([label, pct, value, cls], i) => {
-    const a0 = -135 + i * 90,
-      a1 = a0 + 90,
-      mid = rad(a0 + 45),
-      r = 58 + (Math.min(100, Math.max(0, pct)) / 100) * 92,
+    R = 140,
+    gap = 8,
+    vals = items.map(([, pct]) => Math.max(4, Math.min(100, pct))),
+    total = vals.reduce((a, v) => a + v, 0),
+    rad = (a) => (a * Math.PI) / 180;
+  let g = "",
+    a0 = -90;
+  items.forEach(([label, , value, cls], i) => {
+    const sweep = (vals[i] / total) * 360,
+      a1 = a0 + sweep,
+      mid = rad(a0 + sweep / 2),
       dx = gap * Math.cos(mid),
       dy = gap * Math.sin(mid),
-      [x0, y0] = pt(a0, r, dx, dy),
-      [x1, y1] = pt(a1, r, dx, dy),
-      lr = Math.max(34, r * 0.58),
-      lx = C + dx + lr * Math.cos(mid),
-      ly = C + dy + lr * Math.sin(mid);
-    g += `<path d="M${(C + dx).toFixed(1)},${(C + dy).toFixed(1)}L${x0.toFixed(1)},${y0.toFixed(1)}A${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}Z" class="ai-rose ${cls}"><title>${label}: ${value}</title></path><text x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" text-anchor="middle" class="ai-rose-v ${cls}">${value}</text><text x="${lx.toFixed(1)}" y="${(ly + 14).toFixed(1)}" text-anchor="middle" class="ai-rose-l ${cls}">${label.split(" ")[0]}</text>`;
+      x0 = C + dx + R * Math.cos(rad(a0)),
+      y0 = C + dy + R * Math.sin(rad(a0)),
+      x1 = C + dx + R * Math.cos(rad(a1)),
+      y1 = C + dy + R * Math.sin(rad(a1)),
+      lx = C + dx + R * 0.6 * Math.cos(mid),
+      ly = C + dy + R * 0.6 * Math.sin(mid);
+    g += `<path d="M${(C + dx).toFixed(1)},${(C + dy).toFixed(1)}L${x0.toFixed(1)},${y0.toFixed(1)}A${R},${R} 0 ${sweep > 180 ? 1 : 0} 1 ${x1.toFixed(1)},${y1.toFixed(1)}Z" class="ai-rose ${cls}"><title>${label}: ${value}</title></path>`;
+    if (sweep >= 28) g += `<text x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" text-anchor="middle" class="ai-rose-v ${cls}">${value}</text><text x="${lx.toFixed(1)}" y="${(ly + 14).toFixed(1)}" text-anchor="middle" class="ai-rose-l ${cls}">${label.split(" ")[0]}</text>`;
+    a0 = a1;
   });
   return `<svg viewBox="0 0 320 320" width="100%" role="img" aria-label="${items.map(([l, , v]) => `${l} ${v}`).join(", ")}">${g}</svg>`;
 }
@@ -1296,7 +1301,7 @@ function assistant(c) {
           <div class="chat-thread ai-thread-log" id="thread" role="log" aria-label="Private AI conversation" aria-live="polite">${thread}</div>
           ${state.demo
             ? `<div class="callout amber"><p>The sample does not run AI or save conversations. Sign in and create a case to use assistance grounded in your own profile.</p>${state.assistantDraft ? `<p><strong>Prepared question</strong><br>${esc(state.assistantDraft)}</p>` : ""}</div>`
-            : `<form data-form="assist" id="ai-assist" class="inline-form ai-form"><div class="field"><label for="question">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div>${formEnd("Ask PNC-link AI")}</form>`}
+            : `<form data-form="assist" id="ai-assist" class="inline-form ai-form"><div class="field"><label for="question" class="sr-only">Your question</label><textarea name="question" id="question" required maxlength="2000" placeholder="What would you like to understand or prepare?">${esc(state.assistantDraft)}</textarea></div>${formEnd("Ask PNC-link AI")}</form>`}
         </div>
       </div></section>
     <section class="panel ai-card ai-insight"><div class="panel-head"><div><h2>AI insight</h2><small>Where the case stands today</small></div></div>
@@ -1310,7 +1315,7 @@ function assistant(c) {
             ["Actions done", acts.length ? (doneN / acts.length) * 100 : 0, `${doneN}/${acts.length}`, "g"],
             ["Family liquidity covered", famPct, fam.liquidityGap > 0 ? `Gap ${shortMoney(fam.liquidityGap)}` : "Covered", "p"],
           ];
-        return `<div class="ai-rose-wrap">${insightRose(items.map(([l, pct, v, k]) => [l, pct, k === "p" && fam.liquidityGap > 0 ? `${Math.round(famPct)}%` : v, k]))}</div><ul class="ai-rose-key">${items.map(([l, , v, k]) => `<li><i class="${k}"></i>${l}<b>${v}</b></li>`).join("")}</ul>`;
+        return `<div class="ai-rose-wrap">${insightPie(items.map(([l, pct, v, k]) => [l, pct, k === "p" && fam.liquidityGap > 0 ? `${Math.round(famPct)}%` : v, k]))}</div><ul class="ai-rose-key">${items.map(([l, , v, k]) => `<li><i class="${k}"></i>${l}<b>${v}</b></li>`).join("")}</ul>`;
       })()}
       <p class="footer-note">AI can be wrong. It has no live market data or document access and cannot change your case, send referrals, certify value or give tax, legal, insurance or investment recommendations. Review suggestions with your advisor. Limit: 20 requests per account per hour. <a href="#/resources">Source resources</a></p>
       <button type="button" class="ld-yellow ai-try" data-ask="${esc(prompts[0][2])}">Try AI insight</button></section>
