@@ -121,10 +121,36 @@ async function sha256(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 let guestStore = { row: null, history: [] };
+// Demo AI runs in a Netlify function; GitHub Pages calls it on the Netlify site.
+const DEMO_AI_URL = location.hostname.endsWith(".netlify.app") || location.hostname === "localhost" ? "/api/demo-assist" : "https://pnc-link-demo.netlify.app/api/demo-assist";
+async function demoAssist(path, body) {
+  const id = new URLSearchParams(path.split("?")[1] ?? "").get("id"),
+    c = state.cases.find((x) => x.id === id);
+  if (!c) throw Error("Choose a case first.");
+  const chats = guestStore.chats ?? {},
+    key = `${local.user.id}:${id}`,
+    previous = [...(chats[key] ?? [])].reverse().slice(0, 4);
+  let r;
+  try {
+    r = await fetch(DEMO_AI_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question: body.question, consent: body.consent === true, mode: c.mode, data: c.data, previous }),
+    });
+  } catch {
+    throw Error("The AI service could not be reached. Check your connection and try again.");
+  }
+  const result = await r.json().catch(() => ({}));
+  if (!r.ok) throw Error(result.error || "The assistant could not answer right now.");
+  const entry = { question: body.question, answer: result.answer, createdAt: new Date().toISOString() };
+  guestStore = { ...guestStore, chats: { ...chats, [key]: [...(chats[key] ?? []), entry].slice(-50) } };
+  try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* The answer still shows for this visit. */ }
+  return { answer: result.answer };
+}
 function guestApi(path, body) {
-  if (path.includes("/assist")) throw Error("Live AI needs the connected server, which this browser-only demo does not have. Your case and questions stay in this browser.");
+  if (path.includes("/assist")) return demoAssist(path, body);
   if (guestStore.rows) return sharedApi(path, body);
-  if (path.includes("/history")) return { history: guestStore.history, chat: [] };
+  if (path.includes("/history")) return { history: guestStore.history, chat: (guestStore.chats ?? {})[`${local.user.id}:${guestStore.row?.id}`] ?? [] };
   if (!body) return { cases: guestStore.row ? [project(guestStore.row, local.user)] : [], metrics: {} };
   const next = structuredClone(guestStore);
   const now = new Date().toISOString();
@@ -166,7 +192,7 @@ function scheduleInput(p) {
 function sharedApi(path, body) {
   const id = new URLSearchParams(path.split("?")[1] ?? "").get("id"),
     mine = (r) => !!access(r, local.user);
-  if (path.includes("/history")) return { history: guestStore.histories[id] ?? [], chat: [] };
+  if (path.includes("/history")) return { history: guestStore.histories[id] ?? [], chat: (guestStore.chats ?? {})[`${local.user.id}:${id}`] ?? [] };
   if (path.includes("/schedule")) {
     if (body) {
       if (!isAdvisor()) throw Error("Only the advisor sets working hours.");
