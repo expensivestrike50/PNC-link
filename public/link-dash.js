@@ -177,6 +177,68 @@ function evidenceFunnel(rd) {
   return `<div class="rd-funnel" role="img" aria-label="${rd.total} categories, ${rd.reported} available, ${rd.verified} verified">${bar("n", "All categories", rd.total)}${bar("a", "Owner marked available", rd.reported)}${bar("v", "Advisor verified", rd.verified)}</div>`;
 }
 
+// Monotone cubic path through points (no overshoot), for smooth line charts.
+function smoothPath(pts) {
+  const n = pts.length;
+  if (n < 2) return "";
+  const dx = [],
+    m = [],
+    t = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = pts[i + 1][0] - pts[i][0];
+    m[i] = (pts[i + 1][1] - pts[i][1]) / (dx[i] || 1);
+  }
+  t[0] = m[0];
+  t[n - 1] = m[n - 2];
+  for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = dx[i] / 3;
+    d += `C${(pts[i][0] + h).toFixed(1)},${(pts[i][1] + h * t[i]).toFixed(1)} ${(pts[i + 1][0] - h).toFixed(1)},${(pts[i + 1][1] - h * t[i + 1]).toFixed(1)} ${pts[i + 1][0].toFixed(1)},${pts[i + 1][1].toFixed(1)}`;
+  }
+  return d;
+}
+
+// Share of categories available and verified over time, from the evidence timestamps.
+// Older records without timestamps fall back to case creation (available) and review (verified).
+function evidenceTrend(evidence, createdAt, reviewedAt, now = Date.now()) {
+  const total = evidence.length || 1,
+    t0 = Date.parse(createdAt) || now - 7 * 864e5,
+    when = (v, fb) => Date.parse(v) || fb,
+    rep = evidence.filter((e) => e.reported).map((e) => when(e.reportedAt, t0)),
+    ver = evidence.filter((e) => e.verified).map((e) => when(e.verifiedAt, Date.parse(reviewedAt) || t0)),
+    W = 480,
+    H = 210,
+    L = 40,
+    R = 466,
+    T = 14,
+    B = 180,
+    x = (t) => L + ((t - t0) / Math.max(now - t0, 1)) * (R - L),
+    y = (v) => B - (v / 100) * (B - T),
+    N = 12,
+    series = (times) =>
+      Array.from({ length: N + 1 }, (_, i) => {
+        const t = t0 + ((now - t0) * i) / N;
+        return [x(t), y((times.filter((s) => s <= t).length / total) * 100)];
+      });
+  let g = "<defs>" + ["a", "v"].map((k) => `<linearGradient id="rt-${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="rt-${k}" stop-opacity="0.35"/><stop offset="1" class="rt-${k}" stop-opacity="0"/></linearGradient>`).join("") + "</defs>";
+  [0, 25, 50, 75, 100].forEach((v) => (g += `<line x1="${L}" x2="${R}" y1="${y(v)}" y2="${y(v)}" class="rt-grid"/><text x="${L - 10}" y="${y(v) + 4}" text-anchor="end" class="rt-tick">${v}%</text>`));
+  // One tick per day at midnight, thinned to at most five labels.
+  const first = new Date(t0);
+  first.setHours(24, 0, 0, 0);
+  const days = Math.max(1, Math.ceil((now - first) / 864e5)),
+    step = Math.ceil(days / 5);
+  for (let t = first.getTime(); t <= now; t += step * 864e5)
+    g += `<line x1="${x(t)}" x2="${x(t)}" y1="${T}" y2="${B}" class="rt-grid"/><text x="${x(t)}" y="${B + 22}" text-anchor="middle" class="rt-tick">${new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>`;
+  g += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" class="rt-axis"/><line x1="${L}" x2="${L}" y1="${T}" y2="${B}" class="rt-axis"/>`;
+  [["a", rep], ["v", ver]].forEach(([k, times]) => {
+    const pts = series(times),
+      line = smoothPath(pts);
+    g += `<path d="${line}L${R},${B}L${L},${B}Z" fill="url(#rt-${k})"/><path d="${line}" class="rt-line ${k}"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evidence over time: ${rep.length} of ${total} available, ${ver.length} of ${total} verified today">${g}</svg>`;
+}
+
 function gauge(v) {
   const a = Math.PI * (1 - Math.max(0.001, v) / 100),
     x = 42 + 34 * Math.cos(a),
@@ -240,8 +302,8 @@ function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole,
   return `<header class="ld-head ld-card">
       ${menu}${account}
       <div><small>${greeting}</small><h1 tabindex="-1">${esc(name)}</h1></div>
-      <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span><a class="ld-pill ld-pill-sm" href="#/signup">Create your case</a>' : note}
-        <a class="ld-round" href="#/plan" aria-label="Shared action plan">${svg(I.bell, 20)}${ping ? '<i class="ld-ping"></i>' : ""}</a>
+      <div class="ld-head-r">${viewSwitch}${demo ? '<span class="ld-sample">Read-only sample</span><a class="ld-pill ld-pill-sm" href="#/signup">Create your case</a>' : `${note}<button type="button" class="ld-pill ld-pill-sm" data-action="refresh">Refresh</button>`}
+        <a class="ld-round" href="#/plan" aria-label="Open shared action plan">${svg(I.bell, 20)}${ping ? '<i class="ld-ping"></i>' : ""}</a>
         <a class="ld-round" href="#/discovery" aria-label="Discovery profile settings">${svg(I.settings, 20)}</a>
       </div>
     </header>`;
@@ -251,7 +313,7 @@ function head({ menu, account, name, greeting = "Welcome back!", demo, demoRole,
 
 const EVIDENCE_LETTER = ["F", "O", "S", "P", "T", "R", "L"];
 
-export function linkDashboard({ side, menu, account, theme, c, user, demo, demoRole, history }) {
+export function linkDashboard({ side, menu, account, theme, c, user, demo, demoRole, history, note = "" }) {
   const d = c.data,
     p = d.profile,
     s = { ...defaultScenario, ...d.scenario },
@@ -285,7 +347,7 @@ export function linkDashboard({ side, menu, account, theme, c, user, demo, demoR
 ${side}
 
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
 
     <div class="ld-kpis">
       <div class="ld-card ld-kpi"><small>Working enterprise value</small><b>${short(r.ev)}</b><span>${short(sens[0].ev)} – ${short(sens[2].ev)}</span>${miniRange(sens[0].ev, sens[2].ev, r.ev)}</div>
@@ -425,7 +487,7 @@ ${side}
 
 // My transition in the dashboard frame. Content pieces (forms, badges, AI and brief
 // buttons) come from workspace.js so their behaviour is unchanged.
-export function linkTransition({ side, menu, account, theme, c, user, demo, demoRole, parts }) {
+export function linkTransition({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "" }) {
   const d = c.data,
     p = d.profile,
     journey = transitionJourney(d),
@@ -438,7 +500,7 @@ export function linkTransition({ side, menu, account, theme, c, user, demo, demo
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
     <div class="ld-grid ld-fill">
       <div class="ld-col">
         <div class="ld-tools">
@@ -569,6 +631,17 @@ const HS_TOPICS = [
   ["Actions", /action|next step|coordination|outcomes/i],
 ];
 const DAY_MS = 864e5;
+const HS_ROUTE = {
+  Family: "#/family",
+  Discovery: "#/discovery",
+  Evidence: "#/readiness",
+  Review: "#/readiness",
+  "Value & proceeds": "#/proceeds",
+  "Transition path": "#/pathways",
+  Meetings: "#/overview",
+  Referrals: "#/referrals",
+  Actions: "#/plan",
+};
 const hsActor = (label) => {
   const w = String(label).split(" ")[0].toLowerCase();
   return ["owner", "advisor", "specialist"].includes(w) ? w : "shared";
@@ -660,10 +733,8 @@ export function linkHistory(history, now = Date.now()) {
       ["Longest quiet gap", gap ? `${span(gap.ms)} before “${esc(gap.to.label)}”` : "Only one update so far"],
       ["Last owner update", lastBy("owner") ? ago(now - lastBy("owner").t) : "None yet"],
       ["Last advisor update", lastBy("advisor") ? ago(now - lastBy("advisor").t) : "None yet"],
-    ],
-    days = new Map();
-  [...ev].reverse().forEach((e) => days.set(day(e.t), [...(days.get(day(e.t)) ?? []), e]));
-  return `<h2 class="sr-only">Case history</h2>
+    ];
+  return `<h2 class="sr-only">A visible record of progress.</h2>
     <div class="ld-kpis rd-kpis">
       <div class="ld-card ld-kpi"><small>Recorded updates</small><b>${ev.length}</b><span>Across ${topics.length} topic${topics.length === 1 ? "" : "s"}</span></div>
       <div class="ld-card ld-kpi"><small>Case open</small><b>${Math.max(1, Math.ceil(age / DAY_MS))}<em> days</em></b><span>Since ${day(first.t)}</span></div>
@@ -681,21 +752,29 @@ export function linkHistory(history, now = Date.now()) {
         <dl class="hs-facts">${insight.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
         <p class="hs-note">Counts reflect recorded changes, not effort or progress quality. AI conversations stay private and are not included.</p></section>
     </div>
-    <section class="ld-card ld-pad">
+    <section class="ld-card ld-pad hs-table-card">
       <div class="ld-ch"><div><h2>Timeline</h2><small>Newest first</small></div></div>
-      <div class="hs-days">${[...days]
-        .map(([d, list]) => `<div class="hs-day"><h3>${d}</h3><ul>${list.map((e) => `<li class="${e.actor}"><b>${esc(e.label)}</b><span><em class="hs-chip ${e.actor}">${esc(HS_ACTORS.find(([k]) => k === e.actor)[1])}</em><em class="hs-chip">${esc(e.topic)}</em>${new Date(e.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span></li>`).join("")}</ul></div>`)
+      <div class="hs-tabs" role="tablist" aria-label="Filter updates">${[["all", "All updates"], ...actors.filter(([, , n]) => n).map(([k, l]) => [k, l])]
+        .map(([k, l], i) => `<button type="button" role="tab" class="hs-tab" data-hs-tab="${k}" aria-selected="${i === 0}">${esc(l)}<em>${k === "all" ? ev.length : count(k)}</em></button>`)
         .join("")}</div>
+      <div class="hs-table-wrap"><table class="hs-table"><caption class="sr-only">Recorded case updates, newest first</caption><thead><tr><th>Update</th><th>Who</th><th>Topic</th><th>Date</th><th>Details</th></tr></thead><tbody>${[...ev]
+        .reverse()
+        .map((e) => {
+          const who = HS_ACTORS.find(([k]) => k === e.actor)[1],
+            route = HS_ROUTE[e.topic];
+          return `<tr data-actor="${e.actor}"><td><span class="hs-upd"><i class="hs-arrow ${e.actor}" aria-hidden="true">${e.actor === "owner" ? "↑" : e.actor === "shared" ? "•" : "↓"}</i>${esc(e.label)}</span></td><td>${esc(who)}</td><td><span class="hs-topic ${e.actor}">${esc(e.topic)}</span></td><td class="hs-when">${new Date(e.t).toLocaleDateString("en-US", { day: "2-digit", month: "short" })}, ${new Date(e.t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</td><td>${route ? `<a class="hs-view" href="${route}">View</a>` : ""}</td></tr>`;
+        })
+        .join("")}</tbody></table></div>
     </section>`;
 }
 
-export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body }) {
+export function linkPage({ side, menu, account, theme, c, user, demo, demoRole, route, body, note = "" }) {
   const owner = c.mode === "owner",
     name = owner ? c.data.profile.name : demo ? "Relationship advisor" : user?.name || user?.email || "Advisor";
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, ping: (c.data.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, ping: (c.data.actions ?? []).some((a) => a.status !== "Completed") })}
     <main class="ld-page ld-page-${route}" id="main">${body}</main>
   </div>
 </div>`;
@@ -711,7 +790,7 @@ const EV_ICON = {
   "Operating procedures": '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
   "Transition timeline": '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 };
-export function linkReadiness({ side, menu, account, theme, c, user, demo, demoRole, parts }) {
+export function linkReadiness({ side, menu, account, theme, c, user, demo, demoRole, parts, note = "" }) {
   const d = c.data,
     p = d.profile,
     rd = readiness(d),
@@ -723,7 +802,7 @@ export function linkReadiness({ side, menu, account, theme, c, user, demo, demoR
   return `<div class="ld nx ${theme}" data-ld>
 ${side}
   <div class="ld-body">
-    ${head({ menu, account, name, demo, demoRole, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
+    ${head({ menu, account, name, demo, demoRole, note, ping: (d.actions ?? []).some((a) => a.status !== "Completed") })}
     <h2 class="sr-only">Evidence before conclusions.</h2>
     <div class="ld-kpis rd-kpis">
       <div class="ld-card ld-kpi gauge"><div><small>Owner-reported availability</small><b>${rd.score}<em>%</em></b><span>${rd.reported}/${rd.total} categories</span></div>${gauge(rd.score)}</div>
@@ -731,7 +810,7 @@ ${side}
       <div class="ld-card ld-kpi"><small>Review</small><b>${d.review ? "Recorded" : "Pending"}</b><span>Human findings and next steps</span></div>
       <div class="ld-card ld-kpi"><small>Opportunity</small><b>${d.qualified ? "Qualified" : "Discovery"}</b><span>Advisor determination</span></div>
     </div>
-    <div class="ld-grid ld-fill">
+    <div class="ld-grid rd-grid">
       <div class="ld-col">
         <section class="ld-card ld-pad">
           <div class="ld-ch"><div><h2>Readiness evidence</h2><small>${owner ? "Mark what is available; your advisor verifies it." : "Verify categories the owner marked available."} Select <span class="rd-i-inline" aria-hidden="true">i</span> to see what each item covers.</small></div>${roundLink("#/discovery", "Open discovery profile")}</div>
@@ -743,6 +822,10 @@ ${side}
             .join("")}</div>
           <p class="ld-foot rd-note"><span>The checklist measures evidence completeness, not financial health or readiness to sell. Advisor verification is a recorded review, not an automated document check.</span></p>
         </section>
+        <section class="ld-cc black rd-judge">
+          <span class="ld-cc-brand">${markLogo}Keep professional judgment central</span>
+          <p>Formal valuations, buyer selection, financing, tax, legal matters, and final recommendations remain with qualified professionals. AI can help identify questions; it cannot approve this case.</p>
+        </section>
       </div>
       <div class="ld-col">
         <section class="ld-card ld-pad">
@@ -751,14 +834,13 @@ ${side}
           <p class="rd-cap">${none ? `${none} still to confirm, ${pending} waiting for advisor review.` : pending ? `All categories available; ${pending} waiting for advisor review.` : "Every category is advisor verified."}</p>
           <div class="ld-radar">${evidenceRadar(d.evidence ?? [])}</div>
           <div class="ld-legend"><span><i class="v"></i>Verified</span><span><i class="a"></i>Available</span><span><i class="n"></i>Not confirmed</span></div>
+          <div class="ld-ch rt-head"><div><h2>Readiness over time</h2><small>Share of the seven categories since the case opened</small></div></div>
+          <div class="rt-chart">${evidenceTrend(d.evidence ?? [], c.createdAt, d.review?.at ?? c.updatedAt)}</div>
+          <div class="ld-legend rd-legend"><span><i class="a"></i>Owner marked available</span><span><i class="v"></i>Advisor verified</span></div>
         </section>
         <section class="ld-card ld-pad">
           <div class="ld-ch"><h2>Advisor review</h2>${parts.reviewBadge}</div>
           ${parts.review}
-        </section>
-        <section class="ld-cc black rd-judge">
-          <span class="ld-cc-brand">${markLogo}Keep professional judgment central</span>
-          <p>Formal valuations, buyer selection, financing, tax, legal matters, and final recommendations remain with qualified professionals. AI can help identify questions; it cannot approve this case.</p>
         </section>
       </div>
     </div>
@@ -773,6 +855,13 @@ export function mountLinkDashboard() {
   root.querySelectorAll("[data-w]").forEach((el) => (el.style.width = `${el.dataset.w}%`));
   // Keep the knob inside the track at 0% and 100%.
   root.querySelectorAll("[data-left]").forEach((el) => (el.style.left = `clamp(20px, ${el.dataset.left}%, calc(100% - 20px))`));
+  // Case history tabs filter the timeline by who made the change.
+  root.querySelectorAll("[data-hs-tab]").forEach((tab) =>
+    tab.addEventListener("click", () => {
+      root.querySelectorAll("[data-hs-tab]").forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
+      root.querySelectorAll(".hs-table tbody tr").forEach((tr) => (tr.hidden = tab.dataset.hsTab !== "all" && tr.dataset.actor !== tab.dataset.hsTab));
+    }),
+  );
   // Evidence info buttons open one explanation at a time.
   root.querySelectorAll("[data-rd-info]").forEach((btn) =>
     btn.addEventListener("click", () => {

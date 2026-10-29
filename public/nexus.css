@@ -2293,3 +2293,17 @@ body:has(.ld.light) {
     display: grid;
   }
 }
+@media (max-width: 480px) {
+  .nx .topbar-title {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .nx .view-switch {
+    max-width: 100%;
+  }
+  .nx .view-switch button {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}

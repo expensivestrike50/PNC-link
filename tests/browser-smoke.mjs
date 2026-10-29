@@ -84,9 +84,13 @@ await page.screenshot({
   animations: "disabled",
 });
 await page.setViewportSize({ width: 390, height: 844 });
-await page
-  .getByRole("link", { name: "Transition options", exact: true })
-  .click();
+// On narrow screens the sidebar is off-canvas; open it before following a link.
+const navTo = async (name) => {
+  const menu = page.getByRole("button", { name: "Show sidebar" });
+  if ((await menu.count()) && (await menu.first().isVisible())) await menu.first().click();
+  await page.getByRole("link", { name, exact: true }).click();
+};
+await navTo("Transition options");
 await page
   .getByRole("heading", { name: "Choose the outcome before the structure." })
   .waitFor();
@@ -107,7 +111,7 @@ for (const [name, heading] of [
   ["AI assistant", "A second set of eyes for your case."],
   ["Planning resources", "A stronger plan starts with better questions."],
 ]) {
-  await page.getByRole("link", { name, exact: true }).click();
+  await navTo(name);
   await page.getByRole("heading", { name: heading, exact: true }).waitFor();
   assert.ok(
     await page.evaluate(

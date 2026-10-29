@@ -327,14 +327,14 @@ try {
     "Contextual AI button only drafts a question",
   );
   await advisor
-    .getByRole("button", { name: "Ask PNC Link AI", exact: true })
+    .getByRole("button", { name: "Ask PNC-link AI", exact: true })
     .click();
   assert.equal(assistRequests.length, 0, "Required consent prevents a request");
   await advisor
     .getByLabel("I agree to share this case", { exact: false })
     .check();
   await advisor
-    .getByRole("button", { name: "Ask PNC Link AI", exact: true })
+    .getByRole("button", { name: "Ask PNC-link AI", exact: true })
     .click();
   await expect(advisor.locator(".chat-thread")).toContainText(
     "Prepared discussion questions for Arden Family Tools",

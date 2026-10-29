@@ -146,11 +146,17 @@ export function mutate(row, user, op, payload, now = new Date().toISOString()) {
     if (mode === "owner") {
       e.reported = p.checked === true;
       e.verified = false;
+      // Timestamps feed the readiness-over-time chart.
+      if (e.reported) e.reportedAt = now;
+      else delete e.reportedAt;
+      delete e.verifiedAt;
       invalidate();
     } else {
       if (p.checked && !e.reported)
         fail("The owner must first confirm that this evidence is available.");
       e.verified = p.checked === true;
+      if (e.verified) e.verifiedAt = now;
+      else delete e.verifiedAt;
       d.review = null;
       d.qualified = false;
     }

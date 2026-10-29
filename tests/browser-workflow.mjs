@@ -240,7 +240,7 @@ await owner
   .fill("What should I ask my advisor?");
 await owner.getByLabel("I agree to share this case", { exact: false }).check();
 await owner
-  .getByRole("button", { name: "Ask PNC Link AI", exact: true })
+  .getByRole("button", { name: "Ask PNC-link AI", exact: true })
   .click();
 await owner
   .locator(".chat-message")
