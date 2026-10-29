@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029100000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029103000";
 import {
   newData,
   profileInput,
@@ -92,6 +92,17 @@ const localAccounts = {
     key: "pnc-link-test-v1",
   },
 };
+// The same test login can open the advisor workspace: a local portfolio of sample clients.
+const localAdvisorAccounts = {
+  "test@gmail.com": {
+    hash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+    user: { id: "local-test-advisor", email: "test@gmail.com", name: "Test Advisor", roles: ["advisor"] },
+    key: "pnc-link-test-advisor-v1",
+    advisor: true,
+  },
+};
+const localAccountFor = (email, role) =>
+  (role === "advisor" ? localAdvisorAccounts : localAccounts)[String(email ?? "").trim().toLowerCase()];
 const localSessionKey = "pnc-link-local-session";
 let local = { user: guestUser, key: guestKey };
 async function sha256(text) {
@@ -101,6 +112,7 @@ async function sha256(text) {
 let guestStore = { row: null, history: [] };
 function guestApi(path, body) {
   if (path.includes("/assist")) throw Error("Sign in to use live AI. Your guest case stays in this browser.");
+  if (guestStore.rows) return advisorApi(path, body);
   if (path.includes("/history")) return { history: guestStore.history, chat: [] };
   if (!body) return { cases: guestStore.row ? [project(guestStore.row, local.user)] : [], metrics: {} };
   const next = structuredClone(guestStore);
@@ -126,6 +138,40 @@ function guestApi(path, body) {
   guestStore = next;
   return { case: project(next.row, local.user) };
 }
+// Local advisor workspace: every sample client is assigned to the advisor and editable in this browser.
+function advisorApi(path, body) {
+  const id = new URLSearchParams(path.split("?")[1] ?? "").get("id");
+  if (path.includes("/history")) return { history: guestStore.histories[id] ?? [], chat: [] };
+  if (!body) {
+    const cases = guestStore.rows.map((r) => project(r, local.user));
+    return { cases, metrics: metrics(cases) };
+  }
+  if (!path.includes("/update")) throw Error("Owners create cases; advisors are assigned to them.");
+  const next = structuredClone(guestStore),
+    row = next.rows.find((r) => r.id === id),
+    now = new Date().toISOString();
+  if (!row) throw Error("This client case is not in your portfolio.");
+  const result = mutate(row, local.user, body.op, body.payload);
+  row.data = result.data;
+  row.revision++;
+  row.updatedAt = now;
+  next.histories[id] = [{ label: result.label, createdAt: now }, ...(next.histories[id] ?? [])];
+  try { localStorage.setItem(local.key, JSON.stringify(next)); }
+  catch { throw Error("Browser storage is unavailable. Enable storage to save your portfolio."); }
+  guestStore = next;
+  return { case: project(row, local.user) };
+}
+function seedAdvisorPortfolio(user) {
+  const now = new Date().toISOString(),
+    role = state.demoRole;
+  state.demoRole = "advisor";
+  const rows = samplePortfolio().map(({ mode, ...r }) => ({ ...r, id: `local-${r.id}`, advisorEmail: user.email, data: { ...r.data, profile: { ...r.data.profile, advisorEmail: user.email, shareWithAdvisor: true } } }));
+  state.demoRole = role;
+  return {
+    rows,
+    histories: Object.fromEntries(rows.map((r) => [r.id, [{ label: "Owner shared the case with the advisor", createdAt: now }]])),
+  };
+}
 // A local test account starts from an editable copy of the Bennett sample case.
 function seedLocalCase(user) {
   const now = new Date().toISOString(),
@@ -141,14 +187,19 @@ function seedLocalCase(user) {
 async function openGuest(resume = false, account = null) {
   local = account ? { user: account.user, key: account.key } : { user: guestUser, key: guestKey };
   try {
-    if (account) localStorage.setItem(localSessionKey, account.user.email);
+    if (account) localStorage.setItem(localSessionKey, `${account.user.email}${account.advisor ? "|advisor" : ""}`);
     else localStorage.removeItem(localSessionKey);
   } catch { /* The workspace still opens for this visit. */ }
   try {
     const saved = JSON.parse(localStorage.getItem(local.key) || "null");
-    guestStore = saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
-  } catch { guestStore = { row: null, history: [] }; }
-  if (account && !guestStore.row) {
+    guestStore = account?.advisor
+      ? Array.isArray(saved?.rows) ? saved : { rows: null, histories: {} }
+      : saved?.row?.ownerId === local.user.id && Array.isArray(saved.history) ? saved : { row: null, history: [] };
+  } catch { guestStore = account?.advisor ? { rows: null, histories: {} } : { row: null, history: [] }; }
+  if (account?.advisor && !guestStore.rows) {
+    guestStore = seedAdvisorPortfolio(account.user);
+    try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
+  } else if (account && !account.advisor && !guestStore.row) {
     guestStore = seedLocalCase(account.user);
     try { localStorage.setItem(local.key, JSON.stringify(guestStore)); } catch { /* Kept for this visit. */ }
   }
@@ -158,7 +209,7 @@ async function openGuest(resume = false, account = null) {
   state.selected = null;
   await loadCases();
   await loadHistory();
-  if (!resume) location.hash = account ? "#/dashboard" : current() ? "#/overview" : "#/discovery";
+  if (!resume) location.hash = account?.advisor ? "#/portfolio" : account ? "#/dashboard" : current() ? "#/overview" : "#/discovery";
   render();
 }
 async function api(path, body, retry = true) {
@@ -543,14 +594,17 @@ function home() {
   </div></main>
   <footer class="lp-foot2 lpx-foot"><div class="lp-wrap">PNC-link · Case competition concept · Not an official PNC service</div></footer></div>`;
 }
+// Owner or advisor workspace, chosen on the sign-in and sign-up forms.
+const roleSwitch = (signup) =>
+  `<fieldset class="role-switch"><legend>${signup ? "I am" : "Sign in as"}</legend><label><input type="radio" name="role" value="owner" checked><span>Business owner</span></label><label><input type="radio" name="role" value="advisor"><span>Advisor</span></label></fieldset>`;
 function authPage(kind) {
   const signup = kind === "signup",
     recover = kind === "recover",
     callback = ["reset", "invite"].includes(kind);
   const side = `<aside class="au-side"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="copy"><h2>${signup ? "Start your next chapter with a connected plan." : "Plan your next chapter with us."}</h2><p>Business goals, family priorities and your advisory team in one shared plan.</p><ul><li>Owner-guided discovery</li><li>Advisor-reviewed decisions</li><li>You approve every specialist handoff</li></ul></div><div class="fam"><img src="./assets/family.png" alt=""></div></aside>`;
   if (kind === "signin")
-    return `<div class="au">${side}<div class="au-main"><main class="auth au-card au-min" id="main"><h1 class="sr-only" tabindex="-1">Sign in</h1><form data-form="auth" data-kind="signin">${input("email", "Email address", "", "email", 'required autocomplete="email"')}${input("password", "Password", "", "password", 'required maxlength="256" autocomplete="current-password"')}<button class="btn">Sign in</button><p class="form-error" role="alert"></p></form>${button("Skip signup and enter portal", "testLogin", "au-skip")}</main></div></div>`;
-  return `<div class="au">${side}<div class="au-main">${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}<main class="auth au-card" id="main"><a class="au-back" href="#/home">Back to home</a>${intro(callback ? "Set your password" : recover ? "Recover your account" : signup ? "Start your next chapter." : "Welcome back.", callback ? "Use at least 12 characters." : recover ? "Request a link to set a new password." : signup ? "Create an owner account. Your advisor and specialists use separately assigned roles." : "Open your owner or advisor workspace.")}${!callback && !recover ? `<div class="callout">${button("Skip signup and enter portal", "testLogin", "")}<p>No account needed. Save a personal case in this browser. Shared workflows and live AI require sign in.</p></div>` : ""}<form data-form="auth" data-kind="${kind}">${signup ? input("name", "Your name", "", "text", 'required maxlength="200" autocomplete="name"') : ""}${!callback ? input("email", "Email address", "", "email", 'required autocomplete="email"') : ""}${!recover ? input("password", callback ? "New password" : "Password", "", "password", `required ${signup || callback ? 'minlength="12"' : ""} maxlength="256" autocomplete="${signup || callback ? "new-password" : "current-password"}"`) : ""}<button class="btn">${callback ? "Save password" : recover ? "Send recovery email" : signup ? "Create account" : "Sign in"}</button><p class="form-error" role="alert"></p></form><p class="footer-note">${recover || callback ? '<a href="#/signin">Back to sign in</a>' : signup ? 'Already have an account? <a href="#/signin">Sign in</a>' : '<a href="#/recover">Forgot password?</a> · <a href="#/signup">Create an owner account</a>'}</p>${!signup && !callback && !recover ? `<div class="callout"><p>Advisors and specialists: use your invited account. Access is assigned by a site administrator and by the owner’s case permissions.</p></div>` : ""}</main></div></div>`;
+    return `<div class="au">${side}<div class="au-main"><main class="auth au-card au-min" id="main"><h1 class="sr-only" tabindex="-1">Sign in</h1><form data-form="auth" data-kind="signin">${roleSwitch(false)}${input("email", "Email address", "", "email", 'required autocomplete="email"')}${input("password", "Password", "", "password", 'required maxlength="256" autocomplete="current-password"')}<button class="btn">Sign in</button><p class="form-error" role="alert"></p></form>${button("Skip signup and enter portal", "testLogin", "au-skip")}</main></div></div>`;
+  return `<div class="au">${side}<div class="au-main">${state.servicesAvailable ? "" : '<div class="demo-bar">Connected services are unavailable. Enter the portal without signup to save a case in this browser, or explore the samples.</div>'}<main class="auth au-card" id="main"><a class="au-back" href="#/home">Back to home</a>${intro(callback ? "Set your password" : recover ? "Recover your account" : signup ? "Start your next chapter." : "Welcome back.", callback ? "Use at least 12 characters." : recover ? "Request a link to set a new password." : signup ? "Create an owner account. Your advisor and specialists use separately assigned roles." : "Open your owner or advisor workspace.")}${!callback && !recover ? `<div class="callout">${button("Skip signup and enter portal", "testLogin", "")}<p>No account needed. Save a personal case in this browser. Shared workflows and live AI require sign in.</p></div>` : ""}<form data-form="auth" data-kind="${kind}">${!callback && !recover ? roleSwitch(signup) : ""}${signup ? input("name", "Your name", "", "text", 'required maxlength="200" autocomplete="name"') : ""}${!callback ? input("email", "Email address", "", "email", 'required autocomplete="email"') : ""}${!recover ? input("password", callback ? "New password" : "Password", "", "password", `required ${signup || callback ? 'minlength="12"' : ""} maxlength="256" autocomplete="${signup || callback ? "new-password" : "current-password"}"`) : ""}<button class="btn">${callback ? "Save password" : recover ? "Send recovery email" : signup ? "Create account" : "Sign in"}</button><p class="form-error" role="alert"></p></form><p class="footer-note">${recover || callback ? '<a href="#/signin">Back to sign in</a>' : signup ? 'Already have an account? <a href="#/signin">Sign in</a>' : '<a href="#/recover">Forgot password?</a> · <a href="#/signup">Create an owner account</a>'}</p>${!signup && !callback && !recover ? `<div class="callout"><p>Advisors and specialists: use your invited account. Access is assigned by a site administrator and by the owner’s case permissions.</p></div>` : ""}</main></div></div>`;
 }
 function navItems(c) {
   if (c?.mode === "specialist")
@@ -1637,8 +1691,7 @@ app.addEventListener("submit", async (e) => {
   try {
     if (kind === "auth") {
       const authKind = f.dataset.kind;
-      const account =
-        authKind === "signin" && localAccounts[String(data.email ?? "").trim().toLowerCase()];
+      const account = authKind === "signin" && localAccountFor(data.email, data.role);
       if (account) {
         if ((await sha256(data.password ?? "")) !== account.hash)
           throw Error("Email or password is incorrect.");
@@ -1820,7 +1873,11 @@ app.addEventListener("click", async (e) => {
   try {
     if (action === "guest") { await openGuest(); return; }
     // Skip signup goes straight into the local test account.
-    if (action === "testLogin") { await openGuest(false, localAccounts["test@gmail.com"]); return; }
+    if (action === "testLogin") {
+      const role = document.querySelector('input[name="role"]:checked')?.value;
+      await openGuest(false, localAccountFor("test@gmail.com", role));
+      return;
+    }
     if (action === "demo" || action === "demoAdvisor") {
       state.demo = true;
       state.demoRole = action === "demoAdvisor" ? "advisor" : "owner";
@@ -1993,7 +2050,8 @@ async function openSample(role) {
 async function init() {
   if (!["home", "guest", "signin", "signup", "recover", "reset", "invite", "resources", "sample-owner", "sample-advisor"].includes(route()) && !location.hash.includes("_token=")) {
     try {
-      const account = localAccounts[localStorage.getItem(localSessionKey)];
+      const [email, role] = String(localStorage.getItem(localSessionKey) ?? "").split("|");
+      const account = localAccountFor(email, role);
       if (account) { await openGuest(true, account); return; }
       if (localStorage.getItem(guestKey)) { await openGuest(true); return; }
     } catch { /* Continue with connected sign in. */ }
