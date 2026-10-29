@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029103000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029110000";
 import {
   newData,
   profileInput,
@@ -561,38 +561,30 @@ function publicHeader() {
 function home() {
   const research =
     "https://pnc.mediaroom.com/2026-04-01-PNC-Private-Bank-Research-Reveals-Business-Owners-Increasingly-Want-Integrated-Financial-Advice-to-Help-Align-Business,-Personal-Goals";
-  // One full-screen hero: the pitch and both audiences on the left; the family, the
-  // research gap and the "one relationship" idea layered on the right.
-  return `<div class="lp lp-x"><header class="lp-head"><div class="lp-wrap"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a><div class="right"><a class="lp-link" href="#/signin">Sign in</a><a class="lp-btn fill sm" href="#/guest">Get started</a></div></div></header>
-  <main id="main" class="lpx-hero"><div class="lp-wrap lpx-grid">
-    <div class="lpx-copy">
-      <h1 class="lp-h1" tabindex="-1">A thoughtful transition starts with a connected plan.</h1>
-      <p class="lpx-lead">Bring your business goals, family priorities, and advisory team together, from first questions to life beyond a sale.</p>
-      <div class="lp-hero-btns"><a class="lp-btn fill" href="#/guest">Start your transition profile</a>${button("Explore the sample", "demo", "lp-btn line")}</div>
-      <p class="lp-tagline">Owner-guided discovery. Advisor-reviewed decisions. AI support along the way.</p>
-      <div class="lpx-more"><h2>More than a transaction.</h2><p>A common understanding of what matters, who is helping, and what happens next.</p></div>
-      <div class="lpx-roles">
-        <article><span class="lp-eyebrow">For business owners</span><h3>Know your options. Keep your voice.</h3><p>Explore transition paths, prepare your family, model liquidity, and control specialist sharing. Your AI assistant helps you prepare for a trusted human conversation.</p>${button("Explore the owner journey", "demo", "lp-more")}</article>
-        <article><span class="lp-eyebrow">For relationship advisors</span><h3>See the whole relationship.</h3><p>Manage your client portfolio, surface cases that need attention, map family relationships, and coordinate the next step across PNC teams.</p>${button("Explore the advisor workspace", "demoAdvisor", "lp-more")}</article>
-      </div>
-      <a class="lp-more lpx-research-link" href="#/resources">Explore the research behind PNC-link</a>
+  const icon = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  // One header-style hero: nav, headline and actions on the left, the family on soft brand
+  // shapes on the right, and a floating bar for both audiences and the research.
+  return `<div class="lp lph">
+  <header class="lph-nav"><a class="lp-logo" href="#/home"><img class="logo" src="./assets/pnc-link-logo.svg" alt="PNC-link home"></a>
+    <nav aria-label="Explore">${button("For owners", "demo", "lph-navlink")}${button("For advisors", "demoAdvisor", "lph-navlink")}<a class="lph-navlink" href="${research}" target="_blank" rel="noopener noreferrer">Research</a><a class="lph-navlink" href="#/resources">Planning resources</a></nav>
+    <div class="lph-auth"><a class="lph-signin" href="#/signin">Sign in</a><a class="lph-cta" href="#/guest">Get started</a></div></header>
+  <main id="main" class="lph-main">
+    <div class="lph-shapes" aria-hidden="true"><i class="s1"></i><i class="s2"></i><i class="s3"></i></div>
+    <div class="lph-copy">
+      <h1 tabindex="-1">A thoughtful transition starts with a <span class="lph-mark">connected plan.<svg viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 10C60 3 140 2 197 7" /></svg></span></h1>
+      <p>Bring your business goals, family priorities, and advisory team together, from first questions to life beyond a sale.</p>
+      <div class="lph-btns"><a class="lph-dark" href="#/guest"><small>Get started</small>Start your transition profile</a>${button("<small>No sign in needed</small>Explore the sample", "demo", "lph-dark ghost")}</div>
+      <p class="lph-tag">Owner-guided discovery. Advisor-reviewed decisions. AI support along the way.</p>
     </div>
-    <div class="lpx-visual">
-      <div class="lpx-one"><h2>One relationship.</h2><div class="lp-pills"><span>Business</span><i>+</i><span>Family</span><i>+</i><span>Personal wealth</span></div></div>
-      <figure class="lpx-family"><img src="./assets/family.png" alt="Business owners considering their family's next chapter"><figcaption>Business owners considering their family's next chapter</figcaption></figure>
-      <figure class="lp-gap lpx-gap" aria-label="89% of surveyed owners value integrated advice; 55% use one advisor for both">
-        <span class="lp-eyebrow">Why connected advice matters</span>
-        <h2>Business decisions are personal decisions.</h2>
-        <p>Most owners want advice that sees their business and their family as one picture. Far fewer have it today.</p>
-        <figcaption>PNC 2026 owner research</figcaption>
-        <div class="lp-gap-row"><div class="lp-gap-head"><b>89%</b><span>value advice integrating business and personal needs</span></div><div class="lp-gap-track"><i class="w89"></i></div></div>
-        <div class="lp-gap-row"><div class="lp-gap-head"><b>55%</b><span>currently use one advisor for both</span></div><div class="lp-gap-track"><i class="w55"></i><em><span>34-pt gap</span></em></div></div>
-        <div class="lp-gap-axis"><span>0%</span><span>50%</span><span>100%</span></div>
-        <small>300 U.S. private business owners and co-owners; surveyed Nov–Dec 2025. Research supports the problem, not this product’s effectiveness. <a href="${research}" target="_blank" rel="noopener noreferrer">Read the PNC research</a></small>
-      </figure>
-    </div>
-  </div></main>
-  <footer class="lp-foot2 lpx-foot"><div class="lp-wrap">PNC-link · Case competition concept · Not an official PNC service</div></footer></div>`;
+    <figure class="lph-visual"><img src="./assets/family.png" alt="Business owners considering their family's next chapter"><figcaption class="lph-one"><b>One relationship.</b><span>Business</span><i>+</i><span>Family</span><i>+</i><span>Personal wealth</span></figcaption></figure>
+    <section class="lph-bar" aria-label="More than a transaction">
+      <div><span class="lph-ic">${icon('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>')}</span><div><b>For business owners</b><small>Know your options. Keep your voice.</small></div></div>
+      <div><span class="lph-ic">${icon('<circle cx="8.5" cy="8" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3 19c.6-3.5 2.8-5.3 5.5-5.3s4.9 1.8 5.5 5.3M14.6 14.4c.6-.3 1.2-.4 1.9-.4 2.3 0 3.9 1.5 4.5 4.6"/>')}</span><div><b>For relationship advisors</b><small>See the whole relationship.</small></div></div>
+      <div><span class="lph-ic">${icon('<path d="M4 4v16h16"/><path d="M7.5 14.5l3.5-4 3 2.5 4.5-6"/>')}</span><div><b>89% · 55%</b><small>value integrated advice · use one advisor for both</small></div></div>
+      ${button("Explore the sample", "demo", "lph-cta lg")}
+    </section>
+    <p class="lph-foot">PNC 2026 owner research: 300 U.S. private business owners and co-owners; surveyed Nov–Dec 2025. Research supports the problem, not this product’s effectiveness. · PNC-link · Case competition concept · Not an official PNC service</p>
+  </main></div>`;
 }
 // Owner or advisor workspace, chosen on the sign-in and sign-up forms.
 const roleSwitch = (signup) =>
