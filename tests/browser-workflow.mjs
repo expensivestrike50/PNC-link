@@ -93,7 +93,7 @@ async function open(role) {
   return page;
 }
 const owner = await open("owner");
-await owner.getByRole("link", { name: "Start discovery", exact: true }).click();
+await owner.getByRole("link", { name: "Start your transition profile", exact: true }).click();
 for (const [name, value] of [
   ["Owner name", "Saira Malik"],
   ["Business name", "Malik <Tools> & Family"],
@@ -144,6 +144,8 @@ for (const label of ["Financial statements", "Ownership and debt schedule"]) {
     .waitFor();
 }
 const advisor = await open("advisor");
+// Sign in lands on the dashboard; the portfolio is one click away.
+await advisor.getByRole("link", { name: "Client portfolio", exact: true }).click();
 await advisor
   .getByRole("heading", {
     name: "A clearer view of every client.",

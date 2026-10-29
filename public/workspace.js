@@ -1,5 +1,5 @@
 import { mutate } from "./workflow.mjs";
-import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029120000";
+import { linkDashboard, linkDashboardEmpty, linkHistory, linkTransition, linkReadiness, linkPage, mountLinkDashboard, mountAdvisorCalendar, pathIcon, personAvatar, teamLogo } from "./link-dash.js?v=20261029121500";
 import {
   newData,
   profileInput,
@@ -209,7 +209,8 @@ async function openGuest(resume = false, account = null) {
   state.selected = null;
   await loadCases();
   await loadHistory();
-  if (!resume) location.hash = account?.advisor ? "#/portfolio" : account ? "#/dashboard" : current() ? "#/overview" : "#/discovery";
+  // Signing in always starts on the dashboard; a fresh guest goes to discovery.
+  if (!resume) location.hash = account ? "#/dashboard" : current() ? "#/overview" : "#/discovery";
   render();
 }
 async function api(path, body, retry = true) {
@@ -1712,7 +1713,7 @@ app.addEventListener("submit", async (e) => {
         state.callback = null;
         await loadCases();
         await loadHistory();
-        location.hash = isAdvisor() ? "#/portfolio" : "#/overview";
+        location.hash = "#/dashboard";
       } else if (result.message) {
         notice(result.message);
         if (err) err.textContent = result.message;
@@ -2089,7 +2090,7 @@ async function init() {
         history.replaceState(
           null,
           "",
-          location.pathname + (isAdvisor() ? "#/portfolio" : "#/overview"),
+          location.pathname + "#/dashboard",
         );
     }
     render();

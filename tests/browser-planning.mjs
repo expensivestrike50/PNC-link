@@ -243,6 +243,8 @@ async function refresh(page) {
 
 try {
   const advisor = await open("advisor");
+  // Sign in lands on the dashboard; the portfolio is one click away.
+  await advisor.getByRole("link", { name: "Client portfolio", exact: true }).click();
   await expect(
     advisor.getByRole("heading", {
       name: "A clearer view of every client.",
@@ -375,6 +377,7 @@ try {
   ).toHaveValue("");
 
   const owner = await open("owner");
+  await owner.getByRole("link", { name: "My transition", exact: true }).click();
   await expect(
     owner.getByRole("heading", { name: "Arden Family Tools", exact: true }),
   ).toBeVisible();
